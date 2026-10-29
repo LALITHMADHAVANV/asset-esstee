@@ -16,8 +16,16 @@ const rawRegistryDb = (process.env.REGISTRY_DB_NAME || 'compliance_master').trim
 const REGISTRY_DB = rawRegistryDb.includes(' ') || !rawRegistryDb ? 'compliance_master' : rawRegistryDb;
 const COMPANIES_COLLECTION = 'companies';
 
-// Tenant seeds list - empty by default (no pre-seeded companies)
-const INITIAL_COMPANIES: Array<Omit<CompanyRecord, '_id' | 'createdAt' | 'updatedAt'>> = [];
+// Default company registry seed
+const INITIAL_COMPANIES: Array<Omit<CompanyRecord, '_id' | 'createdAt' | 'updatedAt'>> = [
+  {
+    slug: 'esstee',
+    name: 'Esstee',
+    active: true,
+    databaseName: 'compliance_esstee',
+    description: 'Esstee Plant Maintenance Operations',
+  },
+];
 
 // Short in-memory cache to avoid repeated registry roundtrips on high-frequency requests
 let memoryCache: { data: Map<string, CompanyRecord>; expiresAt: number } | null = null;
