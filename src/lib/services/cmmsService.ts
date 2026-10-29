@@ -15,13 +15,13 @@ import factorySparesSeed from '@/data/factorySparesSeed.json';
 
 // Local storage keys for offline/immediate UI responsiveness
 const STORAGE_KEYS = {
-  MACHINES: 'sahana_machines',
-  PARTS: 'sahana_parts',
-  REPAIRS: 'sahana_repairs',
-  PPM: 'sahana_ppm',
-  REQUISITIONS: 'sahana_requisitions',
-  NOTIFICATIONS: 'sahana_notifications',
-  SEEDED: 'sahana_seeded',
+  MACHINES: 'cmms_machines',
+  PARTS: 'cmms_parts',
+  REPAIRS: 'cmms_repairs',
+  PPM: 'cmms_ppm',
+  REQUISITIONS: 'cmms_requisitions',
+  NOTIFICATIONS: 'cmms_notifications',
+  SEEDED: 'cmms_seeded',
 };
 
 // In-memory subscriber registry for reactive updates
@@ -36,25 +36,19 @@ const listeners = {
 };
 
 function getActiveTenant(): string {
-  if (typeof window === 'undefined') return 'sahana';
+  if (typeof window === 'undefined') return 'esstee';
   try {
     const active = localStorage.getItem('cmms_active_company') || localStorage.getItem('cmms_active_tenant');
     if (active) {
-      const a = active.toLowerCase().trim();
-      if (a === 'maintanence' || a === 'sahana') return 'sahana';
-      return a;
+      return active.toLowerCase().trim();
     }
-    const stored = localStorage.getItem('cmms_current_user') || localStorage.getItem('sahana_current_user');
+    const stored = localStorage.getItem('cmms_current_user');
     if (stored) {
       const u = JSON.parse(stored);
       if (u?.companySlug) return u.companySlug.toLowerCase().trim();
-      const email = (u?.email || '').toLowerCase();
-      const company = (u?.company || '').toLowerCase();
-      if (email.includes('texplus') || company.includes('texplus')) return 'texplus';
-      return 'sahana';
     }
   } catch { }
-  return 'sahana';
+  return 'esstee';
 }
 
 function getLocal<T>(key: string, defaultVal: T): T {
@@ -65,10 +59,8 @@ function getLocal<T>(key: string, defaultVal: T): T {
     const scopedRaw = localStorage.getItem(tenantKey);
     if (scopedRaw) return JSON.parse(scopedRaw);
 
-    if (tenant === 'maintanence' || tenant === 'sahana') {
-      const raw = localStorage.getItem(key) || localStorage.getItem(key.replace('sahana_', 'textech_'));
-      return raw ? JSON.parse(raw) : defaultVal;
-    }
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : defaultVal;
     return defaultVal;
   } catch {
     return defaultVal;
@@ -81,9 +73,7 @@ function setLocal<T>(key: string, val: T): void {
     const tenant = getActiveTenant();
     const tenantKey = `${tenant}_${key}`;
     localStorage.setItem(tenantKey, JSON.stringify(val));
-    if (tenant === 'maintanence' || tenant === 'sahana') {
-      localStorage.setItem(key, JSON.stringify(val));
-    }
+    localStorage.setItem(key, JSON.stringify(val));
   } catch (err) {
     console.warn('LocalStorage error:', err);
   }
@@ -117,11 +107,16 @@ export function apiFetch(url: string, init?: RequestInit): Promise<Response> {
 }
 
 /**
- * Initialize local storage state (Seed injection disabled per multi-tenant architecture)
+ * Initialize local storage state with plantAssetsSeed when cache is empty
  */
 export function initLocalSeedData(): void {
-  // Requirement 6: "Never create sample, seed, or demo data."
-  return;
+  if (typeof window === 'undefined') return;
+  const current = getLocal<Machine[]>(STORAGE_KEYS.MACHINES, []);
+  if (!current || current.length === 0) {
+    if (plantAssetsSeed && Array.isArray(plantAssetsSeed) && plantAssetsSeed.length > 0) {
+      setLocal(STORAGE_KEYS.MACHINES, plantAssetsSeed as unknown as Machine[]);
+    }
+  }
 }
 
 /**
@@ -132,8 +127,6 @@ export async function clearAllRepairs(): Promise<void> {
     setLocal(STORAGE_KEYS.REPAIRS, []);
     setLocal(STORAGE_KEYS.NOTIFICATIONS, []);
     localStorage.removeItem(STORAGE_KEYS.REPAIRS);
-    localStorage.removeItem('sahana_repairs');
-    localStorage.removeItem('textech_repairs');
     notifyLocal('repairs', []);
     notifyLocal('notifications', []);
   }

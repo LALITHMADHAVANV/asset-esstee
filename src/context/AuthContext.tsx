@@ -81,7 +81,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUser(null);
           try {
             localStorage.removeItem(AUTH_STORAGE_KEY);
-            localStorage.removeItem('sahana_current_user');
           } catch { /* Storage may be disabled. */ }
         }
       } catch {
@@ -191,7 +190,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(profile);
     if (typeof window !== 'undefined') {
       localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(profile));
-      const slug = profile.companySlug || (profile.email.includes('texplus') ? 'texplus' : 'sahana');
+      const slug = profile.companySlug || 'esstee';
       localStorage.setItem('cmms_active_company', slug);
       localStorage.setItem('cmms_active_tenant', slug);
       window.dispatchEvent(new Event('cmms_tenant_changed'));
@@ -200,8 +199,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const loginAsRole = async (targetRole: UserRole): Promise<void> => {
-    const slug = user?.companySlug || 'sahana';
-    const cName = user?.company || (slug === 'texplus' ? 'Texplus' : 'Sahana');
+    const slug = user?.companySlug || 'esstee';
+    const cName = user?.company || (slug ? slug.charAt(0).toUpperCase() + slug.slice(1) : 'Esstee');
     const roleTitle = resolveUserTitle(targetRole, cName);
     const roleProfile: UserProfile = {
       uid: `${targetRole.slice(0, 3)}-01`,
@@ -237,7 +236,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
     const headers = {
       'Content-Type': 'application/json',
-      'x-company-slug': user.companySlug || 'sahana',
+      'x-company-slug': user.companySlug || 'esstee',
     };
 
     let res = await fetch('/api/auth/set-password', {
@@ -275,8 +274,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     if (typeof window !== 'undefined') {
       localStorage.removeItem(AUTH_STORAGE_KEY);
-      localStorage.removeItem('sahana_current_user');
-      localStorage.removeItem('textech_current_user');
       localStorage.removeItem('cmms_active_company');
       localStorage.removeItem('cmms_active_tenant');
       window.dispatchEvent(new Event('cmms_tenant_changed'));
@@ -289,8 +286,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       value={{
         user,
         role: user?.role ? (user.role.toString().toUpperCase() as UserRole) : null,
-        companySlug: user?.companySlug || 'sahana',
-        companyName: user?.company || (user?.companySlug === 'texplus' ? 'Texplus' : 'Sahana'),
+        companySlug: user?.companySlug || 'esstee',
+        companyName: user?.company || (user?.companySlug ? user.companySlug.charAt(0).toUpperCase() + user.companySlug.slice(1) : 'Esstee'),
         isLoading,
         loginAsRole,
         loginAsUser,

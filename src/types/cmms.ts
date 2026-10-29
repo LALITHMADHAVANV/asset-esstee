@@ -113,6 +113,9 @@ export interface Machine {
   company?: string; // Company / Facility Name
   brand: string; // "Juki", "Featherlite", "Philips", "Almonard", "Eastman", "Godrej"
   model: string; // "DDL-8700-7", "Optima-360", "120W-LED"
+  serialNo?: string; // Serial number of machine / equipment
+  serialNumber?: string; // S/N alias
+  mcNo?: string; // Machine number
   category?: AssetCategory; // Defaults to 'MACHINE' if absent
   department?: FactoryDepartment; // Factory department or plant section
   machineClass?: MachineClass; // 'OVERLOCK' | 'FLATLOCK' | 'SINGLE_NEEDLE'
@@ -301,7 +304,7 @@ export interface UserProfile {
   unit?: string; // Plant Unit: "All Units" | "UNIT - 1" | "UNIT-2"
   zones?: string[]; // Assigned Factory Zones e.g. ["NETHAJI", "PEACOCK 1"]
   company?: string; // Assigned Company Name from login / user account
-  companySlug?: string; // Tenant slug (e.g. 'Sahana', 'texplus')
+  companySlug?: string; // Tenant slug (e.g. 'esstee')
   status?: 'ACTIVE' | 'INACTIVE';
   defaultPassword?: string;
   createdAt?: string;

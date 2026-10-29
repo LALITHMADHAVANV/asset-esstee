@@ -239,7 +239,7 @@ export function TeamScheduleModal({
           <div className="flex items-start justify-between">
             <div>
               <div className="text-[10px] font-black uppercase tracking-widest text-slate-700">
-                Sahana Garments Ltd &bull; Coimbatore Plant
+                Plant Operations &bull; Central Maintenance
               </div>
               <h1 className="text-xl font-black text-slate-950 uppercase tracking-tight mt-0.5">
                 Senior Mechanic Duty Roster &amp; Dispatch Board

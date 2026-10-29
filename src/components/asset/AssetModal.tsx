@@ -35,7 +35,7 @@ import { useToast } from '@/context/ToastContext';
 import { useAuth } from '@/context/AuthContext';
 import { getCategoryForType, SUBTYPE_LOOKUP } from '@/lib/machineCatalog';
 import { PrintableAssetDocumentModal } from '@/components/print/PrintableAssetDocumentModal';
-import { formatAssetLocation } from '@/lib/formatters';
+import { formatAssetLocation, formatRelocationEndpoint, cleanRelocationLocation } from '@/lib/formatters';
 import { matchesUnit } from '@/lib/constants/units';
 
 interface AssetModalProps {
@@ -1751,9 +1751,9 @@ export function AssetModal({
                       <div key={idx} className="p-3 space-y-1 hover:bg-slate-50 transition">
                         <div className="flex items-center justify-between">
                           <span className="font-bold text-slate-900 flex items-center gap-1.5">
-                            <span className="text-slate-600">{item.fromLine} ({item.fromStation})</span>
+                            <span className="text-slate-600">{formatRelocationEndpoint(item.fromLine, item.fromStation, currentAsset?.unit)}</span>
                             <span className="text-indigo-600">➔</span>
-                            <span className="text-emerald-700">{item.toLine} ({item.toStation})</span>
+                            <span className="text-emerald-700">{formatRelocationEndpoint(item.toLine, item.toStation, currentAsset?.unit)}</span>
                           </span>
                           <span className="text-[10px] text-slate-400 font-mono">
                             {new Date(item.movedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}

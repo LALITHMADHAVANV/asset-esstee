@@ -24,7 +24,7 @@ export function RouteGuard({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    const userSlug = (user.companySlug || 'sahana').toLowerCase();
+    const userSlug = (user.companySlug || 'esstee').toLowerCase();
     const browserPath = typeof window !== 'undefined' ? window.location.pathname : pathname;
     const browserSegments = browserPath.split('/').filter(Boolean);
 
@@ -34,7 +34,7 @@ export function RouteGuard({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // 2. If actual browser URL is scoped to another company (e.g. /texplus/... while user is sahana), block and redirect
+    // 2. If actual browser URL is scoped to another company, block and redirect
     if (browserSegments.length > 1 && browserSegments[1] === 'dashboard' && browserSegments[0] !== userSlug) {
       showToast(`Cross-company access restricted. Redirected to your ${user.company || userSlug} workspace.`, 'warning');
       router.replace(`/${userSlug}/dashboard`);

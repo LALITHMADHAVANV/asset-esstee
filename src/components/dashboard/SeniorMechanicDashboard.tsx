@@ -85,7 +85,7 @@ export function SeniorMechanicDashboard({
   const router = useRouter();
   const { user, role } = useAuth();
   const { showToast } = useToast();
-  const companySlug = (user?.companySlug || 'sahana').toLowerCase();
+  const companySlug = (user?.companySlug || 'esstee').toLowerCase();
 
   const isElectrician = role === 'SENIOR_ELECTRICIAN';
   const tradeFilter = isElectrician ? 'ELECTRICIAN' : 'MECHANIC';
@@ -435,14 +435,6 @@ export function SeniorMechanicDashboard({
             <span>⚡ Assign Task</span>
           </button>
 
-          <button
-            onClick={() => router.push(`/${companySlug}/dashboard/asset-log`)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white transition shadow-xs cursor-pointer"
-            title="Open Asset Log: Toggle Active/Idle and 8 Zones x 8 Lines Availability Report"
-          >
-            <ClipboardList className="w-3.5 h-3.5" />
-            <span>Asset Log &amp; Status</span>
-          </button>
 
           <button
             onClick={() => router.push(`/${companySlug}/dashboard/calendar`)}
@@ -736,13 +728,6 @@ export function SeniorMechanicDashboard({
         </div>
       )}
 
-      {/* ─── 3.5. 8-ZONE × 8-LINE MACHINE COUNT & AVAILABILITY REPORT ─── */}
-      <LineAvailabilityWidget
-        machines={machines}
-        onSelectZoneLine={(zone, line) => {
-          router.push(`/${companySlug}/dashboard/asset-log?zone=${encodeURIComponent(zone)}&line=${encodeURIComponent(line)}`);
-        }}
-      />
 
       {/* ─── 4. DELIVERY SCHEDULE, MY TASKS & ATTENDANCE TODAY (FOR SENIORS) ─── */}
       <MaintenanceMilestonesAndTasks

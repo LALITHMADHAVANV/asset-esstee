@@ -77,7 +77,7 @@ export function PrintableAssetDocumentModal({
   initialMode = 'TAG',
 }: PrintableAssetDocumentModalProps) {
   const [printMode, setPrintMode] = useState<'TAG' | 'DOCUMENT' | 'BATCH'>(initialMode);
-  const [origin] = useState(() => (typeof window !== 'undefined' ? window.location.origin : 'https://sahana.factory'));
+  const [origin] = useState(() => (typeof window !== 'undefined' ? window.location.origin : 'https://esstee.factory'));
 
   // Sync mode if initialMode prop changes without effect setState
   const [prevInitialMode, setPrevInitialMode] = useState(initialMode);
@@ -104,7 +104,7 @@ export function PrintableAssetDocumentModal({
   const displayClass = asset.typeName || TYPE_NAME_MAP[asset.type] || asset.type;
   const valuation = asset.cost ? formatRupee(asset.cost) : '₹75,000';
   const activeTenant = typeof window !== 'undefined' ? (localStorage.getItem('cmms_active_tenant') || '') : '';
-  const fallbackCompany = activeTenant === 'texplus' ? 'Texplus' : 'Sahana';
+  const fallbackCompany = activeTenant ? activeTenant.charAt(0).toUpperCase() + activeTenant.slice(1) : 'Esstee';
   const companyName = asset.company || (typeof window !== 'undefined' ? localStorage.getItem('cmms_company_name') || '' : '') || fallbackCompany;
   const regDate = asset.purchaseDate || '2023-01-01';
 

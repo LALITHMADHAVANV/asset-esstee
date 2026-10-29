@@ -1033,7 +1033,7 @@ export default function AllowancePage() {
       return {
         id: m.id,
         name: m.name || m.typeName || m.model || 'Standard Asset Item',
-        company: m.company || m.brand || (typeof window !== 'undefined' && localStorage.getItem('cmms_active_tenant') === 'texplus' ? 'Texplus' : 'Sahana Garments'),
+        company: m.company || m.brand || (typeof window !== 'undefined' && localStorage.getItem('cmms_company_name')) || 'Esstee',
         category: cat,
         categoryLabel: catLabel,
         machineSubtype: mSubtype,

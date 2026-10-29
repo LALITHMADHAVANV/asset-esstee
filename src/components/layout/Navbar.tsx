@@ -76,7 +76,7 @@ export function Navbar() {
   }, [user?.role, role]);
 
   const handleSignOut = async () => {
-    const slug = user?.companySlug || 'sahana';
+    const slug = user?.companySlug || 'esstee';
     await logout();
     window.location.href = `/${slug}/login`;
   };
@@ -297,11 +297,6 @@ export function Navbar() {
             icon: Boxes,
           },
           {
-            label: 'Asset Log',
-            href: '/dashboard/asset-log',
-            icon: ClipboardList,
-          },
-          {
             label: 'Stock Maintenance',
             href: '/dashboard/inventory',
             icon: Package,
@@ -372,11 +367,6 @@ export function Navbar() {
           icon: QrCode,
         },
         {
-          label: 'Asset Log',
-          href: '/dashboard/asset-log',
-          icon: ClipboardList,
-        },
-        {
           label: 'Mechanic Indents',
           href: '/dashboard/store-inbox',
           icon: PackageCheck,
@@ -411,7 +401,7 @@ export function Navbar() {
     };
 
     const defaultTabs = buildTabs();
-    const companySlug = user?.companySlug || 'sahana';
+    const companySlug = user?.companySlug || 'esstee';
     return defaultTabs.map((tab) => ({
       ...tab,
       href: tab.href.startsWith('/dashboard') ? `/${companySlug}${tab.href}` : tab.href,

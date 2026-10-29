@@ -8,8 +8,6 @@ const nextConfig: NextConfig = {
   ],
   async redirects() {
     return [
-      // Existing customer bookmarks continue to the renamed workspace.
-      { source: '/esstee/:path*', destination: '/sahana/:path*', permanent: false },
       // Legacy /maintenance paths gracefully redirected to native root paths
       {
         source: '/maintenance/login',

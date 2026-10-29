@@ -24,6 +24,8 @@ import { QRCodeSVG } from 'qrcode.react';
 export interface BulkQrAsset {
   id: string;
   mcNo?: string;
+  serialNo?: string;
+  serialNumber?: string;
   name: string;
   brand?: string;
   model?: string;
@@ -71,8 +73,7 @@ export function BulkQrPrintModal({
       const stored = localStorage.getItem('cmms_company_name');
       if (stored) return stored;
       const tenant = localStorage.getItem('cmms_active_tenant');
-      if (tenant === 'texplus') return 'Texplus';
-      if (tenant === 'sahana') return 'Sahana Garments Ltd';
+      if (tenant) return tenant.charAt(0).toUpperCase() + tenant.slice(1);
     }
     const sample = assets.find((a) => a.company);
     return sample?.company || 'Factory Asset Management';
@@ -152,10 +153,11 @@ export function BulkQrPrintModal({
         const q = searchQuery.toLowerCase();
         const idMatch = a.id?.toLowerCase().includes(q);
         const mcNoMatch = a.mcNo?.toLowerCase().includes(q);
+        const serialMatch = a.serialNo?.toLowerCase().includes(q) || a.serialNumber?.toLowerCase().includes(q);
         const nameMatch = a.name?.toLowerCase().includes(q);
         const brandMatch = a.brand?.toLowerCase().includes(q);
         const modelMatch = a.model?.toLowerCase().includes(q);
-        if (!idMatch && !mcNoMatch && !nameMatch && !brandMatch && !modelMatch) return false;
+        if (!idMatch && !mcNoMatch && !serialMatch && !nameMatch && !brandMatch && !modelMatch) return false;
       }
 
       return true;
@@ -248,6 +250,7 @@ export function BulkQrPrintModal({
   const renderSticker = (asset: BulkQrAsset, idx: number, isPrintPortal: boolean = false) => {
     const qrValue = `${assetScanUrl(origin, asset.id)}?brand=${encodeURIComponent(asset.brand || '')}&model=${encodeURIComponent(asset.model || '')}&unit=${encodeURIComponent(asset.unit || '')}&company=${encodeURIComponent(asset.company || effectiveCompanyName)}`;
     const displayId = asset.mcNo && asset.mcNo !== '-' ? asset.mcNo : asset.id;
+    const serialLabel = asset.serialNo || asset.serialNumber || '';
     const lineLabel = asset.currentLine || asset.location || asset.unit || '';
 
     // =========================================================================
@@ -290,7 +293,7 @@ export function BulkQrPrintModal({
     }
 
     // =========================================================================
-    // 2. QR CODE ONLY (CLEAN: QR CODE + MACHINE ID BENEATH) - DEFAULT & RECOMMENDED
+    // 2. QR CODE ONLY (CLEAN: QR CODE + MACHINE ID & SERIAL NO BENEATH) - DEFAULT & RECOMMENDED
     // =========================================================================
     if (stickerFormat === 'QR_ONLY') {
       return (
@@ -326,16 +329,20 @@ export function BulkQrPrintModal({
             />
           </div>
 
-          {/* Machine Number / ID Only */}
+          {/* Machine Number / Serial Number */}
           <div className="mt-1.5 text-center w-full px-1">
             <div className="font-mono font-black text-xs sm:text-sm print:text-[9.5pt] text-slate-950 tracking-wider truncate">
               {displayId}
             </div>
-            {lineLabel && (
+            {serialLabel ? (
+              <div className="text-[9px] print:text-[6.5pt] font-semibold text-slate-500 print:text-black truncate font-mono">
+                {serialLabel}
+              </div>
+            ) : lineLabel ? (
               <div className="text-[9px] print:text-[6.5pt] font-semibold text-slate-500 print:text-black truncate">
                 {lineLabel}
               </div>
-            )}
+            ) : null}
           </div>
         </div>
       );
@@ -380,11 +387,15 @@ export function BulkQrPrintModal({
           <div className="text-[9.5px] print:text-[6.5pt] font-bold text-slate-800 truncate">
             {asset.brand || 'Equipment'} {asset.model && asset.model !== '-' ? `• ${asset.model}` : ''}
           </div>
-          {lineLabel && (
+          {serialLabel ? (
+            <div className="text-[8.5px] print:text-[6pt] font-semibold text-indigo-700 print:text-black truncate font-mono">
+              SN: {serialLabel}
+            </div>
+          ) : lineLabel ? (
             <div className="text-[8.5px] print:text-[6pt] font-semibold text-indigo-700 print:text-black truncate">
               {lineLabel}
             </div>
-          )}
+          ) : null}
         </div>
       </div>
     );
@@ -654,7 +665,7 @@ export function BulkQrPrintModal({
                         : 'text-slate-700 hover:text-slate-900'
                     }`}
                   >
-                    QR Code Only (Clean)
+                    QR Code + S/N
                   </button>
 
                   <button
@@ -762,7 +773,7 @@ export function BulkQrPrintModal({
                 Previewing <span className="text-indigo-600 font-extrabold">{itemsToPrint.length}</span> QR codes (Page details will be 100% hidden when printing)
               </span>
               <span className="text-slate-400">
-                Format: {stickerFormat === 'QR_ONLY' ? 'QR Code + Machine No' : stickerFormat === 'PURE_QR' ? 'Pure QR Only' : 'QR + Details'}
+                Format: {stickerFormat === 'QR_ONLY' ? 'QR Code + S/N' : stickerFormat === 'PURE_QR' ? 'Pure QR Only' : 'QR + Details'}
               </span>
             </div>
 

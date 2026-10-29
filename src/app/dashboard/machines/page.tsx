@@ -67,30 +67,26 @@ export default function MachinesPage() {
     if (user?.company && user.company.trim()) return user.company.trim();
     if (typeof window !== 'undefined') {
       const activeTenant = localStorage.getItem('cmms_active_tenant');
-      if (activeTenant === 'texplus') return 'Texplus';
+      if (activeTenant) return activeTenant.charAt(0).toUpperCase() + activeTenant.slice(1);
       const stored = localStorage.getItem('cmms_company_name');
       if (stored && stored.trim()) return stored.trim();
     }
     const email = (user?.email || '').toLowerCase();
-    if (email.includes('texplus')) return 'Texplus';
-    if (email.includes('sahana')) return 'Sahana Garments Ltd';
-    if (email.includes('textech')) return 'Textech Apparel';
     if (email.includes('@')) {
       const domain = email.split('@')[1];
       const namePart = domain ? domain.split('.')[0] : '';
       if (namePart && namePart !== 'gmail' && namePart !== 'yahoo' && namePart !== 'outlook') {
-        return namePart.charAt(0).toUpperCase() + namePart.slice(1) + ' Garments Ltd';
+        return namePart.charAt(0).toUpperCase() + namePart.slice(1);
       }
     }
-    return 'Sahana Garments Ltd';
+    return 'Esstee';
   }, [user]);
 
   const [mCompany, setMCompany] = useState<string>(() => userCompany);
-  const isTexplusUser = userCompany.toLowerCase().includes('texplus');
 
   // Sync company if user auth session loads asynchronously
   useEffect(() => {
-    if (userCompany && (!mCompany || mCompany === 'Sahana Garments Ltd')) {
+    if (userCompany && !mCompany) {
       setMCompany(userCompany);
     }
   }, [userCompany]);
@@ -138,9 +134,9 @@ export default function MachinesPage() {
   const [isCustomZone, setIsCustomZone] = useState<boolean>(false);
   const [customZoneInput, setCustomZoneInput] = useState<string>('');
 
-  // Floor Line & Station Placement (Manual Entry + Quick-Pick Chips)
+  // Floor Line & Serial Placement
   const [mLine, setMLine] = useState<string>('Line 01');
-  const [mStation, setMStation] = useState<string>('');
+  const [mSerial, setMSerial] = useState<string>('');
 
   // Available lines for the current selected zone
   const availableLinesForZone = useMemo(() => {
@@ -197,16 +193,15 @@ export default function MachinesPage() {
   const [editingMachine, setEditingMachine] = useState<Machine | null>(null);
   const [pickerSearchQuery, setPickerSearchQuery] = useState('');
 
-  // Host origin for QR payload
-  const [origin, setOrigin] = useState('https://sahana.factory');
+  const [origin, setOrigin] = useState('https://esstee.factory');
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
       setOrigin(window.location.origin);
       try {
-        const savedBrands = localStorage.getItem('sahana_custom_brands') || localStorage.getItem('textech_custom_brands');
+        const savedBrands = localStorage.getItem('cmms_custom_brands');
         if (savedBrands) setCustomBrands(JSON.parse(savedBrands));
-        const savedSubtypes = localStorage.getItem('sahana_custom_subtypes') || localStorage.getItem('textech_custom_subtypes');
+        const savedSubtypes = localStorage.getItem('cmms_custom_subtypes');
         if (savedSubtypes) setCustomSubtypes(JSON.parse(savedSubtypes));
       } catch (e) {
         console.error('Failed to load custom catalog from localStorage', e);
@@ -313,7 +308,7 @@ export default function MachinesPage() {
     setIsCustomZone(false);
     setCustomZoneInput('');
     setMLine('Line 01');
-    setMStation('');
+    setMSerial('');
     setIsCustomBrand(false);
     setCustomBrandInput('');
     setIsCustomType(false);
@@ -348,6 +343,12 @@ export default function MachinesPage() {
       return;
     }
 
+    const cleanSerial = mSerial.trim();
+    if (!cleanSerial) {
+      showToast('Please enter a Serial Number', 'warning');
+      return;
+    }
+
     let finalTypeName =
       (mType && ASSET_SUBTYPE_LOOKUP[mType]?.name) ||
       customSubtypes.find((s) => s.id === mType)?.name ||
@@ -365,7 +366,7 @@ export default function MachinesPage() {
         const nextBrands = [...customBrands, trimmed];
         setCustomBrands(nextBrands);
         if (typeof window !== 'undefined') {
-          localStorage.setItem('sahana_custom_brands', JSON.stringify(nextBrands));
+          localStorage.setItem('cmms_custom_brands', JSON.stringify(nextBrands));
         }
       }
     }
@@ -403,14 +404,12 @@ export default function MachinesPage() {
       const nextSubtypes = [...customSubtypes, newDef];
       setCustomSubtypes(nextSubtypes);
       if (typeof window !== 'undefined') {
-        localStorage.setItem('sahana_custom_subtypes', JSON.stringify(nextSubtypes));
+        localStorage.setItem('cmms_custom_subtypes', JSON.stringify(nextSubtypes));
       }
     }
 
     const finalUnit = !isAdmin ? effectiveUnit : (mUnit.trim() || 'UNIT - 1');
-    const finalZone = isCustomZone && customZoneInput.trim() ? customZoneInput.trim() : (mArea.trim() || 'NETHAJI');
-    const finalLine = (mLine.trim() || 'Line 01') as FloorLine;
-    const userDept = (finalZone.includes('Cutting') ? 'Cutting Floor' : finalZone.includes('Finishing') ? 'Finishing Floor' : 'Sewing Floor') as any;
+    const userDept = 'Factory Floor' as any;
 
     const newAsset: Machine = {
       id: cleanId,
@@ -434,11 +433,14 @@ export default function MachinesPage() {
       cost: typeof mCost === 'number' ? mCost : Number(mCost) || 0,
       status: 'ACTIVE',
       unit: finalUnit,
-      area: finalZone,
-      zone: finalZone,
-      currentLine: finalLine,
+      area: finalUnit,
+      zone: '',
+      currentLine: '',
       department: userDept,
-      stationNo: mStation.trim() || 'Line Standard',
+      serialNo: cleanSerial,
+      serialNumber: cleanSerial,
+      mcNo: cleanSerial,
+      stationNo: cleanSerial,
       totalDowntimeMinutes: 0,
       ageYears: parseFloat(calculatedAge) || 0,
       specs: finalSpecs,
@@ -477,8 +479,7 @@ export default function MachinesPage() {
           customSubtypes.find((s) => s.id === mType)?.specs ||
           '';
 
-    const userLine = (mArea.trim() || 'Line 01') as FloorLine;
-    const userDept = (mArea.trim().includes('Line') ? 'Sewing Floor' : mArea.trim() || 'Sewing Floor') as any;
+    const userDept = 'Factory Floor' as any;
 
     return {
       id: mId || 'ASSET-NEW',
@@ -491,9 +492,12 @@ export default function MachinesPage() {
       cost: typeof mCost === 'number' ? mCost : Number(mCost) || 0,
       motorType: mMotor,
       unit: mUnit.trim() || 'Unassigned Unit',
-      area: mArea.trim() || 'Unassigned Area',
-      currentLine: userLine,
-      stationNo: mStation.trim() || 'Unassigned Station',
+      area: mUnit.trim() || 'Unassigned Area',
+      currentLine: (existing?.currentLine || '') as FloorLine,
+      serialNo: mSerial.trim() || 'SN-PENDING',
+      serialNumber: mSerial.trim() || 'SN-PENDING',
+      mcNo: mSerial.trim() || 'SN-PENDING',
+      stationNo: mSerial.trim() || 'Unassigned Station',
       purchaseDate: mDate,
       status: existing?.status || 'ACTIVE',
       category: selectedCategory,
@@ -518,7 +522,7 @@ export default function MachinesPage() {
     mMotor,
     mUnit,
     mArea,
-    mStation,
+    mSerial,
     mDate,
     machines,
     selectedCategory,
@@ -557,7 +561,8 @@ export default function MachinesPage() {
       category: selectedCategory || '',
       unit: mUnit.trim() || '',
       area: mArea.trim() || '',
-      station: mStation.trim() || '',
+      serialNo: mSerial.trim() || '',
+      station: mSerial.trim() || '',
       date: mDate || '',
       cost: mCost ? String(mCost) : '',
     });
@@ -572,7 +577,7 @@ export default function MachinesPage() {
     selectedCategory,
     mUnit,
     mArea,
-    mStation,
+    mSerial,
     mDate,
     mCost,
     isCustomBrand,
@@ -688,7 +693,7 @@ export default function MachinesPage() {
                   required
                   value={mCompany}
                   onChange={(e) => setMCompany(e.target.value)}
-                  placeholder="e.g. Sahana Garments Ltd"
+                  placeholder="e.g. Esstee Industries"
                   autoComplete="off"
                   className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none text-slate-800 font-semibold"
                 />
@@ -983,15 +988,15 @@ export default function MachinesPage() {
               </div>
             </div>
 
-            {/* ─── Plant Unit, Categorized Zone & Floor Line Placement ─── */}
+            {/* ─── Plant Unit & Station Placement ─── */}
             <div className="bg-slate-50/80 p-4 rounded-xl border border-slate-200/80 space-y-3.5">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
                   <LayoutGrid className="w-3.5 h-3.5 text-indigo-600" />
-                  <span>Factory Location &amp; Floor Placement</span>
+                  <span>Factory Location &amp; Placement</span>
                 </span>
                 <span className="text-[10px] text-slate-500 font-medium">
-                  Unit ➔ Categorized Zone ➔ Line Placement
+                  Plant Unit Assignment
                 </span>
               </div>
 
@@ -1004,18 +1009,7 @@ export default function MachinesPage() {
                   <select
                     value={!isAdmin ? effectiveUnit : mUnit}
                     disabled={!isAdmin}
-                    onChange={(e) => {
-                      const nextUnit = e.target.value;
-                      setMUnit(nextUnit);
-                      const zones = getZonesForUnit(nextUnit);
-                      if (zones.length > 0) {
-                        setMArea(zones[0].id);
-                        setIsCustomZone(false);
-                        if (zones[0].defaultLines.length > 0) {
-                          setMLine(zones[0].defaultLines[0]);
-                        }
-                      }
-                    }}
+                    onChange={(e) => setMUnit(e.target.value)}
                     className={`w-full px-3 py-2 text-sm border rounded-xl outline-none font-bold text-slate-800 ${
                       !isAdmin
                         ? 'bg-slate-100 border-slate-200 cursor-not-allowed'
@@ -1030,131 +1024,19 @@ export default function MachinesPage() {
                   </select>
                 </div>
 
-                {/* 2. Categorized Zone / Area Dropdown */}
+                {/* 2. Serial Number (Required) */}
                 <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="text-xs font-semibold text-slate-700">
-                      Zone / Area *
-                    </label>
-                    {!isCustomZone ? (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setIsCustomZone(true);
-                          setCustomZoneInput('');
-                        }}
-                        className="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 cursor-pointer"
-                      >
-                        + Custom Zone
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setIsCustomZone(false);
-                          if (availableZonesForUnit.length > 0) {
-                            setMArea(availableZonesForUnit[0].id);
-                          }
-                        }}
-                        className="text-[11px] font-semibold text-slate-500 hover:text-slate-800 cursor-pointer"
-                      >
-                        Use Zone List
-                      </button>
-                    )}
-                  </div>
-
-                  {!isCustomZone ? (
-                    <select
-                      required
-                      value={mArea}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        if (val === '__CUSTOM_ZONE__') {
-                          setIsCustomZone(true);
-                          setCustomZoneInput('');
-                        } else {
-                          setMArea(val);
-                          const matched = availableZonesForUnit.find((z) => z.id === val);
-                          if (matched && matched.defaultLines.length > 0) {
-                            setMLine(matched.defaultLines[0]);
-                          }
-                        }
-                      }}
-                      className="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-slate-800 font-bold cursor-pointer shadow-2xs"
-                    >
-                      <optgroup label={`Available Zones in ${!isAdmin ? effectiveUnit : mUnit}`}>
-                        {availableZonesForUnit.map((z) => (
-                          <option key={z.id} value={z.id}>
-                            {z.name}
-                          </option>
-                        ))}
-                      </optgroup>
-                      <option value="__CUSTOM_ZONE__" className="text-indigo-600 font-bold">
-                        + Enter Custom Zone...
-                      </option>
-                    </select>
-                  ) : (
-                    <input
-                      type="text"
-                      required
-                      value={customZoneInput}
-                      onChange={(e) => {
-                        setCustomZoneInput(e.target.value);
-                        setMArea(e.target.value);
-                      }}
-                      placeholder="e.g. NETHAJI, PEACOCK, Sampling Section"
-                      autoFocus
-                      className="w-full px-3 py-2 text-sm bg-white border border-indigo-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-slate-800 font-bold"
-                    />
-                  )}
-                </div>
-              </div>
-
-              {/* 3. Floor Line Input (Manual Entry + Available Line Chips) */}
-              <div className="pt-1">
-                <div className="flex items-center justify-between mb-1">
-                  <label className="text-xs font-semibold text-slate-700">
-                    Floor Line *
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Serial Number *
                   </label>
-                  <span className="text-[10px] text-slate-400">Mention line manually or click chip below</span>
-                </div>
-
-                <input
-                  type="text"
-                  required
-                  list="floor-lines-suggestions"
-                  value={mLine}
-                  onChange={(e) => setMLine(e.target.value)}
-                  placeholder="e.g. Line 01, Line 04, Cutting Bay"
-                  autoComplete="off"
-                  className="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-slate-900 font-bold"
-                />
-                <datalist id="floor-lines-suggestions">
-                  {availableLinesForZone.map((l) => (
-                    <option key={l} value={l} />
-                  ))}
-                </datalist>
-
-                {/* Quick-Pick Line Chips */}
-                <div className="flex flex-wrap items-center gap-1.5 mt-2">
-                  <span className="text-[10px] font-semibold text-slate-400">Available in {mArea}:</span>
-                  {availableLinesForZone.map((l) => {
-                    const isSelected = mLine === l;
-                    return (
-                      <button
-                        key={l}
-                        type="button"
-                        onClick={() => setMLine(l)}
-                        className={`px-2.5 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
-                          isSelected
-                            ? 'bg-indigo-600 text-white shadow-2xs'
-                            : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-                        }`}
-                      >
-                        {l}
-                      </button>
-                    );
-                  })}
+                  <input
+                    type="text"
+                    required
+                    value={mSerial}
+                    onChange={(e) => setMSerial(e.target.value)}
+                    placeholder="e.g. SN-4DORD15615"
+                    className="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-slate-800 font-medium font-mono"
+                  />
                 </div>
               </div>
             </div>
@@ -1220,7 +1102,7 @@ export default function MachinesPage() {
                         Company / Unit / ID
                       </div>
                       <div className="text-xs sm:text-sm print:text-[9pt] font-black uppercase tracking-wider text-slate-800 truncate flex items-center gap-1">
-                        <span>{mCompany.trim() || userCompany || 'sahana'}</span>
+                        <span>{mCompany.trim() || userCompany || 'Esstee'}</span>
                         <span className="text-slate-400">/</span>
                         <span>{mUnit.trim() || 'Unit'}</span>
                         <span className="text-slate-400">/</span>
@@ -1351,15 +1233,14 @@ export default function MachinesPage() {
             <div className="flex-1 overflow-y-auto p-4 divide-y divide-slate-100">
               {machines
                 .filter((m) => {
-                  const mComp = (m.company || '').toLowerCase();
-                  if (isTexplusUser && !mComp.includes('texplus')) return false;
-                  if (!isTexplusUser && mComp.includes('texplus')) return false;
                   if (!isAdmin && !matchesUnit(m.unit, effectiveUnit)) return false;
                   if (!pickerSearchQuery.trim()) return true;
                   const q = pickerSearchQuery.toLowerCase();
                   return (
                     m.id?.toLowerCase().includes(q) ||
                     m.name?.toLowerCase().includes(q) ||
+                    m.serialNo?.toLowerCase().includes(q) ||
+                    m.serialNumber?.toLowerCase().includes(q) ||
                     m.brand?.toLowerCase().includes(q) ||
                     m.model?.toLowerCase().includes(q) ||
                     m.type?.toLowerCase().includes(q) ||

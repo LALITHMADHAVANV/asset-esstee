@@ -27,8 +27,8 @@ export type ClientZone = (typeof CLIENT_ZONES)[number];
 export type ClientLine = (typeof CLIENT_LINES)[number];
 
 const STORAGE_KEYS = {
-  ASSET_LOGS: 'sahana_asset_logs',
-  MACHINES: 'sahana_machines',
+  ASSET_LOGS: 'cmms_asset_logs',
+  MACHINES: 'cmms_machines',
 };
 
 type Listener<T> = (data: T) => void;
@@ -37,7 +37,7 @@ const logListeners = new Set<Listener<AssetLogEntry[]>>();
 function getLocal<T>(key: string, defaultVal: T): T {
   if (typeof window === 'undefined') return defaultVal;
   try {
-    const raw = localStorage.getItem(key) || localStorage.getItem(key.replace('sahana_', 'textech_'));
+    const raw = localStorage.getItem(key);
     return raw ? JSON.parse(raw) : defaultVal;
   } catch {
     return defaultVal;
@@ -149,7 +149,7 @@ export function generateClientFleet(): Machine[] {
         fleet.push({
           id,
           name: `${brand} ${spec.typeName} (${spec.model})`,
-          company: 'Sahana Textile Mills',
+          company: 'Esstee',
           brand,
           model: spec.model,
           category: 'MACHINE',
@@ -408,7 +408,7 @@ export async function addExtraMachineToZone(params: {
     purchaseDate: new Date().toISOString().slice(0, 10),
     totalDowntimeMinutes: 0,
     cost: 0,
-    company: 'Sahana Clothing Company',
+    company: 'Esstee',
     lastMovedAt: new Date().toISOString(),
     lastMovedBy: changedBy,
   };

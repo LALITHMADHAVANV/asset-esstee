@@ -24,7 +24,7 @@ import {
 import { EditAssetModal } from '@/components/asset/EditAssetModal';
 import { Machine, RepairTicket, PPMSchedule } from '@/types/cmms';
 import { subscribeRepairs, subscribePPMSchedules } from '@/lib/services/cmmsService';
-import { formatAssetLocation } from '@/lib/formatters';
+import { formatAssetLocation, cleanRelocationLocation, formatRelocationEndpoint, formatRelocationLocation } from '@/lib/formatters';
 
 interface AssetHistoryModalProps {
   machine: Machine | null;
@@ -482,11 +482,11 @@ export function AssetHistoryModal({
                       </div>
                       <div className="text-xs text-slate-800 flex items-center gap-2">
                         <span className="font-semibold text-slate-600">
-                          {machine.previousLine} ({machine.previousStation || 'Station'})
+                          {formatRelocationEndpoint(machine.previousLine, machine.previousStation, machine.unit)}
                         </span>
                         <span className="text-indigo-600 font-bold">➜</span>
                         <span className="font-bold text-emerald-700">
-                          {formatAssetLocation(machine)}
+                          {formatRelocationLocation(machine)}
                         </span>
                       </div>
                       {machine.lastMovedReason && (
@@ -513,9 +513,9 @@ export function AssetHistoryModal({
                         </span>
                       </div>
                       <div className="text-slate-800 font-medium flex items-center gap-2">
-                        <span>{rel.fromLine} ({rel.fromStation})</span>
+                        <span>{formatRelocationEndpoint(rel.fromLine, rel.fromStation, machine.unit)}</span>
                         <span className="text-indigo-600 font-bold">➜</span>
-                        <span className="font-bold text-emerald-700">{rel.toLine} ({rel.toStation})</span>
+                        <span className="font-bold text-emerald-700">{formatRelocationEndpoint(rel.toLine, rel.toStation, machine.unit)}</span>
                       </div>
                       {rel.reason && (
                         <p className="text-[11px] text-slate-600">

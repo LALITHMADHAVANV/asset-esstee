@@ -4065,7 +4065,7 @@ function SettingsContent() {
       <div className="fixed bottom-6 right-6 z-40">
         <button
           type="button"
-          onClick={() => showToast('Helpdesk & WhatsApp line active for Sahana Garments Maintenance Team', 'info')}
+          onClick={() => showToast('Helpdesk & WhatsApp line active for Plant Maintenance Team', 'info')}
           className="w-12 h-12 rounded-full bg-[#16a34a] hover:bg-[#15803d] text-white shadow-lg flex items-center justify-center cursor-pointer transition-transform hover:scale-105 active:scale-95"
           title="Need Help? Chat with Operations Desk"
         >

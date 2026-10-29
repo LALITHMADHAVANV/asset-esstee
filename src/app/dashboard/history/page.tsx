@@ -15,7 +15,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { BulkQrPrintModal, BulkQrAsset } from '@/components/history/BulkQrPrintModal';
 import { subscribeMachines, subscribeRepairs, subscribePPMSchedules } from '@/lib/services/cmmsService';
 import type { Machine, RepairTicket, PPMSchedule } from '@/types/cmms';
-import { formatAssetLocation } from '@/lib/formatters';
+import { formatAssetLocation, cleanRelocationLocation, formatRelocationLocation, formatRelocationEndpoint } from '@/lib/formatters';
 import {
   Search,
   Columns,
@@ -144,7 +144,11 @@ const getAssetRepairCost = (asset: AssetHistoryRecord): number => {
 
 const getAssetLocationHistory = (asset: AssetHistoryRecord): LocationHistoryEntry[] => {
   if (asset.locationHistory && asset.locationHistory.length > 0) {
-    return asset.locationHistory;
+    return asset.locationHistory.map((h) => ({
+      ...h,
+      fromLocation: cleanRelocationLocation(h.fromLocation),
+      toLocation: cleanRelocationLocation(h.toLocation),
+    }));
   }
 
   return [
@@ -152,7 +156,7 @@ const getAssetLocationHistory = (asset: AssetHistoryRecord): LocationHistoryEntr
       transferId: `TRF-${asset.assetId.replace(/[^a-zA-Z0-9]/g, '')}-01`,
       date: asset.purchaseDate || new Date().toISOString().slice(0, 10),
       fromLocation: 'Receiving Inward Store',
-      toLocation: asset.unit || 'Maintenance Workshop',
+      toLocation: cleanRelocationLocation(asset.unit) || 'Maintenance Workshop',
       reason: 'Initial commissioning and station placement',
       movedBy: 'Store / Maintenance Lead',
       status: 'CURRENT',
@@ -189,7 +193,7 @@ const CATEGORIES_META: {
   {
     id: 'MACHINE',
     title: 'Machine History',
-    subtitle: 'Sewing, Cutting & Industrial Machinery (Lines 01-04)',
+    subtitle: 'Sewing, Cutting & Industrial Machinery',
     icon: Wrench,
     theme: {
       bg: 'bg-indigo-50/50',
@@ -322,20 +326,13 @@ export default function HistoryPage() {
   };
 
   // Combined items populated strictly from live registered machines, repairs, and PPM (scoped to unit for non-admins)
-  const isTexplusUser = (user?.company || '').toLowerCase().includes('texplus') ||
-    (typeof window !== 'undefined' && (localStorage.getItem('cmms_active_tenant') === 'texplus' || (localStorage.getItem('cmms_company_name') || '').toLowerCase().includes('texplus')));
-
   const allItems = useMemo(() => {
-    const tenantMachines = isTexplusUser
-      ? liveMachines.filter((m) => (m.company || '').toLowerCase().includes('texplus'))
-      : liveMachines.filter((m) => !(m.company || '').toLowerCase().includes('texplus'));
-
     const scopedLiveMachines = !isAdmin
-      ? tenantMachines.filter((m) => matchesUnit(m.unit, effectiveUnit))
-      : tenantMachines;
+      ? liveMachines.filter((m) => matchesUnit(m.unit, effectiveUnit))
+      : liveMachines;
     const scopedInitialItems = !isAdmin
-      ? (isTexplusUser ? [] : items).filter((i) => matchesUnit(i.unit, effectiveUnit))
-      : (isTexplusUser ? [] : items);
+      ? items.filter((i) => matchesUnit(i.unit, effectiveUnit))
+      : items;
 
     const initialIds = new Set(scopedInitialItems.map((i) => i.assetId.toLowerCase()));
     const extraLive: AssetHistoryRecord[] = scopedLiveMachines
@@ -380,10 +377,10 @@ export default function HistoryPage() {
           ? m.relocationHistory.map((rh, idx) => ({
               transferId: `TRF-${m.id.replace(/[^a-zA-Z0-9]/g, '')}-${String(m.relocationHistory!.length - idx).padStart(2, '0')}`,
               date: rh.movedAt ? rh.movedAt.slice(0, 10) : (m.purchaseDate || '2026-10-10'),
-              fromLocation: `${rh.fromLine}${rh.fromStation ? ` • ${rh.fromStation}` : ''}`,
-              toLocation: `${rh.toLine}${rh.toStation ? ` • ${rh.toStation}` : ''}`,
-              reason: rh.reason || 'Relocation & line balancing',
-              movedBy: rh.movedBy || 'Line Supervisor',
+              fromLocation: formatRelocationEndpoint(rh.fromLine, rh.fromStation, m.unit),
+              toLocation: formatRelocationEndpoint(rh.toLine, rh.toStation, m.unit),
+              reason: rh.reason || 'Relocation & machine transfer',
+              movedBy: rh.movedBy || 'Maintenance Lead',
               status: idx === 0 ? 'CURRENT' : 'TRANSFERRED',
               notes: 'Relocation completed and verified',
             }))
@@ -391,8 +388,8 @@ export default function HistoryPage() {
               {
                 transferId: `TRF-${m.id.replace(/[^a-zA-Z0-9]/g, '')}-01`,
                 date: m.lastMovedAt ? m.lastMovedAt.slice(0, 10) : (m.purchaseDate || new Date().toISOString().slice(0, 10)),
-                fromLocation: m.previousLine ? `${m.previousLine}${m.previousStation ? ` • ${m.previousStation}` : ''}` : 'Receiving Inward Store',
-                toLocation: formatAssetLocation(m),
+                fromLocation: m.previousLine ? formatRelocationEndpoint(m.previousLine, m.previousStation, m.unit) : 'Receiving Inward Store',
+                toLocation: formatRelocationLocation(m),
                 reason: m.lastMovedReason || 'Initial installation and commissioning',
                 movedBy: m.lastMovedBy || 'Plant Maintenance Team',
                 status: 'CURRENT',
@@ -419,7 +416,7 @@ export default function HistoryPage() {
         return {
           _id: `live-${m.id}`,
           assetId: m.id,
-          serialNo: `SN-${m.brand ? m.brand.slice(0, 2).toUpperCase() : 'MC'}-${m.id.replace(/[^0-9]/g, '') || '001'}`,
+          serialNo: (m as any).serialNo || (m as any).serialNumber || (m as any).stationNo || `SN-${m.brand ? m.brand.slice(0, 2).toUpperCase() : 'MC'}-${m.id.replace(/[^0-9]/g, '') || '001'}`,
           name: m.name || `${m.brand || ''} ${m.typeName || m.type || 'Machine'}`.trim(),
           model: m.model || 'Standard',
           brand: m.brand || 'OEM',
@@ -427,7 +424,7 @@ export default function HistoryPage() {
           categoryLabel: m.category === 'FURNITURE' ? 'Furniture' : m.category === 'UTILITY' ? 'Utility' : m.category === 'VEHICLE' ? 'Vehicle' : 'Machine',
           subCategory: subCat,
           location: locName,
-          unit: formatAssetLocation(m),
+          unit: formatRelocationLocation(m),
           riskLevel: riskLevel as any,
           status: m.status === 'BREAKDOWN' ? 'active' : 'completed',
           purchaseDate: m.purchaseDate || new Date().toISOString().slice(0, 10),
@@ -448,13 +445,15 @@ export default function HistoryPage() {
       });
 
     return [...scopedInitialItems, ...extraLive];
-  }, [items, liveMachines, liveRepairs, livePpm, isAdmin, effectiveUnit, isTexplusUser]);
+  }, [items, liveMachines, liveRepairs, livePpm, isAdmin, effectiveUnit]);
 
   // Prepared assets for bulk QR printing modal
   const bulkQrAssets: BulkQrAsset[] = useMemo(() => {
     return allItems.map((item, idx) => ({
       id: item.assetId,
-      mcNo: (item as any).mcNo || (item as any).serialNo || item.assetId,
+      mcNo: (item as any).mcNo || item.assetId,
+      serialNo: item.serialNo || (item as any).serialNumber || (item as any).stationNo || '',
+      serialNumber: (item as any).serialNumber || item.serialNo || '',
       name: item.name,
       brand: item.brand,
       model: item.model,
@@ -555,10 +554,10 @@ export default function HistoryPage() {
       if (loc) set.add(loc);
     });
     liveMachines.forEach((m) => {
-      if (m.area) set.add(m.area);
-      if (m.currentLine) set.add(m.currentLine);
+      if (m.unit) set.add(m.unit);
+      if (m.area && !m.area.toLowerCase().includes('line')) set.add(m.area);
     });
-    ['Line 01', 'Line 02', 'Line 03', 'Line 04', 'Cutting Department', 'Finishing & Pressing', 'Central Utilities & Plant'].forEach((l) => set.add(l));
+    ['Cutting Department', 'Finishing & Pressing', 'Central Utilities & Plant'].forEach((l) => set.add(l));
     return Array.from(set).sort();
   }, [allItems, liveMachines]);
 
@@ -1801,7 +1800,7 @@ export default function HistoryPage() {
                   {locationHistory.length} Movements Recorded
                 </span>
                 <span className="text-xs font-mono font-bold bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-lg border border-indigo-200">
-                  Current: {a.unit}
+                  Current: {cleanRelocationLocation(a.unit)}
                 </span>
               </div>
             </div>
@@ -1814,7 +1813,7 @@ export default function HistoryPage() {
                 </span>
                 <span className="font-bold text-slate-900 text-sm mt-0.5 flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                  {a.unit}
+                  {cleanRelocationLocation(a.unit)}
                 </span>
                 <span className="text-[10px] text-slate-500">Shop-floor operational station</span>
               </div>
@@ -1868,13 +1867,13 @@ export default function HistoryPage() {
                       </td>
 
                       <td className="py-2 px-3 whitespace-nowrap align-top font-medium text-slate-700 border-r border-b border-slate-200">
-                        {loc.fromLocation}
+                        {cleanRelocationLocation(loc.fromLocation)}
                       </td>
 
                       <td className="py-2 px-3 whitespace-nowrap align-top font-bold text-indigo-900 border-r border-b border-slate-200">
                         <span className="inline-flex items-center gap-1">
                           <span className="text-indigo-500">➜</span>
-                          <span>{loc.toLocation}</span>
+                          <span>{cleanRelocationLocation(loc.toLocation)}</span>
                         </span>
                       </td>
 
@@ -2395,8 +2394,8 @@ export default function HistoryPage() {
                           {sectionItems.map((o) => {
                             const locHistory = getAssetLocationHistory(o);
                             const currentEntry = locHistory.find((l) => l.status === 'CURRENT') || locHistory[0];
-                            const currentReloc = currentEntry ? currentEntry.toLocation : o.unit;
-                            const fromReloc = currentEntry ? currentEntry.fromLocation : 'Maintenance Workshop';
+                            const currentReloc = cleanRelocationLocation(currentEntry ? currentEntry.toLocation : o.unit);
+                            const fromReloc = cleanRelocationLocation(currentEntry ? currentEntry.fromLocation : 'Maintenance Workshop');
                             const ppmCost = getAssetPpmCost(o);
                             const repairCost = getAssetRepairCost(o);
                             const assignedTech = getAssetMechanic(o);
@@ -2483,7 +2482,7 @@ export default function HistoryPage() {
                               <td className="px-3.5 py-2 border-r border-b border-slate-200 whitespace-nowrap">
                                 <div className="flex items-center gap-1.5 text-xs font-bold text-slate-900">
                                   <MapPin className="w-3 h-3 text-emerald-600 shrink-0" />
-                                  <span>{currentReloc}</span>
+                                  <span>{cleanRelocationLocation(currentReloc)}</span>
                                 </div>
                                 <div className="text-[10px] text-emerald-700 font-medium pl-4.5 flex items-center gap-1">
                                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
@@ -2495,7 +2494,7 @@ export default function HistoryPage() {
                               <td className="px-3.5 py-2 border-r border-b border-slate-200 whitespace-nowrap">
                                 <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-700">
                                   <ArrowRightLeft className="w-3 h-3 text-indigo-500 shrink-0" />
-                                  <span>{fromReloc}</span>
+                                  <span>{cleanRelocationLocation(fromReloc)}</span>
                                 </div>
                                 <div className="text-[10px] text-slate-400 pl-4.5 truncate max-w-[140px]" title={currentEntry?.reason}>
                                   {currentEntry?.reason || 'Initial Commissioning'}
@@ -2609,7 +2608,11 @@ export default function HistoryPage() {
                 <h4 className="text-xs font-extrabold text-slate-900 mt-1.5">{selectedQrAsset.name}</h4>
                 <p className="text-[11px] text-slate-500">{selectedQrAsset.brand} • {selectedQrAsset.model}</p>
                 <p className="text-[11px] font-semibold text-slate-700 mt-0.5">
-                  Station: <span className="text-indigo-600 font-bold">{selectedQrAsset.unit}</span>
+                  {selectedQrAsset.serialNo ? (
+                    <>Serial No: <span className="text-indigo-600 font-mono font-bold">{selectedQrAsset.serialNo}</span></>
+                  ) : (
+                    <>Station: <span className="text-indigo-600 font-bold">{selectedQrAsset.unit}</span></>
+                  )}
                 </p>
               </div>
             </div>
@@ -2665,11 +2668,15 @@ export default function HistoryPage() {
             <div className="text-xs font-bold text-black mt-0.5">
               {selectedQrAsset.brand} • {selectedQrAsset.model}
             </div>
-            {selectedQrAsset.unit && (
+            {selectedQrAsset.serialNo ? (
+              <div className="text-[11px] font-semibold text-black mt-0.5 font-mono">
+                S/N: {selectedQrAsset.serialNo}
+              </div>
+            ) : selectedQrAsset.unit ? (
               <div className="text-[11px] font-semibold text-black mt-0.5">
                 {selectedQrAsset.unit}
               </div>
-            )}
+            ) : null}
           </div>
         </div>,
         document.body

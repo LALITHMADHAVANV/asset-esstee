@@ -81,7 +81,7 @@ interface StoreDashboardProps {
 }
 
 // Local storage key for persistent store issue ledger
-const STORAGE_STORE_ISSUES = 'sahana_store_issues';
+const STORAGE_STORE_ISSUES = 'cmms_store_issues';
 
 export function StoreDashboard({
   machines = [],

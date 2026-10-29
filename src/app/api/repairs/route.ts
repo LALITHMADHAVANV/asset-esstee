@@ -117,8 +117,7 @@ export async function PATCH(req: Request) {
     });
 
     const ticketCompany = existingTicket?.company || updates.company || db.companyName;
-    const isTexplus = (ticketCompany || '').toLowerCase().includes('texplus');
-    const authoritativeCompany = isTexplus ? 'Texplus' : db.companyName;
+    const authoritativeCompany = ticketCompany || db.companyName;
 
     await db.rawCollection('repair_tickets').updateOne(
       { $or: [{ id }, { ticketId: id }] },
@@ -278,11 +277,7 @@ export async function DELETE(req: Request) {
     const db = await getDatabase(req);
 
     if (all) {
-      const isTexplus = db.tenant === 'texplus';
-      const companyFilter = isTexplus
-        ? { company: { $regex: /^texplus/i } }
-        : { company: { $not: { $regex: /^texplus/i } } };
-      const result = await db.rawCollection('repair_tickets').deleteMany(companyFilter);
+      const result = await db.rawCollection('repair_tickets').deleteMany({});
       return NextResponse.json({
         success: true,
         message: `Deleted ${result.deletedCount} repair tickets`,

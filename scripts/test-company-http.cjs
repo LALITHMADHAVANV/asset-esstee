@@ -7,7 +7,7 @@ const origin = process.env.TEST_ORIGIN || 'http://localhost:3100';
     assert.equal(response.status, 401, path);
     console.log('PASS signed-out access blocked: ' + path);
   }
-  for (const path of ['/login', '/sahana/dashboard', '/texplus/dashboard', '/sahana/scan/test', '/texplus/scan/test']) {
+  for (const path of ['/login', '/esstee/dashboard', '/esstee/scan/test']) {
     const response = await fetch(origin + path, { signal: AbortSignal.timeout(10000) });
     assert.equal(response.status, 200, path);
     console.log('PASS page served: ' + path);

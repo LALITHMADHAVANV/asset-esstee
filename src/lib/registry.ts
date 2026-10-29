@@ -12,26 +12,12 @@ export interface CompanyRecord {
   updatedAt: string;
 }
 
-const REGISTRY_DB = process.env.REGISTRY_DB_NAME || 'compliance_master';
+const rawRegistryDb = (process.env.REGISTRY_DB_NAME || 'compliance_master').trim();
+const REGISTRY_DB = rawRegistryDb.includes(' ') || !rawRegistryDb ? 'compliance_master' : rawRegistryDb;
 const COMPANIES_COLLECTION = 'companies';
 
-// Default initial tenant seeds required by architecture specification
-const INITIAL_COMPANIES: Array<Omit<CompanyRecord, '_id' | 'createdAt' | 'updatedAt'>> = [
-  {
-    slug: 'sahana',
-    name: 'Sahana',
-    active: true,
-    databaseName: 'compliance_sahana',
-    description: 'Sahana Garments & Plant Maintenance Operations',
-  },
-  {
-    slug: 'texplus',
-    name: 'Texplus',
-    active: true,
-    databaseName: 'compliance_texplus',
-    description: 'Texplus Industrial Sewing & Manufacturing Unit',
-  },
-];
+// Tenant seeds list - empty by default (no pre-seeded companies)
+const INITIAL_COMPANIES: Array<Omit<CompanyRecord, '_id' | 'createdAt' | 'updatedAt'>> = [];
 
 // Short in-memory cache to avoid repeated registry roundtrips on high-frequency requests
 let memoryCache: { data: Map<string, CompanyRecord>; expiresAt: number } | null = null;
@@ -49,7 +35,7 @@ export function getCompaniesCollection(client: MongoClient): Collection<CompanyR
 }
 
 /**
- * Ensures the registry database and indexes exist, and default companies are registered.
+ * Ensures the registry database and indexes exist.
  */
 export async function ensureRegistryInitialized(client: MongoClient): Promise<void> {
   try {
@@ -58,14 +44,9 @@ export async function ensureRegistryInitialized(client: MongoClient): Promise<vo
     // Ensure unique index on slug
     await col.createIndex({ slug: 1 }, { unique: true }).catch(() => { });
 
-    // Ensure initial companies are registered
+    // Seed initial companies if any defined
     const now = new Date().toISOString();
     for (const comp of INITIAL_COMPANIES) {
-      // Preserve the registered database: a branding change must not create an empty tenant.
-      if (comp.slug === 'sahana') {
-        const existing = await col.findOne({ slug: { $regex: /^(sahana|esstee)$/i } });
-        if (existing) continue;
-      }
       await col.updateOne(
         { slug: comp.slug },
         {
@@ -97,16 +78,9 @@ export async function getAllCompanies(client: MongoClient): Promise<CompanyRecor
   await ensureRegistryInitialized(client);
   const col = getCompaniesCollection(client);
   const records = await col.find({}).toArray();
-  const list = records.map(record => canonicalCompanySlug(record.slug) === 'sahana'
-    ? { ...record, slug: 'sahana', name: 'Sahana', description: 'Sahana Garments & Plant Maintenance Operations' }
-    : record);
-  const sahanaRecords = list.filter(record => record.slug === 'sahana');
-  if (new Set(sahanaRecords.map(record => record.databaseName)).size > 1) {
-    throw new Error('Multiple database mappings exist for Sahana. Resolve the company registry before signing in.');
-  }
 
   const cacheMap = new Map<string, CompanyRecord>();
-  for (const c of list) {
+  for (const c of records) {
     cacheMap.set(c.slug.toLowerCase(), c);
   }
   memoryCache = { data: cacheMap, expiresAt: now + CACHE_TTL_MS };
@@ -156,7 +130,6 @@ export async function validateActiveCompany(
 
 /**
  * Helper to compute the company's dedicated database name:
- * e.g. "Sahana" -> "compliance_sahana", "texplus" -> "compliance_texplus"
  */
 export function getDatabaseNameForSlug(slug: string): string {
   const clean = normalizeSlug(slug);

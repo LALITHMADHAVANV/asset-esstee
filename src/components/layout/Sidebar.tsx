@@ -71,7 +71,7 @@ export function Sidebar() {
   const [pendingStoreCount, setPendingStoreCount] = useState<number>(0);
   const [unattendedBreachCount, setUnattendedBreachCount] = useState<number>(0);
 
-  const companySlug = (user?.companySlug || 'sahana').toLowerCase();
+  const companySlug = (user?.companySlug || 'esstee').toLowerCase();
 
   const handleSignOut = async () => {
     await logout();
@@ -362,11 +362,6 @@ export function Sidebar() {
                 icon: Boxes,
               },
               {
-                label: 'Asset Log',
-                href: '/dashboard/asset-log',
-                icon: ClipboardList,
-              },
-              {
                 label: 'Stock Maintenance',
                 href: '/dashboard/inventory',
                 icon: Package,
@@ -455,11 +450,6 @@ export function Sidebar() {
               href: '/dashboard/machines',
               icon: QrCode,
             },
-            {
-              label: 'Asset Log',
-              href: '/dashboard/asset-log',
-              icon: ClipboardList,
-            },
           ],
         },
         {
@@ -499,7 +489,7 @@ export function Sidebar() {
       ];
     };
     const rawSections = buildSections();
-    const companySlug = user?.companySlug || 'sahana';
+    const companySlug = user?.companySlug || 'esstee';
     return rawSections.map((sec) => ({
       ...sec,
       items: sec.items.map((it) => ({
@@ -535,7 +525,7 @@ export function Sidebar() {
       {/* ─── Top Brand Header (matching reference image) ─── */}
       <div className="p-4 border-b border-slate-100 flex flex-col gap-1">
         <div className="flex items-center justify-between">
-          <Link href={`/${user?.companySlug || 'sahana'}/dashboard`} className="flex items-center gap-2 group">
+          <Link href={`/${user?.companySlug || 'esstee'}/dashboard`} className="flex items-center gap-2 group">
             <span className="workspace-brand text-lg font-bold tracking-tight hover:opacity-90 transition font-sans">
               <span className="workspace-brand-mark" aria-hidden="true">m.</span>
               <span>maintain</span>
@@ -545,7 +535,7 @@ export function Sidebar() {
           <div className="flex items-center gap-1.5">
             {/* Top Notification Bell with unseen counter */}
             <Link
-              href={`/${user?.companySlug || 'sahana'}/dashboard/messages`}
+              href={`/${user?.companySlug || 'esstee'}/dashboard/messages`}
               className="relative p-1.5 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition cursor-pointer flex items-center justify-center group"
               title={`${unattendedBreachCount} unseen alerts & notifications`}
             >

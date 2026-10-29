@@ -68,7 +68,7 @@ function isValidMongoUri(uri?: string | null): boolean {
 }
 
 async function connectClient(): Promise<MongoClient> {
-  const uri = (process.env.MONGODB_URI || '').trim();
+  const uri = (process.env.MONGODB_URI || 'mongodb://localhost:27017/').trim();
   if (!isValidMongoUri(uri)) throw new Error('MONGODB_URI must be configured.');
   const client = new MongoClient(uri, { serverSelectionTimeoutMS: 9000, connectTimeoutMS: 9000 });
   await client.connect();
@@ -289,7 +289,7 @@ export async function resolveTenantFromRequest(req: Request): Promise<{
 
 /**
  * Universal getDatabase helper compatible with legacy routes and modern requests.
- * Automatically selects the appropriate dedicated database (e.g. compliance_sahana, compliance_texplus).
+ * Automatically selects the appropriate dedicated database.
  */
 export async function getDatabase(target?: string | Request): Promise<TenantDb> {
   if (target && typeof target === 'object' && 'headers' in target) {
@@ -297,12 +297,13 @@ export async function getDatabase(target?: string | Request): Promise<TenantDb> 
     return new TenantDb(db, company, sessionUser);
   }
 
-  let slug = 'sahana';
+  let slug = '';
   if (typeof target === 'string' && target.trim()) {
-    const lower = target.toLowerCase().trim();
-    if (lower.includes('texplus')) slug = 'texplus';
-    else if (lower.includes('sahana') || lower.includes('esstee')) slug = 'sahana';
-    else slug = normalizeCompanySlug(lower) || 'sahana';
+    slug = normalizeCompanySlug(target.trim());
+  }
+
+  if (!slug) {
+    slug = 'esstee';
   }
 
   const { db, company } = await getCompanyDatabase(slug);
@@ -311,15 +312,14 @@ export async function getDatabase(target?: string | Request): Promise<TenantDb> 
 
 // Keep legacy alias for backward compatibility
 export const extractTenant = (target?: string | Request | null): string => {
-  if (!target) return 'sahana';
+  if (!target) return 'esstee';
   if (typeof target === 'object' && 'headers' in target) {
     const h = (target as Request).headers.get('x-company-slug') || (target as Request).headers.get('x-tenant-id');
     if (h) return normalizeCompanySlug(h);
-    return 'sahana';
+    return 'esstee';
   }
   const s = String(target).toLowerCase();
-  if (s.includes('texplus')) return 'texplus';
-  return 'sahana';
+  return normalizeCompanySlug(s) || 'esstee';
 };
 export const extractTenantDb = extractTenant;
 export const colName = (c: string) => cleanColName(c);

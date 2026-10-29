@@ -11,15 +11,15 @@ const titles: Record<string, string> = {
   dashboard: 'Plant overview', 'asset-types': 'Equipment fleet', machines: 'Equipment',
   calendar: 'Team overview', 'pending-actions': 'Pending actions', inventory: 'Spare parts',
   'ppm-scheduler': 'Preventive maintenance', 'mechanic-roster': 'Maintenance team',
-  history: 'Work history', 'asset-log': 'Asset log', messages: 'Notifications',
+  history: 'Work history', messages: 'Notifications',
   settings: 'Settings', kpi: 'Performance', 'floor-tracker': 'Factory floor',
 };
 
 export function WorkspaceHeader() {
   const pathname = usePathname();
   const { user } = useAuth();
-  const companySlug = user?.companySlug || 'sahana';
-  const companyName = user?.company || (companySlug === 'texplus' ? 'Texplus' : 'Sahana');
+  const companySlug = user?.companySlug || 'esstee';
+  const companyName = user?.company || (companySlug ? companySlug.charAt(0).toUpperCase() + companySlug.slice(1) : 'Esstee');
 
   const section = pathname.split('/').filter(Boolean).pop() || 'dashboard';
   const title = titles[section] || section.replace(/-/g, ' ');

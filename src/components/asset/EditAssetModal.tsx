@@ -101,6 +101,7 @@ export function EditAssetModal({ isOpen, onClose, asset, onSave }: EditAssetModa
   const [unit, setUnit] = useState('UNIT - 1');
   const [currentLine, setCurrentLine] = useState<FloorLine>('Line 01');
   const [stationNo, setStationNo] = useState('');
+  const [serialNo, setSerialNo] = useState('');
   const [department, setDepartment] = useState('Sewing Floor');
   const [status, setStatus] = useState<MachineStatus>('ACTIVE');
   const [cost, setCost] = useState<number | ''>(45000);
@@ -128,6 +129,7 @@ export function EditAssetModal({ isOpen, onClose, asset, onSave }: EditAssetModa
       setUnit((asset as any).plant || asset.unit || 'UNIT - 1');
       setCurrentLine(asset.currentLine || 'Line 01');
       setStationNo(asset.stationNo || 'Station 01');
+      setSerialNo(asset.serialNo || asset.serialNumber || asset.mcNo || asset.stationNo || '');
       setDepartment(asset.department || 'Sewing Floor');
       setStatus(asset.status || 'ACTIVE');
       setCost(asset.cost ?? 45000);
@@ -148,6 +150,10 @@ export function EditAssetModal({ isOpen, onClose, asset, onSave }: EditAssetModa
       showToast('Machine Make / Brand is required', 'error');
       return;
     }
+    if (!serialNo.trim()) {
+      showToast('Serial Number is required', 'error');
+      return;
+    }
 
     setIsSubmitting(true);
     try {
@@ -166,11 +172,14 @@ export function EditAssetModal({ isOpen, onClose, asset, onSave }: EditAssetModa
         purchaseDate: computedPurchaseDate,
         area: area.trim(),
         location: area.trim(),
-        zone: zone.trim() || undefined,
+        zone: '',
         unit: unit.trim(),
         plant: unit.trim(),
-        currentLine,
-        stationNo: stationNo.trim(),
+        currentLine: currentLine || '',
+        serialNo: serialNo.trim(),
+        serialNumber: serialNo.trim(),
+        mcNo: serialNo.trim(),
+        stationNo: serialNo.trim() || stationNo.trim(),
         department: department as any,
         status,
         cost: typeof cost === 'number' ? cost : 0,
@@ -405,7 +414,7 @@ export function EditAssetModal({ isOpen, onClose, asset, onSave }: EditAssetModa
               <span>Location &amp; Plant Placement</span>
             </h3>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {/* Location */}
               <div>
                 <label className="block text-[11px] font-bold text-slate-700 mb-1">
@@ -417,20 +426,6 @@ export function EditAssetModal({ isOpen, onClose, asset, onSave }: EditAssetModa
                   onChange={(e) => setArea(e.target.value)}
                   placeholder="e.g. NETHAJI, PEACOCK"
                   className="w-full px-3 py-2 text-xs font-semibold bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition uppercase"
-                />
-              </div>
-
-              {/* Zone */}
-              <div>
-                <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                  Zone (Optional)
-                </label>
-                <input
-                  type="text"
-                  value={zone}
-                  onChange={(e) => setZone(e.target.value)}
-                  placeholder="e.g. Zone 1, 1, 2"
-                  className="w-full px-3 py-2 text-xs font-semibold bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition"
                 />
               </div>
 
@@ -447,38 +442,21 @@ export function EditAssetModal({ isOpen, onClose, asset, onSave }: EditAssetModa
                   className="w-full px-3 py-2 text-xs font-semibold bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition uppercase"
                 />
               </div>
-
-              {/* Floor Line */}
-              <div>
-                <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                  Assigned Floor Line
-                </label>
-                <select
-                  value={currentLine}
-                  onChange={(e) => setCurrentLine(e.target.value as FloorLine)}
-                  className="w-full px-3 py-2 text-xs font-semibold bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition cursor-pointer"
-                >
-                  {FLOOR_LINES.map((line) => (
-                    <option key={line} value={line}>
-                      {line}
-                    </option>
-                  ))}
-                </select>
-              </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {/* Station */}
+              {/* Serial Number */}
               <div>
                 <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                  Station Number / Bay
+                  Serial Number *
                 </label>
                 <input
                   type="text"
-                  value={stationNo}
-                  onChange={(e) => setStationNo(e.target.value)}
-                  placeholder="e.g. Station 01"
-                  className="w-full px-3 py-2 text-xs font-semibold bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition"
+                  required
+                  value={serialNo}
+                  onChange={(e) => setSerialNo(e.target.value)}
+                  placeholder="e.g. SN-4DORD15615"
+                  className="w-full px-3 py-2 text-xs font-mono font-bold bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition"
                 />
               </div>
 

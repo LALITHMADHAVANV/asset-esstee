@@ -30,8 +30,7 @@ export function CompanyLoginForm({ companySlug, companyName, description }: Comp
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const isTexplus = companySlug === 'texplus';
-  const defaultAdminUser = isTexplus ? 'admin@texplus.com' : 'admin@sahana.com';
+  const defaultAdminUser = `admin@${companySlug || 'esstee'}.com`;
 
   const handleFormLogin = async (e: React.FormEvent) => {
     e.preventDefault();

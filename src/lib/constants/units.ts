@@ -1,7 +1,7 @@
 
 import { tenantPreferences } from '@/lib/tenantPreferences';
 /**
- * Factory Units configuration and matching helpers for Sahana Garments CMMS
+ * Factory Units configuration and matching helpers for Plant CMMS
  */
 
 export interface FactoryUnitOption {
@@ -269,7 +269,11 @@ export function matchesUnit(itemUnit?: string | null, targetUnit?: string | null
     // If item has no unit specified, don't filter out unless strict
     return false;
   }
-  return normalizeUnit(itemUnit) === normalizeUnit(targetUnit);
+  const normItem = normalizeUnit(itemUnit);
+  const normTarget = normalizeUnit(targetUnit);
+  if (normItem === normTarget) return true;
+  if ((normItem === 'unit1' || normItem === 'ho') && (normTarget === 'unit1' || normTarget === 'ho')) return true;
+  return false;
 }
 
 /**

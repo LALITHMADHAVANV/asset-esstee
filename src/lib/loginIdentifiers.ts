@@ -5,7 +5,9 @@ import { getMongoClient, TenantError } from './mongodb';
 export async function reserveLoginIdentifiers(companySlug: string, uid: string, identifiers: string[]) {
   const client = await getMongoClient();
   const companies = await getAllCompanies(client);
-  const claims = client.db(process.env.REGISTRY_DB_NAME || 'compliance_master')
+  const regDbName = (process.env.REGISTRY_DB_NAME || 'compliance_master').trim();
+  const safeDbName = regDbName.includes(' ') || !regDbName ? 'compliance_master' : regDbName;
+  const claims = client.db(safeDbName)
     .collection<{ _id: string; owner: string }>('login_identifiers');
   const owner = `${companySlug}:${uid}`;
   for (const raw of identifiers) {

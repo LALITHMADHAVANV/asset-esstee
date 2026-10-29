@@ -139,7 +139,7 @@ export function PlantOperationsDashboard({
   const router = useRouter();
   const { user, role } = useAuth();
   const { showToast } = useToast();
-  const companySlug = (user?.companySlug || 'sahana').toLowerCase();
+  const companySlug = (user?.companySlug || 'esstee').toLowerCase();
   const [isLogBreakdownModalOpen, setIsLogBreakdownModalOpen] = useState(false);
 
   const handleQuickCompletePPM = async (ppmId: string, machineId: string) => {
@@ -832,13 +832,7 @@ export function PlantOperationsDashboard({
       {/* 2.5 SENIOR SUPERVISOR ADD-ONS: LINE AVAILABILITY, WORK ORDERS & ROSTER */}
       {/* ================================================================= */}
       <div className="space-y-4">
-        {/* 8-Zone × 8-Line Machine Availability & Floor Status */}
-        <LineAvailabilityWidget
-          machines={machines}
-          onSelectZoneLine={(zone, line) => {
-            router.push(`/${companySlug}/dashboard/asset-log?zone=${encodeURIComponent(zone)}&line=${encodeURIComponent(line)}`);
-          }}
-        />
+
 
         {/* Milestones & Task Dispatch Grid */}
         <MaintenanceMilestonesAndTasks

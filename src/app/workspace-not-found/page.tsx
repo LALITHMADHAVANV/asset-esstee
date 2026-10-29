@@ -3,7 +3,7 @@
 import React, { Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { Building2, AlertTriangle, ArrowRight, ShieldAlert, CheckCircle2 } from 'lucide-react';
+import { Building2, AlertTriangle, ArrowRight, ShieldAlert, ArrowLeft } from 'lucide-react';
 
 function WorkspaceNotFoundContent() {
   const searchParams = useSearchParams();
@@ -38,63 +38,27 @@ function WorkspaceNotFoundContent() {
         <div className="p-4 bg-slate-900/70 border border-slate-700/60 rounded-2xl text-left space-y-2">
           <div className="flex items-center gap-2 text-xs font-bold text-amber-400 uppercase tracking-wider">
             <AlertTriangle className="w-4 h-4 shrink-0" />
-            <span>Multi-Tenant Isolation Notice</span>
+            <span>Workspace Notice</span>
           </div>
           <p className="text-xs text-slate-300 leading-relaxed">
-            Every company operates on a strictly isolated database cluster. To proceed, please select an authorized active company workspace below:
+            Please sign in with your work email or assigned username to be directed to your company workspace.
           </p>
         </div>
 
-        {/* Available Workspaces */}
-        <div className="space-y-2.5 pt-2">
-          <div className="text-xs font-semibold text-slate-400 uppercase tracking-widest text-left">
-            Active Registered Workspaces:
-          </div>
-
+        {/* Action Button */}
+        <div className="pt-2">
           <Link
-            href="/sahana/login"
-            className="flex items-center justify-between p-3.5 bg-slate-700/40 hover:bg-slate-700/80 border border-slate-600/50 hover:border-indigo-500/60 rounded-2xl transition duration-150 group text-left"
+            href="/login"
+            className="flex items-center justify-center gap-2 w-full py-3 px-4 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl transition duration-150 shadow-lg shadow-blue-500/20"
           >
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-indigo-500/20 border border-indigo-500/40 flex items-center justify-center text-indigo-400 group-hover:scale-105 transition">
-                <Building2 className="w-5 h-5" />
-              </div>
-              <div>
-                <div className="text-sm font-bold text-white group-hover:text-indigo-300 transition">
-                  Sahana
-                </div>
-                <div className="text-xs text-slate-400">
-                  /sahana/login &bull; Garments &amp; Plant Maintenance
-                </div>
-              </div>
-            </div>
-            <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-white group-hover:translate-x-1 transition" />
-          </Link>
-
-          <Link
-            href="/texplus/login"
-            className="flex items-center justify-between p-3.5 bg-slate-700/40 hover:bg-slate-700/80 border border-slate-600/50 hover:border-emerald-500/60 rounded-2xl transition duration-150 group text-left"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 group-hover:scale-105 transition">
-                <Building2 className="w-5 h-5" />
-              </div>
-              <div>
-                <div className="text-sm font-bold text-white group-hover:text-emerald-300 transition">
-                  Texplus
-                </div>
-                <div className="text-xs text-slate-400">
-                  /texplus/login &bull; Industrial Sewing &amp; Manufacturing
-                </div>
-              </div>
-            </div>
-            <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-white group-hover:translate-x-1 transition" />
+            <ArrowLeft className="w-4 h-4" />
+            <span>Return to Sign In</span>
           </Link>
         </div>
 
         {/* Footer */}
         <div className="text-[11px] text-slate-500 pt-2 border-t border-slate-700/60">
-          Plant CMMS Multi-Company Architecture &bull; Central Registry Guard
+          Maintenance Module &bull; Central Registry Guard
         </div>
       </div>
     </div>

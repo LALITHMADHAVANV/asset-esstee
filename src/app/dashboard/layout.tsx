@@ -31,7 +31,7 @@ export default function DashboardLayout({
           </main>
         </RouteGuard>
         <footer className="bg-white border-t border-slate-200 text-slate-400 text-xs py-3 text-center no-print mt-auto">
-          <p>Maintenance Module • Coimbatore Unit</p>
+          <p>Maintenance Module</p>
         </footer>
       </div>
     </div>

@@ -1383,7 +1383,7 @@ function StoreInboxContent() {
             {/* Printable Slip Preview */}
             <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3 font-mono text-xs text-slate-800">
               <div className="text-center pb-2 border-b border-slate-200">
-                <div className="font-bold text-sm text-slate-900">SAHANA CLOTHING FACTORY</div>
+                <div className="font-bold text-sm text-slate-900">ESSTEE PLANT &amp; APPAREL</div>
                 <div className="text-[10px] text-slate-500">CENTRAL SPARE PARTS CRIB • TIRUPUR</div>
                 <div className="text-[10px] font-bold text-[#059669] mt-0.5">
                   GATE PASS SLIP: {gatePassData.slipNo}

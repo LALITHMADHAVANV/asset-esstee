@@ -38,7 +38,7 @@ export function normalizeRole(role?: string | null): UserRole {
  */
 export function canAccessRoute(rawRole: string | null | undefined, pathname: string): boolean {
   const role = normalizeRole(rawRole);
-  // Strip any company prefix (e.g. /sahana/dashboard/inventory -> /dashboard/inventory)
+  // Strip any company prefix (e.g. /esstee/dashboard/inventory -> /dashboard/inventory)
   const cleanPath = pathname.replace(/^\/[^/]+(?=\/dashboard)/, '');
 
   // Admin & Asset Manager have full unrestricted access to all pages
@@ -57,7 +57,6 @@ export function canAccessRoute(rawRole: string | null | undefined, pathname: str
       '/dashboard',
       '/dashboard/messages',
       '/dashboard/asset-types',
-      '/dashboard/asset-log',
       '/dashboard/history',
       '/dashboard/kpi',
       '/dashboard/floor-tracker',
@@ -72,7 +71,6 @@ export function canAccessRoute(rawRole: string | null | undefined, pathname: str
       '/dashboard/store-inbox',
       '/dashboard/inventory',
       '/dashboard/asset-types',
-      '/dashboard/asset-log',
       '/dashboard/history',
       '/dashboard/messages',
     ];
@@ -87,7 +85,6 @@ export function canAccessRoute(rawRole: string | null | undefined, pathname: str
       '/dashboard/inventory',
       '/dashboard/history',
       '/dashboard/messages',
-      '/dashboard/asset-log',
       '/dashboard/asset-types',
       '/dashboard/floor-tracker',
     ];
