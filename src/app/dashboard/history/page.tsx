@@ -253,16 +253,10 @@ export default function HistoryPage() {
   const { showToast } = useToast();
   const { user, role, isLoading } = useAuth();
 
-  useEffect(() => {
-    if (role === 'CEO') {
-      router.replace('/dashboard/messages');
-    }
-  }, [role, router]);
-
   const isAdmin = isUserAdmin(role);
   const effectiveUnit = getUserScopedUnit(user, role);
-  const isExecutiveOrAdmin = role === 'ADMIN' || role === 'ASSET_MANAGER';
-  const [adminTab, setAdminTab] = useState<'ASSETS' | 'PERSONNEL'>('PERSONNEL');
+  const isExecutiveOrAdmin = role === 'ADMIN' || role === 'ASSET_MANAGER' || role === 'CEO';
+  const [adminTab, setAdminTab] = useState<'ASSETS' | 'PERSONNEL'>('ASSETS');
   const [items] = useState<AssetHistoryRecord[]>(INITIAL_ASSETS);
   const [liveMachines, setLiveMachines] = useState<Machine[]>([]);
   const [liveRepairs, setLiveRepairs] = useState<RepairTicket[]>([]);
@@ -1166,9 +1160,9 @@ export default function HistoryPage() {
   const isFloorTechnician = currentRole === 'MECHANIC' || currentRole === 'ELECTRICIAN';
 
   // =========================================================================
-  // VIEW 1: PERSONNEL WORK HISTORY (TABLE FORM) - FOR ALL NON-ADMIN/NON-CEO PERSONS
+  // VIEW 1: PERSONNEL WORK HISTORY (TABLE FORM) - COMPLETED WORKS ARCHIVE
   // =========================================================================
-  if (!isExecutiveOrAdmin) {
+  if (adminTab === 'PERSONNEL') {
     return (
       <div className="space-y-4 pt-0 animate-in fade-in duration-200">
         <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -1192,72 +1186,24 @@ export default function HistoryPage() {
               </p>
             </div>
           </div>
-          {isFloorTechnician ? (
-            <Link
-              href="/dashboard/calendar"
-              className="px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-900 border border-indigo-200 text-xs font-bold transition flex items-center gap-1.5 shadow-2xs cursor-pointer self-start sm:self-auto"
-            >
-              <Clock className="w-3.5 h-3.5 text-indigo-600" />
-              <span>Pending Tasks</span>
-            </Link>
-          ) : (
-            <Link
-              href="/dashboard/active-tna"
-              className="px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 text-xs font-bold transition flex items-center gap-1.5 shadow-2xs cursor-pointer self-start sm:self-auto"
-            >
-              <Clock className="w-3.5 h-3.5 text-amber-600" />
-              <span>Active TNAs</span>
-            </Link>
-          )}
-          <button
-            type="button"
-            onClick={() => setIsBulkQrModalOpen(true)}
-            className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
-            title="Print Bulk QR Codes for machinery & assets"
-          >
-            <QrCode className="w-3.5 h-3.5" />
-            <Printer className="w-3.5 h-3.5" />
-            <span>Print Bulk QR</span>
-          </button>
-        </div>
-        <PersonnelWorkHistoryTable />
-      </div>
-    );
-  }
-
-  // =========================================================================
-  // ADMIN VIEW: PERSONNEL WORK LOG SUB-VIEW (IF ADMIN INSPECTS PERSONNEL LOGS)
-  // =========================================================================
-  if (adminTab === 'PERSONNEL') {
-    return (
-      <div className="space-y-4 pt-0 animate-in fade-in duration-200">
-        <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <span className="p-2 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-200 shadow-2xs">
-              <CheckCircle2 className="w-5 h-5" />
-            </span>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-sm sm:text-base font-bold text-slate-900 tracking-tight">
-                  Completed TNAs: History of Completed Works
-                </h1>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
-                  History Archive
-                </span>
-              </div>
-              <p className="text-[11px] text-slate-500 mt-0.5">
-                Audit ledger of all completed breakdown repairs, executed PPM overhauls, downtime recovered, and technician logs
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Link
-              href="/dashboard/active-tna"
-              className="px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 text-xs font-bold transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
-            >
-              <Clock className="w-3.5 h-3.5 text-amber-600" />
-              <span>Active TNAs</span>
-            </Link>
+          <div className="flex items-center gap-2 flex-wrap">
+            {isFloorTechnician ? (
+              <Link
+                href="/dashboard/calendar"
+                className="px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-900 border border-indigo-200 text-xs font-bold transition flex items-center gap-1.5 shadow-2xs cursor-pointer self-start sm:self-auto"
+              >
+                <Clock className="w-3.5 h-3.5 text-indigo-600" />
+                <span>Pending Tasks</span>
+              </Link>
+            ) : (
+              <Link
+                href="/dashboard/active-tna"
+                className="px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 text-xs font-bold transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
+              >
+                <Clock className="w-3.5 h-3.5 text-amber-600" />
+                <span>Active TNAs</span>
+              </Link>
+            )}
             <button
               type="button"
               onClick={() => setIsBulkQrModalOpen(true)}

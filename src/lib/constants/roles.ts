@@ -20,7 +20,12 @@ export function normalizeRole(role?: string | null): UserRole {
   if (clean.includes('SENIOR') && (clean.includes('ELEC') || clean.includes('POWER'))) {
     return 'SENIOR_ELECTRICIAN';
   }
-  if (clean.includes('SENIOR') || (clean.includes('CHIEF') && clean.includes('MECH'))) {
+  if (
+    clean.includes('SENIOR') ||
+    (clean.includes('CHIEF') && clean.includes('MECH')) ||
+    clean.includes('SUPERVISOR') ||
+    clean.includes('LEAD')
+  ) {
     return 'SENIOR_MECHANIC';
   }
   if (clean.includes('ELEC')) {
