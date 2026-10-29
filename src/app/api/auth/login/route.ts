@@ -153,6 +153,13 @@ export async function POST(req: Request) {
     if (err instanceof TenantInactiveError) {
       return NextResponse.json({ error: err.message, code: err.code }, { status: 403 });
     }
+    const msg = err instanceof Error ? err.message : String(err);
+    if (msg.includes('MONGODB_URI') || msg.includes('ECONNREFUSED') || msg.includes('timed out') || msg.includes('server selection') || msg.includes('whitelist')) {
+      return NextResponse.json(
+        { error: 'Database connection failed. Please verify MONGODB_URI in Vercel Environment Variables and ensure MongoDB Atlas allows connections (0.0.0.0/0).' },
+        { status: 503 }
+      );
+    }
     return NextResponse.json(
       { error: 'Sign-in is temporarily unavailable. Please try again.' },
       { status: 500 }
