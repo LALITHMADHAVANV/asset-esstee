@@ -68,12 +68,23 @@ function isValidMongoUri(uri?: string | null): boolean {
 }
 
 async function connectClient(): Promise<MongoClient> {
-  const uri = (process.env.MONGODB_URI || 'mongodb://localhost:27017/').trim();
+  const uri = (process.env.MONGODB_URI || (process.env.NODE_ENV !== 'production' ? 'mongodb://localhost:27017/' : '')).trim();
   if (!isValidMongoUri(uri)) throw new Error('MONGODB_URI must be configured.');
-  const client = new MongoClient(uri, { serverSelectionTimeoutMS: 9000, connectTimeoutMS: 9000 });
-  await client.connect();
-  await ensureRegistryInitialized(client);
-  return client;
+  const client = new MongoClient(uri, {
+    serverSelectionTimeoutMS: 9000,
+    connectTimeoutMS: 9000,
+    maxPoolSize: 10,
+    minPoolSize: 0,
+    maxIdleTimeMS: 60000,
+  });
+  try {
+    await client.connect();
+    await ensureRegistryInitialized(client);
+    return client;
+  } catch (error) {
+    await client.close().catch(() => {});
+    throw error;
+  }
 }
 
 /**

@@ -4,7 +4,7 @@ import jwt from 'jsonwebtoken';
 import { UserProfile, UserRole } from '@/types/cmms';
 
 function sessionSecret(): string {
-  const secret = process.env.JWT_SECRET || process.env.SESSION_SECRET || 'esstee_maintanence_production_jwt_secret_key_2026_super_secure';
+  const secret = process.env.JWT_SECRET || process.env.SESSION_SECRET;
   if (!secret || secret.length < 32) throw new Error('Configure a session secret of at least 32 characters.');
   return secret;
 }

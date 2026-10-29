@@ -71,18 +71,11 @@ npm install
 ```
 
 ### 2. Configure Environment
-Your local MongoDB URI is already pre-configured in `.env.local`:
-```env
-MONGODB_URI=mongodb+srv://<username>:<password>@cluster0.ucek7vf.mongodb.net/maintanence?appName=Cluster0
-MONGODB_DB_NAME=maintanence
-```
+Copy `.env.example` to `.env.local`. Set `MONGODB_URI` to your local MongoDB or Atlas connection string, `REGISTRY_DB_NAME` to `compliance_master`, and `JWT_SECRET` to a private random value of at least 32 characters.
 
-Ensure your local MongoDB server is running:
-```bash
-# Verify MongoDB service or mongod
-mongod --dbpath <data-dir>
-```
+The app uses the registry's `companies` collection to select each company's dedicated database. Existing local data must be migrated when moving to Atlas.
 
+For Vercel settings, Atlas access, and migration requirements, see [DEPLOYMENT.md](DEPLOYMENT.md).
 ### 3. Run Development Server
 ```bash
 npm run dev
