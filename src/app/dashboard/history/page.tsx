@@ -320,10 +320,20 @@ export default function HistoryPage() {
   };
 
   // Combined items populated strictly from live registered machines, repairs, and PPM (scoped to unit for non-admins)
+  const machinesWithIds = liveMachines.filter(
+    (machine) => machine && typeof machine.id === 'string' && machine.id.trim().length > 0
+  );
+  const missingIdCount = liveMachines.length - machinesWithIds.length;
+
   const allItems = useMemo(() => {
+    // Imported records can lack the application ID. Do not invent an ID: repair
+    // links and QR codes must refer to the same identifier stored in MongoDB.
+    const validMachines = liveMachines.filter(
+      (machine) => machine && typeof machine.id === 'string' && machine.id.trim().length > 0
+    );
     const scopedLiveMachines = !isAdmin
-      ? liveMachines.filter((m) => matchesUnit(m.unit, effectiveUnit))
-      : liveMachines;
+      ? validMachines.filter((m) => matchesUnit(m.unit, effectiveUnit))
+      : validMachines;
     const scopedInitialItems = !isAdmin
       ? items.filter((i) => matchesUnit(i.unit, effectiveUnit))
       : items;
@@ -334,10 +344,10 @@ export default function HistoryPage() {
       .map((m) => {
         const cost = typeof m.cost === 'number' ? m.cost : 0;
         const machineRepairs = liveRepairs.filter(
-          (r) => r.machineId?.toLowerCase() === m.id.toLowerCase()
+          (r) => typeof r.machineId === 'string' && r.machineId.toLowerCase() === m.id.toLowerCase()
         );
         const machinePpm = livePpm.filter(
-          (p) => p.machineId?.toLowerCase() === m.id.toLowerCase()
+          (p) => typeof p.machineId === 'string' && p.machineId.toLowerCase() === m.id.toLowerCase()
         );
 
         // Derive real service logs from repair tickets
@@ -1866,6 +1876,12 @@ export default function HistoryPage() {
   // =========================================================================
   return (
     <div className="space-y-4 pt-0">
+      {missingIdCount > 0 && (
+        <div role="alert" className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+          {missingIdCount} asset record(s) have no valid asset ID and cannot display history.
+          Correct the id field in the imported machines collection to include these assets.
+        </div>
+      )}
       {/* 1. Page Header & Personnel Quick Link */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1">
         <div className="flex items-center gap-2.5">
