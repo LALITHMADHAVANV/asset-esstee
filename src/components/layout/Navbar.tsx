@@ -299,11 +299,6 @@ export function Navbar() {
             icon: Boxes,
           },
           {
-            label: 'Asset Log',
-            href: '/dashboard/asset-log',
-            icon: ClipboardList,
-          },
-          {
             label: 'Stock Maintenance',
             href: '/dashboard/inventory',
             icon: Package,
@@ -372,11 +367,6 @@ export function Navbar() {
           label: 'Asset Registration',
           href: '/dashboard/machines',
           icon: QrCode,
-        },
-        {
-          label: 'Asset Log',
-          href: '/dashboard/asset-log',
-          icon: ClipboardList,
         },
         {
           label: 'Mechanic Indents',

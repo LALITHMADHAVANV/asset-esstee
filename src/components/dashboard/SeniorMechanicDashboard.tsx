@@ -439,15 +439,6 @@ export function SeniorMechanicDashboard({
 
 
           <button
-            onClick={() => router.push(`/${companySlug}/dashboard/asset-log`)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white transition shadow-xs cursor-pointer"
-            title="Open Asset Log: Toggle Active/Idle and 8 Zones x 8 Lines Availability Report"
-          >
-            <ClipboardList className="w-3.5 h-3.5" />
-            <span>Asset Log &amp; Status</span>
-          </button>
-
-<button
             onClick={() => router.push(`/${companySlug}/dashboard/calendar`)}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition cursor-pointer"
           >
@@ -738,12 +729,7 @@ export function SeniorMechanicDashboard({
           <span className="text-xs text-emerald-700 font-medium">All lines producing nominally</span>
         </div>
       )}
-      <LineAvailabilityWidget
-        machines={machines}
-        onSelectZoneLine={(zone, line) => {
-          router.push(`/${companySlug}/dashboard/asset-log?zone=${encodeURIComponent(zone)}&line=${encodeURIComponent(line)}`);
-        }}
-      />
+
 
       {/* ─── 4. DELIVERY SCHEDULE, MY TASKS & ATTENDANCE TODAY (FOR SENIORS) ─── */}
       <MaintenanceMilestonesAndTasks

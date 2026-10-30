@@ -8,7 +8,7 @@ import { useAuth } from '@/context/AuthContext';
 const titles: Record<string, string> = {
   'assign-task': 'Assign a task', 'active-tna': 'Active task tracking',
   allowance: 'Allowances', users: 'User access', 'store-inbox': 'Store requests',
-  dashboard: 'Plant overview', 'asset-types': 'Equipment fleet', 'asset-log': 'Asset log', machines: 'Equipment',
+  dashboard: 'Plant overview', 'asset-types': 'Equipment fleet', machines: 'Equipment',
   calendar: 'Team overview', 'pending-actions': 'Pending actions', inventory: 'Spare parts',
   'ppm-scheduler': 'Preventive maintenance', 'mechanic-roster': 'Maintenance team',
   history: 'Work history', messages: 'Notifications',
