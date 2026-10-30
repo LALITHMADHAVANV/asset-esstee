@@ -598,6 +598,7 @@ export function Sidebar() {
                 <Link
                   key={item.label + item.href}
                   href={item.href}
+                  onClick={closeMobileNav}
                   aria-current={isActive ? 'page' : undefined}
                   className={`sidebar-link flex items-center justify-between px-3 py-2.5 rounded-lg text-[13px] transition group cursor-pointer ${isActive
                       ? 'bg-[#eef9f5] text-[#065f46] border border-[#a7f3d0] font-bold shadow-2xs'
@@ -788,8 +789,12 @@ export function Sidebar() {
       <div className="md:hidden bg-white text-slate-900 px-4 py-3 flex items-center justify-between border-b border-slate-200 sticky top-0 z-40">
         <div className="flex items-center gap-2.5">
           <button
+            type="button"
             onClick={() => setIsMobileOpen(true)}
-            className="p-1.5 rounded-lg bg-slate-100 text-slate-700 hover:text-slate-900 hover:bg-slate-200 transition cursor-pointer"
+            aria-label="Open navigation"
+            aria-expanded={isMobileOpen}
+            aria-controls="mobile-navigation"
+            className="min-h-11 min-w-11 flex items-center justify-center rounded-lg bg-slate-100 text-slate-700 hover:text-slate-900 hover:bg-slate-200 transition cursor-pointer"
             title="Open Menu"
           >
             <Menu className="w-5 h-5" />
@@ -820,7 +825,7 @@ export function Sidebar() {
             className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs transition-opacity"
             onClick={closeMobileNav}
           />
-          <div className="relative w-64 max-w-[80vw] h-full shadow-2xl z-10 bg-white">
+          <div id="mobile-navigation" className="relative w-64 max-w-[80vw] h-full shadow-2xl z-10 bg-white">
             {sidebarContent}
           </div>
         </div>

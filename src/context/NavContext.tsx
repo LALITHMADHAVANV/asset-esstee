@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 
 interface NavContextType {
   isNavHidden: boolean;
@@ -39,20 +39,20 @@ export function NavProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const toggleNav = () => {
+  const toggleNav = useCallback(() => {
     setIsNavHidden((prev) => !prev);
-  };
+  }, []);
 
-  const hideNav = () => {
+  const hideNav = useCallback(() => {
     setIsNavHidden(true);
-  };
+  }, []);
 
-  const showNav = () => {
+  const showNav = useCallback(() => {
     setIsNavHidden(false);
-  };
+  }, []);
 
-  const openMobileNav = () => setIsMobileOpen(true);
-  const closeMobileNav = () => setIsMobileOpen(false);
+  const openMobileNav = useCallback(() => setIsMobileOpen(true), []);
+  const closeMobileNav = useCallback(() => setIsMobileOpen(false), []);
 
   return (
     <NavContext.Provider
