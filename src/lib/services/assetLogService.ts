@@ -1,3 +1,4 @@
+import { textValue } from '@/lib/textValue';
 import { Machine, MachineStatus, AssetLogEntry, FloorLine } from '@/types/cmms';
 import { updateMachineStatus, apiFetch } from './cmmsService';
 
@@ -237,7 +238,7 @@ export async function toggleMachineActiveIdle(
 ): Promise<{ success: boolean; machine?: Machine; previousStatus?: MachineStatus; newStatus?: MachineStatus; message: string }> {
   const cleanId = machineId.trim().toUpperCase();
   const currentMachines = getLocal<Machine[]>(STORAGE_KEYS.MACHINES, []);
-  const machine = currentMachines.find((m) => m.id.toUpperCase() === cleanId);
+  const machine = currentMachines.find((m) => textValue(m.id).toUpperCase() === cleanId);
 
   if (!machine) {
     return {
@@ -308,7 +309,7 @@ export async function setMachineStatusWithLog(
 ): Promise<{ success: boolean; machine?: Machine; previousStatus?: MachineStatus; newStatus?: MachineStatus; message: string }> {
   const cleanId = machineId.trim().toUpperCase();
   const currentMachines = getLocal<Machine[]>(STORAGE_KEYS.MACHINES, []);
-  const machine = currentMachines.find((m) => m.id.toUpperCase() === cleanId);
+  const machine = currentMachines.find((m) => textValue(m.id).toUpperCase() === cleanId);
 
   if (!machine) {
     return {
@@ -391,7 +392,7 @@ export async function addExtraMachineToZone(params: {
   const changedBy = params.changedBy || 'Senior Mechanic';
 
   const newMachine: Machine = {
-    id: params.machineId.trim().toUpperCase(),
+    id: textValue(params.machineId).trim().toUpperCase(),
     name: params.name || `${params.brand} ${params.type}`,
     brand: params.brand,
     type: params.type as any,
@@ -415,7 +416,7 @@ export async function addExtraMachineToZone(params: {
 
   // Save to local storage
   const current = getLocal<Machine[]>(STORAGE_KEYS.MACHINES, []);
-  const existingIdx = current.findIndex((m) => m.id.toUpperCase() === newMachine.id);
+  const existingIdx = current.findIndex((m) => textValue(m.id).toUpperCase() === newMachine.id);
   let updated: Machine[];
   if (existingIdx >= 0) {
     updated = [...current];

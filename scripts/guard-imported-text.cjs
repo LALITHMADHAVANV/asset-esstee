@@ -9,7 +9,7 @@ function files(dir) {
     return entry.isDirectory() ? files(p) : /\.tsx?$/.test(p) ? [p] : [];
   });
 }
-const targets = [...files('src/app'), ...files('src/components'), 'src/lib/services/cmmsService.ts'];
+const targets = [...files('src/app'), ...files('src/components'), 'src/lib/services/cmmsService.ts', 'src/lib/services/assetLogService.ts'];
 let total = 0;
 for (const file of targets) {
   // Server validation and auth have their own stricter rules.

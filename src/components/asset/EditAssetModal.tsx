@@ -172,14 +172,14 @@ export function EditAssetModal({ isOpen, onClose, asset, onSave }: EditAssetModa
         purchaseDate: computedPurchaseDate,
         area: area.trim(),
         location: area.trim(),
-        zone: '',
+        zone: zone.trim() || undefined,
         unit: unit.trim(),
         plant: unit.trim(),
         currentLine: currentLine || '',
         serialNo: serialNo.trim(),
         serialNumber: serialNo.trim(),
         mcNo: serialNo.trim(),
-        stationNo: serialNo.trim() || stationNo.trim(),
+        stationNo: stationNo.trim(),
         department: department as any,
         status,
         cost: typeof cost === 'number' ? cost : 0,
@@ -429,6 +429,20 @@ export function EditAssetModal({ isOpen, onClose, asset, onSave }: EditAssetModa
                 />
               </div>
 
+              {/* Zone */}
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                  Zone (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={zone}
+                  onChange={(e) => setZone(e.target.value)}
+                  placeholder="e.g. Zone 1, 1, 2"
+                  className="w-full px-3 py-2 text-xs font-semibold bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition"
+                />
+              </div>
+
               {/* Plant */}
               <div>
                 <label className="block text-[11px] font-bold text-slate-700 mb-1">
@@ -445,7 +459,39 @@ export function EditAssetModal({ isOpen, onClose, asset, onSave }: EditAssetModa
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {/* Serial Number */}
+              {/* Floor Line */}
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                  Assigned Floor Line
+                </label>
+                <select
+                  value={currentLine}
+                  onChange={(e) => setCurrentLine(e.target.value as FloorLine)}
+                  className="w-full px-3 py-2 text-xs font-semibold bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition cursor-pointer"
+                >
+                  {FLOOR_LINES.map((line) => (
+                    <option key={line} value={line}>
+                      {line}
+                    </option>
+                  ))}
+                </select>
+              </div>
+{/* Station */}
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                  Station Number / Bay
+                </label>
+                <input
+                  type="text"
+                  value={stationNo}
+                  onChange={(e) => setStationNo(e.target.value)}
+                  placeholder="e.g. Station 01"
+                  className="w-full px-3 py-2 text-xs font-semibold bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition"
+                />
+              </div>
+
+              
+{/* Serial Number */}
               <div>
                 <label className="block text-[11px] font-bold text-slate-700 mb-1">
                   Serial Number *

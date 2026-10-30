@@ -364,6 +364,11 @@ export function Sidebar() {
                 icon: Boxes,
               },
               {
+                label: 'Asset Log',
+                href: '/dashboard/asset-log',
+                icon: ClipboardList,
+              },
+              {
                 label: 'Stock Maintenance',
                 href: '/dashboard/inventory',
                 icon: Package,
@@ -451,6 +456,11 @@ export function Sidebar() {
               label: 'Asset Registration',
               href: '/dashboard/machines',
               icon: QrCode,
+            },
+            {
+              label: 'Asset Log',
+              href: '/dashboard/asset-log',
+              icon: ClipboardList,
             },
           ],
         },

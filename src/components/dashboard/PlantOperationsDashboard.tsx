@@ -834,7 +834,12 @@ export function PlantOperationsDashboard({
       {/* 2.5 SENIOR SUPERVISOR ADD-ONS: LINE AVAILABILITY, WORK ORDERS & ROSTER */}
       {/* ================================================================= */}
       <div className="space-y-4">
-
+        <LineAvailabilityWidget
+          machines={machines}
+          onSelectZoneLine={(zone, line) => {
+            router.push(`/${companySlug}/dashboard/asset-log?zone=${encodeURIComponent(zone)}&line=${encodeURIComponent(line)}`);
+          }}
+        />
 
         {/* Milestones & Task Dispatch Grid */}
         <MaintenanceMilestonesAndTasks

@@ -62,6 +62,7 @@ export function canAccessRoute(rawRole: string | null | undefined, pathname: str
       '/dashboard',
       '/dashboard/messages',
       '/dashboard/asset-types',
+      '/dashboard/asset-log',
       '/dashboard/history',
       '/dashboard/kpi',
       '/dashboard/floor-tracker',
@@ -76,6 +77,7 @@ export function canAccessRoute(rawRole: string | null | undefined, pathname: str
       '/dashboard/store-inbox',
       '/dashboard/inventory',
       '/dashboard/asset-types',
+      '/dashboard/asset-log',
       '/dashboard/history',
       '/dashboard/messages',
     ];
@@ -91,6 +93,7 @@ export function canAccessRoute(rawRole: string | null | undefined, pathname: str
       '/dashboard/history',
       '/dashboard/messages',
       '/dashboard/asset-types',
+      '/dashboard/asset-log',
       '/dashboard/floor-tracker',
     ];
     return mechanicAllowed.some((r) => cleanPath === r || cleanPath.startsWith(`${r}/`));
