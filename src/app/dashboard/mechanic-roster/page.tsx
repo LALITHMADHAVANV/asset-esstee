@@ -1,5 +1,7 @@
 'use client';
 
+import { textValue } from '@/lib/textValue';
+
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   Users,
@@ -154,9 +156,9 @@ export default function MechanicRosterPage() {
   // Scoped repairs by unit
   const scopedRepairs = React.useMemo(() => {
     if (isAdmin && selectedUnit === 'ALL') return repairs;
-    const allowedMachineIds = new Set(scopedMachines.map((m) => m.id.toLowerCase()));
+    const allowedMachineIds = new Set(scopedMachines.map((m) => textValue(m.id).toLowerCase()));
     return repairs.filter((r) => {
-      if (r.machineId && allowedMachineIds.has(r.machineId.toLowerCase())) return true;
+      if (r.machineId && allowedMachineIds.has(textValue(r.machineId).toLowerCase())) return true;
       if (r.unit && matchesUnit(r.unit, effectiveUnit)) return true;
       return false;
     });
@@ -165,9 +167,9 @@ export default function MechanicRosterPage() {
   // Scoped PPM schedules by unit
   const scopedPpm = React.useMemo(() => {
     if (isAdmin && selectedUnit === 'ALL') return ppmSchedules;
-    const allowedMachineIds = new Set(scopedMachines.map((m) => m.id.toLowerCase()));
+    const allowedMachineIds = new Set(scopedMachines.map((m) => textValue(m.id).toLowerCase()));
     return ppmSchedules.filter((p) => {
-      if (p.machineId && allowedMachineIds.has(p.machineId.toLowerCase())) return true;
+      if (p.machineId && allowedMachineIds.has(textValue(p.machineId).toLowerCase())) return true;
       if (p.unit && matchesUnit(p.unit, effectiveUnit)) return true;
       return false;
     });
@@ -220,9 +222,9 @@ export default function MechanicRosterPage() {
           inCharge: techName,
           targetDate: `Target ${repDate.toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}`,
           urgency: r.urgency === 'CRITICAL' ? 'Critical' : 'High',
-          stageName: (r.faultCategory || 'BREAKDOWN-REPAIR').toUpperCase().replace(/\s+/g, '-'),
+          stageName: textValue((r.faultCategory || 'BREAKDOWN-REPAIR')).toUpperCase().replace(/\s+/g, '-'),
           statusBadge: r.status === 'IN_PROGRESS' ? 'In progress' : 'Assigned',
-          stageSubtitle: r.faultCategory?.toLowerCase() || 'breakdown-repair',
+          stageSubtitle: textValue(r.faultCategory)?.toLowerCase() || 'breakdown-repair',
           dueDate: repDate.toLocaleDateString('en-US', { day: 'numeric', month: 'short' }),
           plannedDate: repDate.toLocaleDateString('en-US', { day: 'numeric', month: 'short' }),
           overdueDays: diffDays,
@@ -260,9 +262,9 @@ export default function MechanicRosterPage() {
           inCharge: assignedName,
           targetDate: `Target ${dueObj.toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}`,
           urgency: 'High',
-          stageName: (p.task || 'PREVENTIVE-MAINTENANCE').toUpperCase().replace(/\s+/g, '-'),
+          stageName: textValue((p.task || 'PREVENTIVE-MAINTENANCE')).toUpperCase().replace(/\s+/g, '-'),
           statusBadge: p.status === 'IN_PROGRESS' ? 'In progress' : 'Pending',
-          stageSubtitle: p.task?.toLowerCase() || 'preventive-maintenance',
+          stageSubtitle: textValue(p.task)?.toLowerCase() || 'preventive-maintenance',
           dueDate: dueObj.toLocaleDateString('en-US', { day: 'numeric', month: 'short' }),
           plannedDate: dueObj.toLocaleDateString('en-US', { day: 'numeric', month: 'short' }),
           overdueDays: diffDays,
@@ -334,29 +336,29 @@ export default function MechanicRosterPage() {
   const filteredActions = useMemo(() => {
     return allInChargeActions.filter((item) => {
       if (activeTab !== 'ALL' && activeTab !== 'OVERDUE') {
-        if (!item.inCharge.toLowerCase().includes(activeTab.toLowerCase())) return false;
+        if (!textValue(item.inCharge).toLowerCase().includes(activeTab.toLowerCase())) return false;
       }
       if (activeTab === 'OVERDUE' && item.overdueDays <= 0) return false;
 
-      if (selectedType !== 'ALL' && item.type.toLowerCase() !== selectedType.toLowerCase()) {
+      if (selectedType !== 'ALL' && textValue(item.type).toLowerCase() !== selectedType.toLowerCase()) {
         return false;
       }
-      if (selectedBuyer !== 'ALL' && item.buyer.toLowerCase() !== selectedBuyer.toLowerCase()) {
+      if (selectedBuyer !== 'ALL' && textValue(item.buyer).toLowerCase() !== selectedBuyer.toLowerCase()) {
         return false;
       }
       if (
         selectedInCharge !== 'ALL' &&
-        !item.inCharge.toLowerCase().includes(selectedInCharge.toLowerCase())
+        !textValue(item.inCharge).toLowerCase().includes(selectedInCharge.toLowerCase())
       ) {
         return false;
       }
 
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim();
-        const matchesRef = item.ref.toLowerCase().includes(q);
-        const matchesStage = item.stageName.toLowerCase().includes(q);
-        const matchesUser = item.inCharge.toLowerCase().includes(q);
-        const matchesDetails = item.details.toLowerCase().includes(q);
+        const matchesRef = textValue(item.ref).toLowerCase().includes(q);
+        const matchesStage = textValue(item.stageName).toLowerCase().includes(q);
+        const matchesUser = textValue(item.inCharge).toLowerCase().includes(q);
+        const matchesDetails = textValue(item.details).toLowerCase().includes(q);
         if (!matchesRef && !matchesStage && !matchesUser && !matchesDetails) {
           return false;
         }
@@ -467,12 +469,12 @@ export default function MechanicRosterPage() {
 
   const mechanicWorkData = registeredRoster.map((mech) => {
     const assignedTickets = dayRepairs.filter(
-      (r) => r.attendedBy && r.attendedBy.toLowerCase().includes(mech.name.toLowerCase())
+      (r) => r.attendedBy && textValue(r.attendedBy).toLowerCase().includes(textValue(mech.name).toLowerCase())
     );
 
     const assignedPpm = dayPpms.filter((p) => {
       if (!p.assignedTo) return false;
-      return p.assignedTo.toLowerCase().includes(mech.name.toLowerCase());
+      return textValue(p.assignedTo).toLowerCase().includes(textValue(mech.name).toLowerCase());
     });
 
     const completedCount = assignedTickets.filter((t) => t.status === 'COMPLETED').length;
@@ -506,7 +508,7 @@ export default function MechanicRosterPage() {
 
               {uniqueInCharges.slice(0, 6).map((name) => {
                 const count = allInChargeActions.filter((a) =>
-                  a.inCharge.toLowerCase().includes(name.toLowerCase())
+                  textValue(a.inCharge).toLowerCase().includes(name.toLowerCase())
                 ).length;
                 return (
                   <button

@@ -254,7 +254,7 @@ export function getZonesForUnit(unit?: string | null): FactoryZoneOption[] {
  */
 export function normalizeUnit(val?: string | null): string {
   if (!val) return '';
-  return val.toLowerCase().replace(/[^a-z0-9]/g, '');
+  return String(val).toLowerCase().replace(/[^a-z0-9]/g, '');
 }
 
 /**
@@ -316,7 +316,7 @@ export function getUnitBadgeInfo(unit?: string | null): { label: string; color: 
  */
 export function isUserAdmin(role?: string | null): boolean {
   if (!role) return false;
-  const upper = role.toUpperCase();
+  const upper = typeof role === 'string' ? role.toUpperCase() : '';
   return upper === 'ADMIN' || upper === 'CEO';
 }
 

@@ -21,7 +21,7 @@ export function formatRupee(
 
 export function isLineName(str?: string | null): boolean {
   if (!str) return false;
-  const s = str.trim();
+  const s = String(str).trim();
   return (
     /^line\s*\d+/i.test(s) ||
     /^sewing\s+floor\s*-\s*line\s*\d+/i.test(s) ||
@@ -33,7 +33,7 @@ export function isLineName(str?: string | null): boolean {
 
 export function isZoneName(str?: string | null): boolean {
   if (!str) return false;
-  const s = str.trim();
+  const s = String(str).trim();
   return (
     /(^|\b)zone(\s*\d+)?\b/i.test(s) ||
     /nethaji/i.test(s) ||
@@ -48,7 +48,7 @@ export function isZoneName(str?: string | null): boolean {
  */
 export function cleanRelocationLocation(locationStr?: string | null): string {
   if (!locationStr) return '';
-  const parts = locationStr
+  const parts = String(locationStr)
     .split(/\s*•\s*|\s*➔\s*|\s*➜\s*/)
     .map((p) => p.trim())
     .filter(Boolean);

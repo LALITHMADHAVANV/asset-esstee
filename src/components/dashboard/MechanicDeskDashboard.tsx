@@ -1,5 +1,7 @@
 'use client';
 
+import { textValue } from '@/lib/textValue';
+
 import React, { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
@@ -87,7 +89,7 @@ export function MechanicDeskDashboard({
     }
     return (
       FACTORY_MECHANICS_ROSTER.find(
-        (m) => m.name.toLowerCase() === userName.toLowerCase()
+        (m) => textValue(m.name).toLowerCase() === userName.toLowerCase()
       ) || userToMechanicDuty({ name: userName, role: 'MECHANIC', employeeId: 'MECH-01' })
     );
   }, [user, userName]);
@@ -104,7 +106,7 @@ export function MechanicDeskDashboard({
 
     const matched = repairs.filter((r) => {
       if (!r.attendedBy) return isGeneric;
-      const attendedClean = r.attendedBy.trim().toLowerCase();
+      const attendedClean = textValue(r.attendedBy).trim().toLowerCase();
       return (
         attendedClean === userNameClean ||
         isGeneric ||
@@ -420,7 +422,7 @@ export function MechanicDeskDashboard({
     return ppmSchedules.filter((p) => {
       if (p.status === 'COMPLETED') return false;
       if (p.assignedTo) {
-        const aClean = p.assignedTo.trim().toLowerCase();
+        const aClean = textValue(p.assignedTo).trim().toLowerCase();
         return (
           aClean === uClean ||
           (uFirst.length > 2 && aClean.includes(uFirst)) ||
@@ -500,7 +502,7 @@ export function MechanicDeskDashboard({
   const sameUnitColleagues = useMemo(() => {
     const myName = (userName || '').trim().toLowerCase();
     return registeredTechs.filter((t) => {
-      const isSelf = t.name?.trim().toLowerCase() === myName;
+      const isSelf = textValue(t.name)?.trim().toLowerCase() === myName;
       const inSameUnit = matchesUnit(t.unit, targetUnit);
       return !isSelf && inSameUnit;
     });

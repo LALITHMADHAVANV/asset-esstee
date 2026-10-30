@@ -1,5 +1,7 @@
 'use client';
 
+import { textValue } from '@/lib/textValue';
+
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   CalendarDays,
@@ -246,10 +248,10 @@ export default function CalendarPage() {
 
   // Floor technicians available for assignment (supervisor assigns technicians, NOT himself)
   const relevantTechnicians = useMemo(() => {
-    const currentName = (user?.name || '').trim().toLowerCase();
+    const currentName = textValue((user?.name || '')).trim().toLowerCase();
     const isFloorCandidate = (m: MechanicDuty) => {
-      const lower = m.role.toLowerCase();
-      const mName = m.name.trim().toLowerCase();
+      const lower = textValue(m.role).toLowerCase();
+      const mName = textValue(m.name).trim().toLowerCase();
       const isSelf = currentName && (mName === currentName || mName.includes(currentName) || currentName.includes(mName));
       const isSeniorOrAdmin =
         lower.includes('senior') ||
@@ -300,9 +302,9 @@ export default function CalendarPage() {
   // Floor repairs and PPM schedules scoped to user's unit for non-admins
   const scopedRepairs = useMemo(() => {
     if (isAdmin) return repairs;
-    const allowedMachineIds = new Set(displayMachines.map((m) => m.id.toLowerCase()));
+    const allowedMachineIds = new Set(displayMachines.map((m) => textValue(m.id).toLowerCase()));
     return repairs.filter((r) => {
-      if (r.machineId && allowedMachineIds.has(r.machineId.toLowerCase())) return true;
+      if (r.machineId && allowedMachineIds.has(textValue(r.machineId).toLowerCase())) return true;
       if (r.unit && matchesUnit(r.unit, effectiveUnit)) return true;
       return false;
     });
@@ -310,9 +312,9 @@ export default function CalendarPage() {
 
   const scopedPpmSchedules = useMemo(() => {
     if (isAdmin) return ppmSchedules;
-    const allowedMachineIds = new Set(displayMachines.map((m) => m.id.toLowerCase()));
+    const allowedMachineIds = new Set(displayMachines.map((m) => textValue(m.id).toLowerCase()));
     return ppmSchedules.filter((p) => {
-      if (p.machineId && allowedMachineIds.has(p.machineId.toLowerCase())) return true;
+      if (p.machineId && allowedMachineIds.has(textValue(p.machineId).toLowerCase())) return true;
       if (p.unit && matchesUnit(p.unit, effectiveUnit)) return true;
       return false;
     });
@@ -329,13 +331,13 @@ export default function CalendarPage() {
     const q = moveSearchQuery.toLowerCase();
     return openTicketsForMove.filter(
       (t) =>
-        t.id.toLowerCase().includes(q) ||
-        t.machineId.toLowerCase().includes(q) ||
-        (t.machineType && t.machineType.toLowerCase().includes(q)) ||
-        (t.line && t.line.toLowerCase().includes(q)) ||
-        (t.faultCategory && t.faultCategory.toLowerCase().includes(q)) ||
-        (t.faultDetails && t.faultDetails.toLowerCase().includes(q)) ||
-        (t.attendedBy && t.attendedBy.toLowerCase().includes(q))
+        textValue(t.id).toLowerCase().includes(q) ||
+        textValue(t.machineId).toLowerCase().includes(q) ||
+        (t.machineType && textValue(t.machineType).toLowerCase().includes(q)) ||
+        (t.line && textValue(t.line).toLowerCase().includes(q)) ||
+        (t.faultCategory && textValue(t.faultCategory).toLowerCase().includes(q)) ||
+        (t.faultDetails && textValue(t.faultDetails).toLowerCase().includes(q)) ||
+        (t.attendedBy && textValue(t.attendedBy).toLowerCase().includes(q))
     );
   }, [openTicketsForMove, moveSearchQuery]);
 
@@ -1253,7 +1255,7 @@ export default function CalendarPage() {
                                 <div className="flex flex-wrap items-center gap-1.5">
                                   {/* Direct Move to Floor Technicians */}
                                   {relevantTechnicians.map((mech) => {
-                                    const isCurrent = r.attendedBy?.toLowerCase().includes(mech.name.toLowerCase());
+                                    const isCurrent = textValue(r.attendedBy)?.toLowerCase().includes(textValue(mech.name).toLowerCase());
                                     const firstName = mech.name.split(' ')[0];
 
                                     return (

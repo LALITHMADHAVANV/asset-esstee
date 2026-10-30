@@ -1,5 +1,7 @@
 'use client';
 
+import { textValue } from '@/lib/textValue';
+
 import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import { useParams, useRouter, useSearchParams, usePathname } from 'next/navigation';
 import Link from 'next/link';
@@ -123,7 +125,7 @@ function AuthenticatedScanContent() {
       .then((data) => {
         if (data.users && Array.isArray(data.users)) {
           const techs = data.users.filter((u: any) =>
-            ['MECHANIC', 'ELECTRICIAN', 'SENIOR_MECHANIC', 'SENIOR_ELECTRICIAN'].includes((u.role || '').toUpperCase())
+            ['MECHANIC', 'ELECTRICIAN', 'SENIOR_MECHANIC', 'SENIOR_ELECTRICIAN'].includes(textValue((u.role || '')).toUpperCase())
           );
           setRegisteredTechs(techs);
         }
@@ -157,7 +159,7 @@ function AuthenticatedScanContent() {
 
   useEffect(() => {
     const unsub = subscribeMachines((machines) => {
-      const found = machines.find((m) => m.id.toLowerCase() === machineId.toLowerCase());
+      const found = machines.find((m) => textValue(m.id).toLowerCase() === machineId.toLowerCase());
       if (found) {
         setMachine(found);
         setTargetLine(found.currentLine);
@@ -170,7 +172,7 @@ function AuthenticatedScanContent() {
 
     const unsubRepairs = subscribeRepairs((repairs) => {
       const matching = repairs.filter(
-        (r) => r.machineId?.toLowerCase() === machineId.toLowerCase()
+        (r) => textValue(r.machineId)?.toLowerCase() === machineId.toLowerCase()
       );
       setAssetHistoryCount(matching.length);
     });

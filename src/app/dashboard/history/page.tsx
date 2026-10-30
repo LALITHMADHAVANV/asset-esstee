@@ -1,5 +1,7 @@
 'use client';
 
+import { textValue } from '@/lib/textValue';
+
 import { assetScanUrl } from '@/lib/scanUrl';
 
 import React, { useState, useMemo, useEffect } from 'react';
@@ -128,7 +130,7 @@ export interface AssetHistoryRecord {
 const getAssetPpmCost = (asset: AssetHistoryRecord): number => {
   if (typeof asset.totalPpmCost === 'number') return asset.totalPpmCost;
   const fromLogs = asset.serviceLogs
-    .filter((l) => l.faultCategory.toLowerCase().includes('ppm') || l.faultCategory.toLowerCase().includes('lubrication') || l.faultCategory.toLowerCase().includes('routine'))
+    .filter((l) => textValue(l.faultCategory).toLowerCase().includes('ppm') || textValue(l.faultCategory).toLowerCase().includes('lubrication') || textValue(l.faultCategory).toLowerCase().includes('routine'))
     .reduce((sum, l) => sum + (l.costIncurred || 0), 0);
   return fromLogs > 0 ? fromLogs : 0;
 };
@@ -136,7 +138,7 @@ const getAssetPpmCost = (asset: AssetHistoryRecord): number => {
 const getAssetRepairCost = (asset: AssetHistoryRecord): number => {
   if (typeof asset.totalRepairCost === 'number') return asset.totalRepairCost;
   const fromLogs = asset.serviceLogs
-    .filter((l) => !l.faultCategory.toLowerCase().includes('ppm') && !l.faultCategory.toLowerCase().includes('routine'))
+    .filter((l) => !textValue(l.faultCategory).toLowerCase().includes('ppm') && !textValue(l.faultCategory).toLowerCase().includes('routine'))
     .reduce((sum, l) => sum + (l.costIncurred || 0), 0);
   if (fromLogs > 0) return fromLogs;
   return asset.totalRepairCost || 0;
@@ -321,7 +323,7 @@ export default function HistoryPage() {
 
   // Combined items populated strictly from live registered machines, repairs, and PPM (scoped to unit for non-admins)
   const machinesWithIds = liveMachines.filter(
-    (machine) => machine && typeof machine.id === 'string' && machine.id.trim().length > 0
+    (machine) => machine && typeof machine.id === 'string' && textValue(machine.id).trim().length > 0
   );
   const missingIdCount = liveMachines.length - machinesWithIds.length;
 
@@ -329,7 +331,7 @@ export default function HistoryPage() {
     // Imported records can lack the application ID. Do not invent an ID: repair
     // links and QR codes must refer to the same identifier stored in MongoDB.
     const validMachines = liveMachines.filter(
-      (machine) => machine && typeof machine.id === 'string' && machine.id.trim().length > 0
+      (machine) => machine && typeof machine.id === 'string' && textValue(machine.id).trim().length > 0
     );
     const scopedLiveMachines = !isAdmin
       ? validMachines.filter((m) => matchesUnit(m.unit, effectiveUnit))
@@ -338,16 +340,16 @@ export default function HistoryPage() {
       ? items.filter((i) => matchesUnit(i.unit, effectiveUnit))
       : items;
 
-    const initialIds = new Set(scopedInitialItems.map((i) => i.assetId.toLowerCase()));
+    const initialIds = new Set(scopedInitialItems.map((i) => textValue(i.assetId).toLowerCase()));
     const extraLive: AssetHistoryRecord[] = scopedLiveMachines
-      .filter((m) => !initialIds.has(m.id.toLowerCase()))
+      .filter((m) => !initialIds.has(textValue(m.id).toLowerCase()))
       .map((m) => {
         const cost = typeof m.cost === 'number' ? m.cost : 0;
         const machineRepairs = liveRepairs.filter(
-          (r) => typeof r.machineId === 'string' && r.machineId.toLowerCase() === m.id.toLowerCase()
+          (r) => typeof r.machineId === 'string' && textValue(r.machineId).toLowerCase() === textValue(m.id).toLowerCase()
         );
         const machinePpm = livePpm.filter(
-          (p) => typeof p.machineId === 'string' && p.machineId.toLowerCase() === m.id.toLowerCase()
+          (p) => typeof p.machineId === 'string' && textValue(p.machineId).toLowerCase() === textValue(m.id).toLowerCase()
         );
 
         // Derive real service logs from repair tickets
@@ -492,7 +494,7 @@ export default function HistoryPage() {
 
   // Helper to resolve sub-category / equipment type
   const getAssetSubCategory = (asset: AssetHistoryRecord): string => {
-    if (asset.subCategory && asset.subCategory.trim()) return asset.subCategory;
+    if (asset.subCategory && textValue(asset.subCategory).trim()) return asset.subCategory;
     if (asset.model && asset.model !== 'Standard' && asset.model !== 'OEM') return asset.model;
     if (asset.name) {
       const clean = asset.name.replace(new RegExp(`^${asset.brand}\\s*`, 'i'), '').trim();
@@ -503,7 +505,7 @@ export default function HistoryPage() {
 
   // Helper to resolve location / production line
   const getAssetLocation = (asset: AssetHistoryRecord): string => {
-    if (asset.location && asset.location.trim()) return asset.location;
+    if (asset.location && textValue(asset.location).trim()) return asset.location;
     if (asset.unit) {
       return asset.unit.split('•')[0].trim();
     }
@@ -522,12 +524,12 @@ export default function HistoryPage() {
     if (current) {
       if (
         current.fromLocation &&
-        !current.fromLocation.toLowerCase().includes('inward store') &&
-        !current.fromLocation.toLowerCase().includes('receiving')
+        !textValue(current.fromLocation).toLowerCase().includes('inward store') &&
+        !textValue(current.fromLocation).toLowerCase().includes('receiving')
       ) {
         return true;
       }
-      if (current.reason && current.reason.toLowerCase().includes('reloc')) {
+      if (current.reason && textValue(current.reason).toLowerCase().includes('reloc')) {
         return true;
       }
     }
@@ -541,11 +543,11 @@ export default function HistoryPage() {
       const m = getAssetMechanic(item);
       if (m && m !== 'Unassigned / Lead') set.add(m);
       item.serviceLogs.forEach((l) => {
-        if (l.technician && l.technician.trim()) set.add(l.technician.trim());
+        if (l.technician && textValue(l.technician).trim()) set.add(textValue(l.technician).trim());
       });
     });
     liveRepairs.forEach((r) => {
-      if (r.attendedBy && r.attendedBy.trim()) set.add(r.attendedBy.trim());
+      if (r.attendedBy && textValue(r.attendedBy).trim()) set.add(textValue(r.attendedBy).trim());
     });
     return Array.from(set).sort();
   }, [allItems, liveRepairs]);
@@ -559,7 +561,7 @@ export default function HistoryPage() {
     });
     liveMachines.forEach((m) => {
       if (m.unit) set.add(m.unit);
-      if (m.area && !m.area.toLowerCase().includes('line')) set.add(m.area);
+      if (m.area && !textValue(m.area).toLowerCase().includes('line')) set.add(m.area);
     });
     ['Cutting Department', 'Finishing & Pressing', 'Central Utilities & Plant'].forEach((l) => set.add(l));
     return Array.from(set).sort();
@@ -656,7 +658,7 @@ export default function HistoryPage() {
       if (mechanicFilter !== 'ALL') {
         const primaryMech = getAssetMechanic(item).toLowerCase();
         const target = mechanicFilter.toLowerCase();
-        const hasLogByMech = item.serviceLogs.some((l) => l.technician?.toLowerCase() === target);
+        const hasLogByMech = item.serviceLogs.some((l) => textValue(l.technician)?.toLowerCase() === target);
         if (!primaryMech.includes(target) && !hasLogByMech) {
           return false;
         }
@@ -724,14 +726,14 @@ export default function HistoryPage() {
       // 9. Search query
       if (q.trim()) {
         const query = q.toLowerCase().trim();
-        const matchesId = item.assetId.toLowerCase().includes(query);
-        const matchesName = item.name.toLowerCase().includes(query);
-        const matchesBrand = item.brand.toLowerCase().includes(query);
-        const matchesModel = item.model.toLowerCase().includes(query);
+        const matchesId = textValue(item.assetId).toLowerCase().includes(query);
+        const matchesName = textValue(item.name).toLowerCase().includes(query);
+        const matchesBrand = textValue(item.brand).toLowerCase().includes(query);
+        const matchesModel = textValue(item.model).toLowerCase().includes(query);
         const matchesSub = getAssetSubCategory(item).toLowerCase().includes(query);
         const matchesLoc = getAssetLocation(item).toLowerCase().includes(query);
-        const matchesUnit = item.unit.toLowerCase().includes(query);
-        const matchesSerial = item.serialNo.toLowerCase().includes(query);
+        const matchesUnit = textValue(item.unit).toLowerCase().includes(query);
+        const matchesSerial = textValue(item.serialNo).toLowerCase().includes(query);
         const matchesMech = getAssetMechanic(item).toLowerCase().includes(query);
         const loc = getAssetLocationHistory(item);
         const curLoc = loc.find((l) => l.status === 'CURRENT')?.toLocation || '';
@@ -1132,7 +1134,7 @@ export default function HistoryPage() {
           'None',
           asset.downtimeMins,
           asset.totalMaintenanceCost,
-          asset.status.toUpperCase(),
+          textValue(asset.status).toUpperCase(),
         ]);
       }
     });

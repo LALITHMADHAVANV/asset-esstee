@@ -1,5 +1,7 @@
 'use client';
 
+import { textValue } from '@/lib/textValue';
+
 import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -96,8 +98,8 @@ export function Navbar() {
       const unattended = pendingTickets.filter((r) => {
         const hasAttendant = Boolean(
           r.attendedBy &&
-          r.attendedBy.trim() !== '' &&
-          r.attendedBy.toLowerCase() !== 'unassigned'
+          textValue(r.attendedBy).trim() !== '' &&
+          textValue(r.attendedBy).toLowerCase() !== 'unassigned'
         );
         const elapsedMin = r.reportedAt ? (now - new Date(r.reportedAt).getTime()) / 60000 : 0;
         return !hasAttendant && elapsedMin >= 5;

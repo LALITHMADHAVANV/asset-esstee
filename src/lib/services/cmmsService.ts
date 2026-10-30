@@ -1,3 +1,4 @@
+import { textValue } from '@/lib/textValue';
 import {
   Machine,
   MachineStatus,
@@ -46,7 +47,7 @@ function getActiveTenant(): string {
     const stored = localStorage.getItem('cmms_current_user');
     if (stored) {
       const u = JSON.parse(stored);
-      if (u?.companySlug) return u.companySlug.toLowerCase().trim();
+      if (u?.companySlug) return textValue(u.companySlug).toLowerCase().trim();
     }
   } catch { }
   return 'esstee';
@@ -212,7 +213,7 @@ export function subscribeMachines(callback: (machines: Machine[]) => void): () =
 
 export async function createMachine(machine: Machine): Promise<void> {
   const current = getLocal<Machine[]>(STORAGE_KEYS.MACHINES, []);
-  const existsIndex = current.findIndex((m) => m.id.toLowerCase() === machine.id.toLowerCase());
+  const existsIndex = current.findIndex((m) => textValue(m.id).toLowerCase() === textValue(machine.id).toLowerCase());
   let updated: Machine[];
 
   if (existsIndex >= 0) {
@@ -1113,7 +1114,7 @@ export interface AssignMechanicTaskInput {
 export async function assignMechanicTask(input: AssignMechanicTaskInput): Promise<string> {
   const currentMachines = getLocal<Machine[]>(STORAGE_KEYS.MACHINES, []);
   const targetMachine = currentMachines.find(
-    (m) => m.id.toLowerCase() === input.machineId.toLowerCase()
+    (m) => textValue(m.id).toLowerCase() === textValue(input.machineId).toLowerCase()
   );
 
   const machineType =
@@ -1153,7 +1154,7 @@ export async function assignMechanicTask(input: AssignMechanicTaskInput): Promis
     const newStatus: MachineStatus =
       input.urgency === 'CRITICAL' ? 'BREAKDOWN' : 'UNDER_MAINTENANCE';
     const updatedMachines = currentMachines.map((m) =>
-      m.id.toLowerCase() === input.machineId.toLowerCase() ? { ...m, status: newStatus } : m
+      textValue(m.id).toLowerCase() === textValue(input.machineId).toLowerCase() ? { ...m, status: newStatus } : m
     );
     setLocal(STORAGE_KEYS.MACHINES, updatedMachines);
     notifyLocal('machines', updatedMachines);

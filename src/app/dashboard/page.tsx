@@ -1,5 +1,7 @@
 'use client';
 
+import { textValue } from '@/lib/textValue';
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
@@ -131,14 +133,14 @@ export default function DashboardPage() {
 
   const scopedRepairs = useMemo(() => {
     if (!effectiveUnit || effectiveUnit === 'All Units') return repairs;
-    const machineIdSet = new Set(scopedMachines.map((m) => (m.id || '').toUpperCase()));
-    return repairs.filter((r) => !r.machineId || machineIdSet.has((r.machineId || '').toUpperCase()));
+    const machineIdSet = new Set(scopedMachines.map((m) => textValue((m.id || '')).toUpperCase()));
+    return repairs.filter((r) => !r.machineId || machineIdSet.has(textValue((r.machineId || '')).toUpperCase()));
   }, [repairs, scopedMachines, effectiveUnit]);
 
   const scopedPpmSchedules = useMemo(() => {
     if (!effectiveUnit || effectiveUnit === 'All Units') return ppmSchedules;
-    const machineIdSet = new Set(scopedMachines.map((m) => (m.id || '').toUpperCase()));
-    return ppmSchedules.filter((p) => !p.machineId || machineIdSet.has((p.machineId || '').toUpperCase()));
+    const machineIdSet = new Set(scopedMachines.map((m) => textValue((m.id || '')).toUpperCase()));
+    return ppmSchedules.filter((p) => !p.machineId || machineIdSet.has(textValue((p.machineId || '')).toUpperCase()));
   }, [ppmSchedules, scopedMachines, effectiveUnit]);
 
   const scopedParts = useMemo(() => {
@@ -148,8 +150,8 @@ export default function DashboardPage() {
 
   const scopedRequisitions = useMemo(() => {
     if (!effectiveUnit || effectiveUnit === 'All Units') return requisitions;
-    const machineIdSet = new Set(scopedMachines.map((m) => (m.id || '').toUpperCase()));
-    return requisitions.filter((r) => !r.machineId || machineIdSet.has((r.machineId || '').toUpperCase()));
+    const machineIdSet = new Set(scopedMachines.map((m) => textValue((m.id || '')).toUpperCase()));
+    return requisitions.filter((r) => !r.machineId || machineIdSet.has(textValue((r.machineId || '')).toUpperCase()));
   }, [requisitions, scopedMachines, effectiveUnit]);
 
   return (

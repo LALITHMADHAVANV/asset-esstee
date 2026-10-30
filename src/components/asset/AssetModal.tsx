@@ -1,5 +1,7 @@
 'use client';
 
+import { textValue } from '@/lib/textValue';
+
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   X,
@@ -602,7 +604,7 @@ export function AssetModal({
       .then((data) => {
         if (data.users && Array.isArray(data.users)) {
           const techs = data.users.filter((u: any) =>
-            ['MECHANIC', 'ELECTRICIAN', 'SENIOR_MECHANIC', 'SENIOR_ELECTRICIAN'].includes((u.role || '').toUpperCase())
+            ['MECHANIC', 'ELECTRICIAN', 'SENIOR_MECHANIC', 'SENIOR_ELECTRICIAN'].includes(textValue((u.role || '')).toUpperCase())
           );
           setRegisteredTechs(techs);
         }
@@ -692,11 +694,11 @@ export function AssetModal({
     const q = searchQuery.toLowerCase();
     return list.filter(
       (m) =>
-        m.id.toLowerCase().includes(q) ||
-        (m.name || '').toLowerCase().includes(q) ||
-        (m.brand || '').toLowerCase().includes(q) ||
-        (m.stationNo || '').toLowerCase().includes(q) ||
-        (m.currentLine || '').toLowerCase().includes(q)
+        textValue(m.id).toLowerCase().includes(q) ||
+        textValue((m.name || '')).toLowerCase().includes(q) ||
+        textValue((m.brand || '')).toLowerCase().includes(q) ||
+        textValue((m.stationNo || '')).toLowerCase().includes(q) ||
+        textValue((m.currentLine || '')).toLowerCase().includes(q)
     );
   }, [categoryAssets, searchQuery, activeCategory, utilityFilter, furnitureFilter]);
 

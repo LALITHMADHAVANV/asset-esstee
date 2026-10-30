@@ -1,5 +1,7 @@
 'use client';
 
+import { textValue } from '@/lib/textValue';
+
 import { assetScanUrl } from '@/lib/scanUrl';
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -64,14 +66,14 @@ export default function MachinesPage() {
 
   // User's assigned enterprise company from authenticated session
   const userCompany = useMemo(() => {
-    if (user?.company && user.company.trim()) return user.company.trim();
+    if (user?.company && textValue(user.company).trim()) return textValue(user.company).trim();
     if (typeof window !== 'undefined') {
       const activeTenant = localStorage.getItem('cmms_active_tenant');
       if (activeTenant) return activeTenant.charAt(0).toUpperCase() + activeTenant.slice(1);
       const stored = localStorage.getItem('cmms_company_name');
       if (stored && stored.trim()) return stored.trim();
     }
-    const email = (user?.email || '').toLowerCase();
+    const email = textValue((user?.email || '')).toLowerCase();
     if (email.includes('@')) {
       const domain = email.split('@')[1];
       const namePart = domain ? domain.split('.')[0] : '';
@@ -1237,16 +1239,16 @@ export default function MachinesPage() {
                   if (!pickerSearchQuery.trim()) return true;
                   const q = pickerSearchQuery.toLowerCase();
                   return (
-                    m.id?.toLowerCase().includes(q) ||
-                    m.name?.toLowerCase().includes(q) ||
-                    m.serialNo?.toLowerCase().includes(q) ||
-                    m.serialNumber?.toLowerCase().includes(q) ||
-                    m.brand?.toLowerCase().includes(q) ||
-                    m.model?.toLowerCase().includes(q) ||
-                    m.type?.toLowerCase().includes(q) ||
-                    m.typeName?.toLowerCase().includes(q) ||
-                    m.area?.toLowerCase().includes(q) ||
-                    m.unit?.toLowerCase().includes(q)
+                    textValue(m.id)?.toLowerCase().includes(q) ||
+                    textValue(m.name)?.toLowerCase().includes(q) ||
+                    textValue(m.serialNo)?.toLowerCase().includes(q) ||
+                    textValue(m.serialNumber)?.toLowerCase().includes(q) ||
+                    textValue(m.brand)?.toLowerCase().includes(q) ||
+                    textValue(m.model)?.toLowerCase().includes(q) ||
+                    textValue(m.type)?.toLowerCase().includes(q) ||
+                    textValue(m.typeName)?.toLowerCase().includes(q) ||
+                    textValue(m.area)?.toLowerCase().includes(q) ||
+                    textValue(m.unit)?.toLowerCase().includes(q)
                   );
                 })
                 .slice(0, 50)

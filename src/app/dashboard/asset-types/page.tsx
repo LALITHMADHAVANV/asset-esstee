@@ -1,4 +1,6 @@
 'use client';
+
+import { textValue } from '@/lib/textValue';
 import { PDF_MACHINE_TYPES, PDF_MACHINE_MAKES, type PdfMachineType } from '@/lib/constants/machineCatalog';
 
 import React, { useState, useEffect, useMemo, Suspense } from 'react';
@@ -102,7 +104,7 @@ function AssetsPageContent() {
 
   // User's assigned enterprise company from authenticated session
   const userCompany = useMemo(() => {
-    if (user?.company && user.company.trim()) return user.company.trim();
+    if (user?.company && textValue(user.company).trim()) return textValue(user.company).trim();
     if (typeof window !== 'undefined') {
       const activeTenant = localStorage.getItem('cmms_active_tenant');
       if (activeTenant) return activeTenant.charAt(0).toUpperCase() + activeTenant.slice(1);
@@ -287,7 +289,7 @@ function AssetsPageContent() {
   const distinctMakes = useMemo(() => {
     const set = new Set<string>();
     for (const item of unitScopedItems) {
-      if (item.machineMake && item.machineMake !== '—') set.add(item.machineMake.toUpperCase());
+      if (item.machineMake && item.machineMake !== '—') set.add(textValue(item.machineMake).toUpperCase());
     }
     return Array.from(set).sort();
   }, [unitScopedItems]);
@@ -340,7 +342,7 @@ function AssetsPageContent() {
         return false;
       }
       // 4. Machine Make
-      if (selectedMake !== 'ALL' && item.machineMake.toUpperCase() !== selectedMake.toUpperCase()) {
+      if (selectedMake !== 'ALL' && textValue(item.machineMake).toUpperCase() !== selectedMake.toUpperCase()) {
         return false;
       }
       // 5. Year
@@ -348,24 +350,24 @@ function AssetsPageContent() {
         return false;
       }
       // 6. Status
-      if (selectedStatus !== 'ALL' && item.status.toUpperCase() !== selectedStatus.toUpperCase()) {
+      if (selectedStatus !== 'ALL' && textValue(item.status).toUpperCase() !== selectedStatus.toUpperCase()) {
         return false;
       }
       // 7. Search query
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim();
         const matches =
-          item.mcNo.toLowerCase().includes(q) ||
-          item.id.toLowerCase().includes(q) ||
-          item.machineType.toLowerCase().includes(q) ||
-          (item.variety && item.variety.toLowerCase().includes(q)) ||
-          item.machineMake.toLowerCase().includes(q) ||
-          item.model.toLowerCase().includes(q) ||
+          textValue(item.mcNo).toLowerCase().includes(q) ||
+          textValue(item.id).toLowerCase().includes(q) ||
+          textValue(item.machineType).toLowerCase().includes(q) ||
+          (item.variety && textValue(item.variety).toLowerCase().includes(q)) ||
+          textValue(item.machineMake).toLowerCase().includes(q) ||
+          textValue(item.model).toLowerCase().includes(q) ||
           String(item.year).toLowerCase().includes(q) ||
-          item.location.toLowerCase().includes(q) ||
-          item.zone.toLowerCase().includes(q) ||
-          item.plant.toLowerCase().includes(q) ||
-          item.status.toLowerCase().includes(q) ||
+          textValue(item.location).toLowerCase().includes(q) ||
+          textValue(item.zone).toLowerCase().includes(q) ||
+          textValue(item.plant).toLowerCase().includes(q) ||
+          textValue(item.status).toLowerCase().includes(q) ||
           String(item.sNo).includes(q);
         if (!matches) return false;
       }

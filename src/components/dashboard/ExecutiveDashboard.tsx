@@ -1,5 +1,7 @@
 'use client';
 
+import { textValue } from '@/lib/textValue';
+
 import React, { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import {
@@ -277,7 +279,7 @@ export function ExecutiveDashboard({
   const maintenanceByType = useMemo(() => {
     const preventive = ppmSchedules.length;
     const corrective = repairs.filter(
-      (r) => r.urgency === 'CRITICAL' || r.faultCategory?.toLowerCase().includes('breakdown')
+      (r) => r.urgency === 'CRITICAL' || textValue(r.faultCategory)?.toLowerCase().includes('breakdown')
     ).length;
     const routine = repairs.filter((r) => r.urgency === 'WARNING' || !r.urgency).length;
     const predictive = machines.filter((m) => m.status === 'UNDER_MAINTENANCE').length;

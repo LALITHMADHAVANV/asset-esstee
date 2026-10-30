@@ -1,5 +1,7 @@
 'use client';
 
+import { textValue } from '@/lib/textValue';
+
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   Users,
@@ -87,10 +89,10 @@ export function TeamScheduleModal({
 
   // Filter technicians based on role - strictly floor technicians (never self or senior/admin)
   const relevantTechnicians = React.useMemo(() => {
-    const currentName = (user?.name || '').trim().toLowerCase();
+    const currentName = textValue((user?.name || '')).trim().toLowerCase();
     const isFloorCandidate = (m: MechanicDuty) => {
-      const lower = m.role.toLowerCase();
-      const mName = m.name.trim().toLowerCase();
+      const lower = textValue(m.role).toLowerCase();
+      const mName = textValue(m.name).trim().toLowerCase();
       const isSelf = currentName && (mName === currentName || mName.includes(currentName) || currentName.includes(mName));
       const isSeniorOrAdmin =
         lower.includes('senior') ||
@@ -164,14 +166,14 @@ export function TeamScheduleModal({
 
   // Unassigned breakdown tickets on this date
   const unassignedRepairs = dayRepairs.filter(
-    (r) => !r.attendedBy || r.attendedBy.trim() === ''
+    (r) => !r.attendedBy || textValue(r.attendedBy).trim() === ''
   );
 
   // Group work by mechanic
   const mechanicWorkData = relevantTechnicians.map((mech) => {
     // Tickets attended or assigned to this mechanic
     const assignedTickets = dayRepairs.filter(
-      (r) => r.attendedBy && r.attendedBy.toLowerCase().includes(mech.name.toLowerCase())
+      (r) => r.attendedBy && textValue(r.attendedBy).toLowerCase().includes(textValue(mech.name).toLowerCase())
     );
 
     // PPM tasks: M. Selvam gets PPM tasks by default, or Senior Mechanic Ramesh oversees
@@ -653,7 +655,7 @@ export function TeamScheduleModal({
                                     {/* Direct 1-Click Move Buttons (Floor Mechanics) */}
                                     <div className="flex flex-wrap items-center gap-1.5">
                                       {relevantTechnicians.map((mech) => {
-                                        const isCurrent = mechanic.name.toLowerCase().includes(mech.name.toLowerCase());
+                                        const isCurrent = textValue(mechanic.name).toLowerCase().includes(textValue(mech.name).toLowerCase());
                                         const firstName = mech.name.split(' ')[0];
 
                                         return (

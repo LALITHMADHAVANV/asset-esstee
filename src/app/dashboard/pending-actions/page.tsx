@@ -1,5 +1,7 @@
 'use client';
 
+import { textValue } from '@/lib/textValue';
+
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   RotateCw,
@@ -122,7 +124,7 @@ export default function PendingActionsPage() {
     repairs
       .filter((r) => r.status !== 'COMPLETED' && !completedItemIds.has(r.id))
       .forEach((r) => {
-        const machine = machines.find((m) => m.id.toLowerCase() === (r.machineId || '').toLowerCase());
+        const machine = machines.find((m) => textValue(m.id).toLowerCase() === textValue((r.machineId || '')).toLowerCase());
         const refText = machine
           ? `${machine.id} · ${r.line || machine.currentLine || 'Line 01'} (${machine.stationNo || 'St-01'}) · ${machine.typeName || r.machineType || machine.name}`
           : `${r.machineId || 'EQ-UNKNOWN'} · ${r.line || 'Line 01'} · ${r.machineType || 'Industrial Machine'}`;
@@ -149,7 +151,7 @@ export default function PendingActionsPage() {
           inChargeRole: 'Floor Line Mechanic',
           targetDate: `Target ${reportedDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}`,
           urgency: isCrit ? 'Critical' : 'High',
-          taskTitle: `BREAKDOWN: ${(r.faultCategory || 'FLOOR DEFECT').toUpperCase()} - ${r.faultDetails?.slice(0, 45) || 'REPAIR REQUIRED'}`,
+          taskTitle: `BREAKDOWN: ${textValue((r.faultCategory || 'FLOOR DEFECT')).toUpperCase()} - ${r.faultDetails?.slice(0, 45) || 'REPAIR REQUIRED'}`,
           statusBadge: r.status === 'IN_PROGRESS' ? 'In progress' : 'Assigned',
           dueDate: reportedDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }),
           plannedDate: reportedDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }),
@@ -166,7 +168,7 @@ export default function PendingActionsPage() {
     ppmSchedules
       .filter((p) => p.status !== 'COMPLETED' && !completedItemIds.has(p.id))
       .forEach((p) => {
-        const machine = machines.find((m) => m.id.toLowerCase() === (p.machineId || '').toLowerCase());
+        const machine = machines.find((m) => textValue(m.id).toLowerCase() === textValue((p.machineId || '')).toLowerCase());
         const refText = machine
           ? `${machine.id} · ${machine.currentLine || 'Line 02'} (${machine.stationNo || 'St-01'}) · ${machine.typeName || machine.name}`
           : `${p.machineId} · Floor Maintenance · Preventive Task`;
@@ -191,7 +193,7 @@ export default function PendingActionsPage() {
           inChargeRole: 'Senior Master Mechanic',
           targetDate: `Due ${dueDateObj.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}`,
           urgency: diffDays > 2 ? 'High' : 'Normal',
-          taskTitle: `PPM: ${(p.task || 'PREVENTIVE OVERHAUL').toUpperCase()}`,
+          taskTitle: `PPM: ${textValue((p.task || 'PREVENTIVE OVERHAUL')).toUpperCase()}`,
           statusBadge: p.status === 'IN_PROGRESS' ? 'In progress' : 'Pending',
           dueDate: dueDateObj.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }),
           plannedDate: dueDateObj.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }),
@@ -246,16 +248,16 @@ export default function PendingActionsPage() {
       if (activeTab === 'REQUISITION' && item.sourceType !== 'REQUISITION') return false;
 
       // Dropdown filters
-      if (selectedType !== 'ALL' && item.type.toLowerCase() !== selectedType.toLowerCase()) {
+      if (selectedType !== 'ALL' && textValue(item.type).toLowerCase() !== selectedType.toLowerCase()) {
         return false;
       }
-      if (selectedInCharge !== 'ALL' && item.inCharge.toLowerCase() !== selectedInCharge.toLowerCase()) {
+      if (selectedInCharge !== 'ALL' && textValue(item.inCharge).toLowerCase() !== selectedInCharge.toLowerCase()) {
         return false;
       }
-      if (selectedLine !== 'ALL' && item.line.toLowerCase() !== selectedLine.toLowerCase()) {
+      if (selectedLine !== 'ALL' && textValue(item.line).toLowerCase() !== selectedLine.toLowerCase()) {
         return false;
       }
-      if (selectedUrgency !== 'ALL' && item.urgency.toLowerCase() !== selectedUrgency.toLowerCase()) {
+      if (selectedUrgency !== 'ALL' && textValue(item.urgency).toLowerCase() !== selectedUrgency.toLowerCase()) {
         return false;
       }
       if (selectedUnit !== 'ALL' && !matchesUnit(item.unit, selectedUnit)) {
@@ -265,12 +267,12 @@ export default function PendingActionsPage() {
       // Search query
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim();
-        const matchesRef = item.ref.toLowerCase().includes(q);
-        const matchesTitle = item.taskTitle.toLowerCase().includes(q);
-        const matchesUser = item.inCharge.toLowerCase().includes(q);
-        const matchesDetails = item.details.toLowerCase().includes(q);
-        const matchesMach = item.machineId.toLowerCase().includes(q);
-        const matchesLine = item.line.toLowerCase().includes(q);
+        const matchesRef = textValue(item.ref).toLowerCase().includes(q);
+        const matchesTitle = textValue(item.taskTitle).toLowerCase().includes(q);
+        const matchesUser = textValue(item.inCharge).toLowerCase().includes(q);
+        const matchesDetails = textValue(item.details).toLowerCase().includes(q);
+        const matchesMach = textValue(item.machineId).toLowerCase().includes(q);
+        const matchesLine = textValue(item.line).toLowerCase().includes(q);
         if (!matchesRef && !matchesTitle && !matchesUser && !matchesDetails && !matchesMach && !matchesLine) {
           return false;
         }

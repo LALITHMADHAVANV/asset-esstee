@@ -1,5 +1,7 @@
 'use client';
 
+import { textValue } from '@/lib/textValue';
+
 import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -71,7 +73,7 @@ export function Sidebar() {
   const [pendingStoreCount, setPendingStoreCount] = useState<number>(0);
   const [unattendedBreachCount, setUnattendedBreachCount] = useState<number>(0);
 
-  const companySlug = (user?.companySlug || 'esstee').toLowerCase();
+  const companySlug = textValue((user?.companySlug || 'esstee')).toLowerCase();
 
   const handleSignOut = async () => {
     await logout();
@@ -93,8 +95,8 @@ export function Sidebar() {
       const unattended = pendingTickets.filter((r) => {
         const hasAttendant = Boolean(
           r.attendedBy &&
-          r.attendedBy.trim() !== '' &&
-          r.attendedBy.toLowerCase() !== 'unassigned'
+          textValue(r.attendedBy).trim() !== '' &&
+          textValue(r.attendedBy).toLowerCase() !== 'unassigned'
         );
         const elapsedMin = r.reportedAt ? (now - new Date(r.reportedAt).getTime()) / 60000 : 0;
         return !hasAttendant && elapsedMin >= 5;

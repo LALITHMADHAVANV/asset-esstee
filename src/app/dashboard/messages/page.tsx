@@ -1,5 +1,7 @@
 'use client';
 
+import { textValue } from '@/lib/textValue';
+
 import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import {
@@ -137,7 +139,7 @@ export default function NotificationsPage() {
   }, [user?.role, role]);
 
   const userAssignedUnit = useMemo(() => {
-    return user?.unit && user.unit.trim().length > 0 ? user.unit.trim() : 'All Units';
+    return user?.unit && textValue(user.unit).trim().length > 0 ? textValue(user.unit).trim() : 'All Units';
   }, [user?.unit]);
 
   const isAdmin = currentRole === 'ADMIN' || currentRole === 'ASSET_MANAGER' || currentRole === 'CEO';
@@ -289,14 +291,14 @@ export default function NotificationsPage() {
 
       const hasAttendant = Boolean(
         rep.attendedBy &&
-        rep.attendedBy.trim() !== '' &&
-        rep.attendedBy.toLowerCase() !== 'unassigned'
+        textValue(rep.attendedBy).trim() !== '' &&
+        textValue(rep.attendedBy).toLowerCase() !== 'unassigned'
       );
       const isUnattended = !hasAttendant && rep.status === 'PENDING';
       const isOver5Mins = isUnattended && elapsedMin >= 5;
 
       const matchingMachine = machines.find(
-        (m) => m.id.toLowerCase() === (rep.machineId || '').toLowerCase()
+        (m) => textValue(m.id).toLowerCase() === textValue((rep.machineId || '')).toLowerCase()
       );
       const machineName = matchingMachine?.name || matchingMachine?.typeName || rep.machineType || 'Industrial Machine';
       const line = rep.line || matchingMachine?.currentLine || 'Line 01';
@@ -418,14 +420,14 @@ export default function NotificationsPage() {
     ppmSchedules.forEach((ppm) => {
       if (ppm.status === 'OVERDUE' || (ppm.status === 'PENDING' && new Date(ppm.nextDue).getTime() < nowMs)) {
         const matchingMachine = machines.find(
-          (m) => m.id.toLowerCase() === (ppm.machineId || '').toLowerCase()
+          (m) => textValue(m.id).toLowerCase() === textValue((ppm.machineId || '')).toLowerCase()
         );
         const machineName = matchingMachine?.name || matchingMachine?.typeName || 'Sewing Machine';
         const line = matchingMachine?.currentLine || 'Line 01';
         const stationNo = matchingMachine?.stationNo || 'Station 01';
         const unit = ppm.unit || matchingMachine?.unit || 'UNIT - 1';
 
-        const isElec = ppm.task?.toLowerCase().includes('elec') || ppm.task?.toLowerCase().includes('motor');
+        const isElec = textValue(ppm.task)?.toLowerCase().includes('elec') || textValue(ppm.task)?.toLowerCase().includes('motor');
         const targetTrade: 'ELECTRICIAN' | 'MECHANIC' = isElec ? 'ELECTRICIAN' : 'MECHANIC';
         const targetRoles: UserRole[] = isElec
           ? ['ELECTRICIAN', 'SENIOR_ELECTRICIAN', 'ADMIN', 'ASSET_MANAGER']
@@ -672,12 +674,12 @@ export default function NotificationsPage() {
       // Search query
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
-        const matchesTitle = item.title.toLowerCase().includes(q);
-        const matchesMessage = item.message.toLowerCase().includes(q);
-        const matchesMachine = (item.machineId || '').toLowerCase().includes(q);
-        const matchesLine = (item.line || '').toLowerCase().includes(q);
-        const matchesTech = (item.attendedBy || '').toLowerCase().includes(q);
-        const matchesUnitField = (item.unit || '').toLowerCase().includes(q);
+        const matchesTitle = textValue(item.title).toLowerCase().includes(q);
+        const matchesMessage = textValue(item.message).toLowerCase().includes(q);
+        const matchesMachine = textValue((item.machineId || '')).toLowerCase().includes(q);
+        const matchesLine = textValue((item.line || '')).toLowerCase().includes(q);
+        const matchesTech = textValue((item.attendedBy || '')).toLowerCase().includes(q);
+        const matchesUnitField = textValue((item.unit || '')).toLowerCase().includes(q);
         if (!matchesTitle && !matchesMessage && !matchesMachine && !matchesLine && !matchesTech && !matchesUnitField) {
           return false;
         }

@@ -1,5 +1,7 @@
 'use client';
 
+import { textValue } from '@/lib/textValue';
+
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   History,
@@ -48,14 +50,14 @@ export function AssetHistoryModal({
 
     const unsubRepairs = subscribeRepairs((allRepairs) => {
       const match = allRepairs.filter(
-        (r) => r.machineId?.toLowerCase() === machine.id.toLowerCase()
+        (r) => textValue(r.machineId)?.toLowerCase() === textValue(machine.id).toLowerCase()
       );
       setRepairs(match);
     });
 
     const unsubPPM = subscribePPMSchedules((allPPM) => {
       const match = allPPM.filter(
-        (p) => p.machineId?.toLowerCase() === machine.id.toLowerCase()
+        (p) => textValue(p.machineId)?.toLowerCase() === textValue(machine.id).toLowerCase()
       );
       setPpmList(match);
     });
@@ -83,11 +85,11 @@ export function AssetHistoryModal({
     const q = searchQuery.toLowerCase();
     return repairs.filter(
       (r) =>
-        r.id.toLowerCase().includes(q) ||
-        r.faultCategory?.toLowerCase().includes(q) ||
-        r.faultDetails?.toLowerCase().includes(q) ||
-        r.attendedBy?.toLowerCase().includes(q) ||
-        r.actionTaken?.toLowerCase().includes(q)
+        textValue(r.id).toLowerCase().includes(q) ||
+        textValue(r.faultCategory)?.toLowerCase().includes(q) ||
+        textValue(r.faultDetails)?.toLowerCase().includes(q) ||
+        textValue(r.attendedBy)?.toLowerCase().includes(q) ||
+        textValue(r.actionTaken)?.toLowerCase().includes(q)
     );
   }, [repairs, searchQuery]);
 

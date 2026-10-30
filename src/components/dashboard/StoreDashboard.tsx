@@ -1,5 +1,7 @@
 'use client';
 
+import { textValue } from '@/lib/textValue';
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import {
@@ -547,7 +549,7 @@ export function StoreDashboard({
   const handleCreateNewIndent = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const validItems = indentItems.filter((i) => i.partName.trim() && (Number(i.quantity) || 0) > 0);
+    const validItems = indentItems.filter((i) => textValue(i.partName).trim() && (Number(i.quantity) || 0) > 0);
     if (validItems.length === 0) {
       showToast('Please add at least one item with a valid part name and quantity.', 'error');
       return;
@@ -559,10 +561,10 @@ export function StoreDashboard({
         const rate = Number(item.unitCost) || 0;
         return {
           partId: item.partId || `PRT-${Date.now()}`,
-          partName: item.partName.trim(),
-          sku: item.sku.trim() || 'SKU-GEN',
+          partName: textValue(item.partName).trim(),
+          sku: textValue(item.sku).trim() || 'SKU-GEN',
           quantity: qty,
-          unit: item.unit.trim() || 'pcs',
+          unit: textValue(item.unit).trim() || 'pcs',
           unitCost: rate,
           totalCost: qty * rate,
         };
@@ -619,11 +621,11 @@ export function StoreDashboard({
 
       if (issueSearch.trim()) {
         const q = issueSearch.toLowerCase();
-        const m1 = r.mechanicName.toLowerCase().includes(q);
-        const m2 = r.partName.toLowerCase().includes(q);
-        const m3 = r.id.toLowerCase().includes(q);
-        const m4 = (r.targetMachineId || '').toLowerCase().includes(q);
-        const m5 = (r.targetLine || '').toLowerCase().includes(q);
+        const m1 = textValue(r.mechanicName).toLowerCase().includes(q);
+        const m2 = textValue(r.partName).toLowerCase().includes(q);
+        const m3 = textValue(r.id).toLowerCase().includes(q);
+        const m4 = textValue((r.targetMachineId || '')).toLowerCase().includes(q);
+        const m5 = textValue((r.targetLine || '')).toLowerCase().includes(q);
         if (!m1 && !m2 && !m3 && !m4 && !m5) return false;
       }
       return true;
@@ -641,10 +643,10 @@ export function StoreDashboard({
 
       if (stockSearch.trim()) {
         const q = stockSearch.toLowerCase();
-        const m1 = p.name.toLowerCase().includes(q);
-        const m2 = p.sku.toLowerCase().includes(q);
-        const m3 = (p.shelfLocation || '').toLowerCase().includes(q);
-        const m4 = (p.category || '').toLowerCase().includes(q);
+        const m1 = textValue(p.name).toLowerCase().includes(q);
+        const m2 = textValue(p.sku).toLowerCase().includes(q);
+        const m3 = textValue((p.shelfLocation || '')).toLowerCase().includes(q);
+        const m4 = textValue((p.category || '')).toLowerCase().includes(q);
         if (!m1 && !m2 && !m3 && !m4) return false;
       }
       return true;

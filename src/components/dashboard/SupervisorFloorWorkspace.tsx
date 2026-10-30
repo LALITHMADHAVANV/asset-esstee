@@ -1,5 +1,7 @@
 'use client';
 
+import { textValue } from '@/lib/textValue';
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import {
@@ -119,7 +121,7 @@ export function SupervisorFloorWorkspace({
   // Filter fallback roster to floor personnel (exclude seniors/supervisors)
   const fallbackFloorRoster = useMemo(() => {
     return FACTORY_MECHANICS_ROSTER.filter((m) => {
-      const lower = m.role.toLowerCase();
+      const lower = textValue(m.role).toLowerCase();
       return !lower.includes('senior') && !lower.includes('supervisor') && !lower.includes('admin');
     });
   }, []);
@@ -127,11 +129,11 @@ export function SupervisorFloorWorkspace({
   // Floor technicians available for task dispatch (NEVER includes self or admin/senior supervisor)
   const assignableTechnicians = useMemo(() => {
     const base = registeredTechs.length > 0 ? registeredTechs : fallbackFloorRoster;
-    const currentName = (userName || user?.name || '').trim().toLowerCase();
+    const currentName = textValue((userName || user?.name || '')).trim().toLowerCase();
     return base.filter((m) => {
-      const mName = m.name.trim().toLowerCase();
+      const mName = textValue(m.name).trim().toLowerCase();
       const isSelf = currentName && (mName === currentName || mName.includes(currentName) || currentName.includes(mName));
-      const isSenior = m.role.toLowerCase().includes('senior') || m.role.toLowerCase().includes('admin');
+      const isSenior = textValue(m.role).toLowerCase().includes('senior') || textValue(m.role).toLowerCase().includes('admin');
       return !isSelf && !isSenior;
     });
   }, [registeredTechs, fallbackFloorRoster, userName, user?.name]);
@@ -182,11 +184,11 @@ export function SupervisorFloorWorkspace({
       // Search query filter
       if (ticketSearch.trim()) {
         const q = ticketSearch.toLowerCase();
-        const mchId = (r.machineId || '').toLowerCase();
-        const fault = (r.faultCategory || '').toLowerCase();
-        const details = (r.faultDetails || '').toLowerCase();
-        const mech = (r.attendedBy || '').toLowerCase();
-        const id = (r.id || '').toLowerCase();
+        const mchId = textValue((r.machineId || '')).toLowerCase();
+        const fault = textValue((r.faultCategory || '')).toLowerCase();
+        const details = textValue((r.faultDetails || '')).toLowerCase();
+        const mech = textValue((r.attendedBy || '')).toLowerCase();
+        const id = textValue((r.id || '')).toLowerCase();
         return (
           mchId.includes(q) ||
           fault.includes(q) ||

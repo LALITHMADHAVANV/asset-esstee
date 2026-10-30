@@ -1,5 +1,7 @@
 'use client';
 
+import { textValue } from '@/lib/textValue';
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import {
@@ -263,7 +265,7 @@ export function MaintenanceMilestonesAndTasks({
     const myTickets = repairs.filter((r) => {
       if (r.status === 'COMPLETED') return false;
       if (!r.attendedBy) return false;
-      const attendedClean = r.attendedBy.trim().toLowerCase();
+      const attendedClean = textValue(r.attendedBy).trim().toLowerCase();
       return (
         attendedClean === userNameClean ||
         (firstName.length > 2 && attendedClean.includes(firstName)) ||
@@ -300,7 +302,7 @@ export function MaintenanceMilestonesAndTasks({
     const myPpms = ppmSchedules.filter((p) => {
       if (p.status === 'COMPLETED') return false;
       if (p.assignedTo) {
-        const attendedClean = p.assignedTo.trim().toLowerCase();
+        const attendedClean = textValue(p.assignedTo).trim().toLowerCase();
         return (
           attendedClean === userNameClean ||
           (firstName.length > 2 && attendedClean.includes(firstName)) ||

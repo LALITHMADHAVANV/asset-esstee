@@ -1,5 +1,7 @@
 'use client';
 
+import { textValue } from '@/lib/textValue';
+
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   Wrench,
@@ -712,16 +714,16 @@ function getAssetSubCategory(item: AssetItem): string {
 function getAssetLocation(item: AssetItem): string {
   if (!item.relocation) return 'Main Facility';
   const parts = item.relocation.split('•');
-  return parts[0].trim();
+  return textValue(parts[0]).trim();
 }
 
 // Helper to detect if asset has been relocated
 function isItemRelocated(item: AssetItem, liveMachines: Machine[] = []): boolean {
-  const m = liveMachines.find((mach) => mach.id.toLowerCase() === item.id.toLowerCase());
+  const m = liveMachines.find((mach) => textValue(mach.id).toLowerCase() === textValue(item.id).toLowerCase());
   if (m) {
     if (m.relocationHistory && m.relocationHistory.length > 0) return true;
     if (m.previousLine && m.previousLine !== m.currentLine) return true;
-    if (m.lastMovedReason && m.lastMovedReason.toLowerCase().includes('reloc')) return true;
+    if (m.lastMovedReason && textValue(m.lastMovedReason).toLowerCase().includes('reloc')) return true;
   }
   if (item.id.includes('104') || item.id.includes('204') || item.id.includes('304') || item.id.includes('404')) {
     return true;
@@ -1054,10 +1056,10 @@ export default function AllowancePage() {
 
     return combined.map((item) => {
       const machineRepairs = repairs.filter(
-        (r) => typeof r.machineId === 'string' && r.machineId.trim().toLowerCase() === item.id.trim().toLowerCase()
+        (r) => typeof r.machineId === 'string' && textValue(r.machineId).trim().toLowerCase() === textValue(item.id).trim().toLowerCase()
       );
       const machinePpm = ppmList.filter(
-        (p) => typeof p.machineId === 'string' && p.machineId.trim().toLowerCase() === item.id.trim().toLowerCase()
+        (p) => typeof p.machineId === 'string' && textValue(p.machineId).trim().toLowerCase() === textValue(item.id).trim().toLowerCase()
       );
       const allw = getAllowanceData(item.id, item.category, item.cost, machineRepairs, machinePpm);
 
@@ -1439,10 +1441,10 @@ export default function AllowancePage() {
           const tq = tableSearchQuery.toLowerCase().trim();
           list = list.filter(
             (item) =>
-              item.name.toLowerCase().includes(tq) ||
-              item.id.toLowerCase().includes(tq) ||
-              item.company.toLowerCase().includes(tq) ||
-              item.relocation.toLowerCase().includes(tq)
+              textValue(item.name).toLowerCase().includes(tq) ||
+              textValue(item.id).toLowerCase().includes(tq) ||
+              textValue(item.company).toLowerCase().includes(tq) ||
+              textValue(item.relocation).toLowerCase().includes(tq)
           );
         }
       } else if (
@@ -1463,10 +1465,10 @@ export default function AllowancePage() {
           const cq = chairSearchQuery.toLowerCase().trim();
           list = list.filter(
             (item) =>
-              item.name.toLowerCase().includes(cq) ||
-              item.id.toLowerCase().includes(cq) ||
-              item.company.toLowerCase().includes(cq) ||
-              item.relocation.toLowerCase().includes(cq)
+              textValue(item.name).toLowerCase().includes(cq) ||
+              textValue(item.id).toLowerCase().includes(cq) ||
+              textValue(item.company).toLowerCase().includes(cq) ||
+              textValue(item.relocation).toLowerCase().includes(cq)
           );
         }
       } else if (activeFurnitureTab === 'SOFA' || selectedFurnitureSubtype === 'SOFA') {
@@ -1481,9 +1483,9 @@ export default function AllowancePage() {
         const fq = furnitureSearchQuery.toLowerCase().trim();
         list = list.filter(
           (item) =>
-            item.name.toLowerCase().includes(fq) ||
-            item.id.toLowerCase().includes(fq) ||
-            item.company.toLowerCase().includes(fq)
+            textValue(item.name).toLowerCase().includes(fq) ||
+            textValue(item.id).toLowerCase().includes(fq) ||
+            textValue(item.company).toLowerCase().includes(fq)
         );
       }
     }
@@ -1503,10 +1505,10 @@ export default function AllowancePage() {
       const q = searchQuery.toLowerCase().trim();
       list = list.filter(
         (item) =>
-          item.id.toLowerCase().includes(q) ||
-          item.name.toLowerCase().includes(q) ||
-          item.company.toLowerCase().includes(q) ||
-          item.relocation.toLowerCase().includes(q) ||
+          textValue(item.id).toLowerCase().includes(q) ||
+          textValue(item.name).toLowerCase().includes(q) ||
+          textValue(item.company).toLowerCase().includes(q) ||
+          textValue(item.relocation).toLowerCase().includes(q) ||
           getAssetSubCategory(item).toLowerCase().includes(q) ||
           (item.purchasePrice !== undefined && item.purchasePrice.toString().includes(q)) ||
           (item.totalRepairCost !== undefined && item.totalRepairCost.toString().includes(q)) ||
@@ -1516,7 +1518,7 @@ export default function AllowancePage() {
           (item.monthlyAllowance !== undefined && item.monthlyAllowance.toString().includes(q)) ||
           (item.spentAmount !== undefined && item.spentAmount.toString().includes(q)) ||
           (item.remainingBalance !== undefined && item.remainingBalance.toString().includes(q)) ||
-          (item.allowanceStatus && item.allowanceStatus.toLowerCase().replace('_', ' ').includes(q))
+          (item.allowanceStatus && textValue(item.allowanceStatus).toLowerCase().replace('_', ' ').includes(q))
       );
     }
 

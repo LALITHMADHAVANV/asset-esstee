@@ -1,5 +1,7 @@
 'use client';
 
+import { textValue } from '@/lib/textValue';
+
 import { tenantPreferences } from '@/lib/tenantPreferences';
 
 import React, { useState, useEffect, useMemo, useRef, Suspense } from 'react';
@@ -662,7 +664,7 @@ function SettingsContent() {
         break;
       default: {
         const matchedDept = departments.find(
-          (d) => d.name.toLowerCase() === (role as string).toLowerCase()
+          (d) => textValue(d.name).toLowerCase() === (role as string).toLowerCase()
         );
         setNewTitle(matchedDept ? `${matchedDept.name} Specialist` : `${role} Staff`);
         setNewDepartment(matchedDept ? matchedDept.name : (role as string));
@@ -705,7 +707,7 @@ function SettingsContent() {
   const handleSaveEditDept = (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingDept) return;
-    if (!editingDept.name.trim()) {
+    if (!textValue(editingDept.name).trim()) {
       showToast('Department name cannot be empty', 'error');
       return;
     }
@@ -747,7 +749,7 @@ function SettingsContent() {
       return;
     }
     const cleanCode = newUnitCode.trim().toUpperCase();
-    if (factoryUnits.some((u) => u.code.toUpperCase() === cleanCode)) {
+    if (factoryUnits.some((u) => textValue(u.code).toUpperCase() === cleanCode)) {
       showToast(`A factory unit with code "${cleanCode}" already exists`, 'error');
       return;
     }
@@ -865,7 +867,7 @@ function SettingsContent() {
 
     if (
       currentZones.some(
-        (z) => z.name.toLowerCase() === cleanName.toLowerCase() || z.id.toLowerCase() === cleanName.toLowerCase()
+        (z) => textValue(z.name).toLowerCase() === cleanName.toLowerCase() || textValue(z.id).toLowerCase() === cleanName.toLowerCase()
       )
     ) {
       showToast(`A zone named "${cleanName}" already exists in ${zoneModalUnit.code}`, 'error');
@@ -916,7 +918,7 @@ function SettingsContent() {
 
     if (
       currentZones.some(
-        (z) => z.id !== zone.id && z.name.toLowerCase() === cleanName.toLowerCase()
+        (z) => z.id !== zone.id && textValue(z.name).toLowerCase() === cleanName.toLowerCase()
       )
     ) {
       showToast(`Another zone named "${cleanName}" already exists in ${unit.code}`, 'error');
@@ -1185,14 +1187,14 @@ function SettingsContent() {
   const filteredUsers = useMemo(() => {
     return users.filter((u) => {
       const matchesSearch =
-        u.name?.toLowerCase().includes(userSearchQuery.toLowerCase()) ||
-        u.email?.toLowerCase().includes(userSearchQuery.toLowerCase()) ||
-        u.employeeId?.toLowerCase().includes(userSearchQuery.toLowerCase()) ||
-        u.department?.toLowerCase().includes(userSearchQuery.toLowerCase());
+        textValue(u.name)?.toLowerCase().includes(userSearchQuery.toLowerCase()) ||
+        textValue(u.email)?.toLowerCase().includes(userSearchQuery.toLowerCase()) ||
+        textValue(u.employeeId)?.toLowerCase().includes(userSearchQuery.toLowerCase()) ||
+        textValue(u.department)?.toLowerCase().includes(userSearchQuery.toLowerCase());
 
       const matchesRole =
         userRoleFilter === 'ALL' ||
-        u.role?.toUpperCase() === userRoleFilter.toUpperCase() ||
+        textValue(u.role)?.toUpperCase() === userRoleFilter.toUpperCase() ||
         u.role === userRoleFilter;
 
       const matchesUnitFilter =
@@ -1248,7 +1250,7 @@ function SettingsContent() {
 
     const combined = [...staticMechanics];
     dynamicTechs.forEach((dt) => {
-      if (!combined.some((c) => c.name.toLowerCase() === dt.name.toLowerCase())) {
+      if (!combined.some((c) => textValue(c.name).toLowerCase() === textValue(dt.name).toLowerCase())) {
         combined.push(dt as any);
       }
     });
@@ -1337,9 +1339,9 @@ function SettingsContent() {
     return workerKpiList
       .filter((w) => {
         const matchesQuery =
-          w.name.toLowerCase().includes(kpiSearchQuery.toLowerCase()) ||
-          w.specialty.toLowerCase().includes(kpiSearchQuery.toLowerCase()) ||
-          w.assignedLines.toLowerCase().includes(kpiSearchQuery.toLowerCase());
+          textValue(w.name).toLowerCase().includes(kpiSearchQuery.toLowerCase()) ||
+          textValue(w.specialty).toLowerCase().includes(kpiSearchQuery.toLowerCase()) ||
+          textValue(w.assignedLines).toLowerCase().includes(kpiSearchQuery.toLowerCase());
         const matchesTrade = kpiTradeFilter === 'ALL' || w.trade === kpiTradeFilter;
         return matchesQuery && matchesTrade;
       })
@@ -1826,8 +1828,8 @@ function SettingsContent() {
                         usr.zones &&
                         usr.zones.some(
                           (zn) =>
-                            zn.toLowerCase() === (z.name || '').toLowerCase() ||
-                            zn.toLowerCase() === (z.id || '').toLowerCase()
+                            zn.toLowerCase() === textValue((z.name || '')).toLowerCase() ||
+                            zn.toLowerCase() === textValue((z.id || '')).toLowerCase()
                         )
                       );
 
@@ -3728,7 +3730,7 @@ function SettingsContent() {
                       setEditRole(val);
                       setEditDepartment(val);
                       const matchedDept = departments.find(
-                        (d) => d.name.toLowerCase() === (val as string).toLowerCase()
+                        (d) => textValue(d.name).toLowerCase() === (val as string).toLowerCase()
                       );
                       if (matchedDept) {
                         setEditTitle(`${matchedDept.name} Specialist`);

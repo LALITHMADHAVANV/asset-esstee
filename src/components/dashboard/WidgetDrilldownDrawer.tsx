@@ -1,5 +1,7 @@
 'use client';
 
+import { textValue } from '@/lib/textValue';
+
 import React, { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
@@ -157,9 +159,9 @@ export function WidgetDrilldownDrawer({
     // 1. OPEN TICKETS
     if (type === 'open_tickets') {
       const open = repairs.filter((r) => r.status !== 'COMPLETED');
-      const assignedToName = meta?.assignedTo?.toLowerCase();
+      const assignedToName = textValue(meta?.assignedTo)?.toLowerCase();
       const myOpen = assignedToName
-        ? open.filter((r) => r.attendedBy && r.attendedBy.toLowerCase() === assignedToName)
+        ? open.filter((r) => r.attendedBy && textValue(r.attendedBy).toLowerCase() === assignedToName)
         : [];
       const criticalCount = open.filter((r) => r.urgency === 'CRITICAL').length;
       const inProgressCount = open.filter((r) => r.status === 'IN_PROGRESS').length;
@@ -185,12 +187,12 @@ export function WidgetDrilldownDrawer({
         const q = searchTerm.toLowerCase();
         filtered = filtered.filter(
           (r) =>
-            r.id.toLowerCase().includes(q) ||
-            r.machineId.toLowerCase().includes(q) ||
-            r.line.toLowerCase().includes(q) ||
-            r.faultCategory?.toLowerCase().includes(q) ||
-            r.faultDetails?.toLowerCase().includes(q) ||
-            (r.attendedBy && r.attendedBy.toLowerCase().includes(q))
+            textValue(r.id).toLowerCase().includes(q) ||
+            textValue(r.machineId).toLowerCase().includes(q) ||
+            textValue(r.line).toLowerCase().includes(q) ||
+            textValue(r.faultCategory)?.toLowerCase().includes(q) ||
+            textValue(r.faultDetails)?.toLowerCase().includes(q) ||
+            (r.attendedBy && textValue(r.attendedBy).toLowerCase().includes(q))
         );
       }
 
@@ -257,10 +259,10 @@ export function WidgetDrilldownDrawer({
         const q = searchTerm.toLowerCase();
         filtered = filtered.filter(
           (p) =>
-            p.id.toLowerCase().includes(q) ||
-            p.machineId.toLowerCase().includes(q) ||
-            p.task?.toLowerCase().includes(q) ||
-            p.frequency?.toLowerCase().includes(q)
+            textValue(p.id).toLowerCase().includes(q) ||
+            textValue(p.machineId).toLowerCase().includes(q) ||
+            textValue(p.task)?.toLowerCase().includes(q) ||
+            textValue(p.frequency)?.toLowerCase().includes(q)
         );
       }
 
@@ -321,10 +323,10 @@ export function WidgetDrilldownDrawer({
         const q = searchTerm.toLowerCase();
         filtered = filtered.filter(
           (r) =>
-            r.id.toLowerCase().includes(q) ||
-            r.machineId.toLowerCase().includes(q) ||
-            r.line.toLowerCase().includes(q) ||
-            r.faultCategory?.toLowerCase().includes(q)
+            textValue(r.id).toLowerCase().includes(q) ||
+            textValue(r.machineId).toLowerCase().includes(q) ||
+            textValue(r.line).toLowerCase().includes(q) ||
+            textValue(r.faultCategory)?.toLowerCase().includes(q)
         );
       }
 
@@ -384,15 +386,15 @@ export function WidgetDrilldownDrawer({
         const q = searchTerm.toLowerCase();
         filteredTickets = filteredTickets.filter(
           (r) =>
-            r.id.toLowerCase().includes(q) ||
-            r.machineId.toLowerCase().includes(q) ||
-            r.line.toLowerCase().includes(q)
+            textValue(r.id).toLowerCase().includes(q) ||
+            textValue(r.machineId).toLowerCase().includes(q) ||
+            textValue(r.line).toLowerCase().includes(q)
         );
         filteredPpm = filteredPpm.filter(
           (p) =>
-            p.id.toLowerCase().includes(q) ||
-            p.machineId.toLowerCase().includes(q) ||
-            p.task?.toLowerCase().includes(q)
+            textValue(p.id).toLowerCase().includes(q) ||
+            textValue(p.machineId).toLowerCase().includes(q) ||
+            textValue(p.task)?.toLowerCase().includes(q)
         );
       }
 
@@ -442,33 +444,33 @@ export function WidgetDrilldownDrawer({
     // 5. RESOLVED TODAY & COMPLETED
     if (type === 'resolved') {
       const completed = repairs.filter((r) => r.status === 'COMPLETED');
-      const assignedToName = meta?.assignedTo?.toLowerCase();
+      const assignedToName = textValue(meta?.assignedTo)?.toLowerCase();
       const myResolved = assignedToName
-        ? completed.filter((r) => r.attendedBy && r.attendedBy.toLowerCase() === assignedToName)
+        ? completed.filter((r) => r.attendedBy && textValue(r.attendedBy).toLowerCase() === assignedToName)
         : [];
       const totalDowntime = completed.reduce((sum, r) => sum + (r.downtimeMinutes || 0), 0);
       const avgMTTR = completed.length > 0 ? Math.round(totalDowntime / completed.length) : 0;
-      const mechanical = completed.filter((r) => r.faultCategory?.toLowerCase().includes('mechanical')).length;
-      const electrical = completed.filter((r) => r.faultCategory?.toLowerCase().includes('electrical')).length;
+      const mechanical = completed.filter((r) => textValue(r.faultCategory)?.toLowerCase().includes('mechanical')).length;
+      const electrical = completed.filter((r) => textValue(r.faultCategory)?.toLowerCase().includes('electrical')).length;
 
       let filtered = completed;
       if (activeFilter === 'my_resolved' || activeFilter === 'mine') {
         filtered = myResolved;
       } else if (activeFilter === 'mechanical') {
-        filtered = completed.filter((r) => r.faultCategory?.toLowerCase().includes('mechanical'));
+        filtered = completed.filter((r) => textValue(r.faultCategory)?.toLowerCase().includes('mechanical'));
       } else if (activeFilter === 'electrical') {
-        filtered = completed.filter((r) => r.faultCategory?.toLowerCase().includes('electrical'));
+        filtered = completed.filter((r) => textValue(r.faultCategory)?.toLowerCase().includes('electrical'));
       }
 
       if (searchTerm.trim()) {
         const q = searchTerm.toLowerCase();
         filtered = filtered.filter(
           (r) =>
-            r.id.toLowerCase().includes(q) ||
-            r.machineId.toLowerCase().includes(q) ||
-            r.line.toLowerCase().includes(q) ||
-            r.actionTaken?.toLowerCase().includes(q) ||
-            (r.attendedBy && r.attendedBy.toLowerCase().includes(q))
+            textValue(r.id).toLowerCase().includes(q) ||
+            textValue(r.machineId).toLowerCase().includes(q) ||
+            textValue(r.line).toLowerCase().includes(q) ||
+            textValue(r.actionTaken)?.toLowerCase().includes(q) ||
+            (r.attendedBy && textValue(r.attendedBy).toLowerCase().includes(q))
         );
       }
 
@@ -567,12 +569,12 @@ export function WidgetDrilldownDrawer({
         const q = searchTerm.toLowerCase();
         filteredTasks = filteredTasks.filter(
           (t) =>
-            t.id.toLowerCase().includes(q) ||
-            t.machineId.toLowerCase().includes(q) ||
-            t.line.toLowerCase().includes(q) ||
-            t.taskTitle.toLowerCase().includes(q) ||
-            t.technician.toLowerCase().includes(q) ||
-            t.actionTaken.toLowerCase().includes(q)
+            textValue(t.id).toLowerCase().includes(q) ||
+            textValue(t.machineId).toLowerCase().includes(q) ||
+            textValue(t.line).toLowerCase().includes(q) ||
+            textValue(t.taskTitle).toLowerCase().includes(q) ||
+            textValue(t.technician).toLowerCase().includes(q) ||
+            textValue(t.actionTaken).toLowerCase().includes(q)
         );
       }
 
@@ -656,11 +658,11 @@ export function WidgetDrilldownDrawer({
         const q = searchTerm.toLowerCase();
         filtered = filtered.filter(
           (m) =>
-            m.id.toLowerCase().includes(q) ||
-            m.model?.toLowerCase().includes(q) ||
-            m.brand?.toLowerCase().includes(q) ||
-            m.currentLine?.toLowerCase().includes(q) ||
-            m.stationNo?.toLowerCase().includes(q)
+            textValue(m.id).toLowerCase().includes(q) ||
+            textValue(m.model)?.toLowerCase().includes(q) ||
+            textValue(m.brand)?.toLowerCase().includes(q) ||
+            textValue(m.currentLine)?.toLowerCase().includes(q) ||
+            textValue(m.stationNo)?.toLowerCase().includes(q)
         );
       }
 
@@ -785,7 +787,7 @@ export function WidgetDrilldownDrawer({
     if (type === 'fault_category') {
       const fault = meta?.fault || 'Mechanical';
       const faultRepairs = repairs.filter((r) =>
-        r.faultCategory?.toLowerCase().includes(fault.toLowerCase())
+        textValue(r.faultCategory)?.toLowerCase().includes(fault.toLowerCase())
       );
       const totalDowntime = faultRepairs.reduce((s, r) => s + (r.downtimeMinutes || 0), 0);
       const criticalCount = faultRepairs.filter((r) => r.urgency === 'CRITICAL').length;
@@ -917,7 +919,7 @@ export function WidgetDrilldownDrawer({
         liveRoster.find(
           (m) =>
             m.toolbox?.kitCode === kitCode ||
-            (meta?.assignedTo && m.name.toLowerCase() === meta.assignedTo.toLowerCase())
+            (meta?.assignedTo && textValue(m.name).toLowerCase() === textValue(meta.assignedTo).toLowerCase())
         ) || liveRoster[0];
 
       if (!mechanic || !mechanic.toolbox) {
@@ -1005,9 +1007,9 @@ export function WidgetDrilldownDrawer({
         const q = searchTerm.toLowerCase();
         rows = rows.filter(
           (r) =>
-            r.col1.toLowerCase().includes(q) ||
-            r.col2.toLowerCase().includes(q) ||
-            r.col3.toLowerCase().includes(q)
+            textValue(r.col1).toLowerCase().includes(q) ||
+            textValue(r.col2).toLowerCase().includes(q) ||
+            textValue(r.col3).toLowerCase().includes(q)
         );
       }
 
@@ -1049,10 +1051,10 @@ export function WidgetDrilldownDrawer({
         const q = searchTerm.toLowerCase();
         filtered = filtered.filter(
           (m) =>
-            m.name.toLowerCase().includes(q) ||
-            m.role.toLowerCase().includes(q) ||
-            m.assignedLines.toLowerCase().includes(q) ||
-            m.specialty.toLowerCase().includes(q)
+            textValue(m.name).toLowerCase().includes(q) ||
+            textValue(m.role).toLowerCase().includes(q) ||
+            textValue(m.assignedLines).toLowerCase().includes(q) ||
+            textValue(m.specialty).toLowerCase().includes(q)
         );
       }
 

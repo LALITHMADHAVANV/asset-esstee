@@ -1,5 +1,7 @@
 'use client';
 
+import { textValue } from '@/lib/textValue';
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import {
@@ -85,7 +87,7 @@ export function SeniorMechanicDashboard({
   const router = useRouter();
   const { user, role } = useAuth();
   const { showToast } = useToast();
-  const companySlug = (user?.companySlug || 'esstee').toLowerCase();
+  const companySlug = textValue((user?.companySlug || 'esstee')).toLowerCase();
 
   const isElectrician = role === 'SENIOR_ELECTRICIAN';
   const tradeFilter = isElectrician ? 'ELECTRICIAN' : 'MECHANIC';
@@ -168,10 +170,10 @@ export function SeniorMechanicDashboard({
 
   // Floor technicians available for task dispatch (supervisor assigns floor technicians, NEVER himself)
   const assignableTechnicians = useMemo(() => {
-    const currentName = (user?.name || '').trim().toLowerCase();
+    const currentName = textValue((user?.name || '')).trim().toLowerCase();
     return activeStaffRoster.filter((m) => {
-      const lower = m.role.toLowerCase();
-      const mName = m.name.trim().toLowerCase();
+      const lower = textValue(m.role).toLowerCase();
+      const mName = textValue(m.name).trim().toLowerCase();
       const isSelf = currentName && (mName === currentName || mName.includes(currentName) || currentName.includes(mName));
       const isSeniorOrAdmin =
         lower.includes('senior') ||
@@ -246,11 +248,11 @@ export function SeniorMechanicDashboard({
       // Search
       const searchMatch =
         ticketSearch === '' ||
-        r.id.toLowerCase().includes(ticketSearch.toLowerCase()) ||
-        r.machineId.toLowerCase().includes(ticketSearch.toLowerCase()) ||
-        r.line.toLowerCase().includes(ticketSearch.toLowerCase()) ||
-        (r.attendedBy && r.attendedBy.toLowerCase().includes(ticketSearch.toLowerCase())) ||
-        r.faultCategory.toLowerCase().includes(ticketSearch.toLowerCase());
+        textValue(r.id).toLowerCase().includes(ticketSearch.toLowerCase()) ||
+        textValue(r.machineId).toLowerCase().includes(ticketSearch.toLowerCase()) ||
+        textValue(r.line).toLowerCase().includes(ticketSearch.toLowerCase()) ||
+        (r.attendedBy && textValue(r.attendedBy).toLowerCase().includes(ticketSearch.toLowerCase())) ||
+        textValue(r.faultCategory).toLowerCase().includes(ticketSearch.toLowerCase());
 
       if (!searchMatch) return false;
 

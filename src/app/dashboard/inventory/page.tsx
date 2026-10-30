@@ -1,5 +1,7 @@
 'use client';
 
+import { textValue } from '@/lib/textValue';
+
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import {
@@ -184,7 +186,7 @@ export default function InventoryPage() {
   const visibleMechanics = useMemo(() => {
     if (currentRole === 'SENIOR_ELECTRICIAN') {
       return activeStaffRoster.filter(
-        (m) => m.trade === 'ELECTRICIAN' && !m.role.toLowerCase().includes('senior')
+        (m) => m.trade === 'ELECTRICIAN' && !textValue(m.role).toLowerCase().includes('senior')
       );
     }
     if (currentRole === 'SENIOR_MECHANIC') {
@@ -215,9 +217,9 @@ export default function InventoryPage() {
     const cleanName = (mechIdentifier || '').toLowerCase();
     const found = activeStaffRoster.find(
       (m) =>
-        m.name.toLowerCase().includes(cleanName) ||
-        cleanName.includes(m.name.toLowerCase()) ||
-        m.id.toLowerCase() === cleanName
+        textValue(m.name).toLowerCase().includes(cleanName) ||
+        cleanName.includes(textValue(m.name).toLowerCase()) ||
+        textValue(m.id).toLowerCase() === cleanName
     );
     const mech = found || activeStaffRoster[0];
     if (mech) {
@@ -318,8 +320,8 @@ export default function InventoryPage() {
   const displayedRequisitions = useMemo(() => {
     if (role === 'SENIOR_ELECTRICIAN') {
       return requisitions.filter((r) => {
-        const reqName = (r.requestedBy || '').trim().toLowerCase();
-        const reqRole = (r.requestedByRole || '').trim().toLowerCase();
+        const reqName = textValue((r.requestedBy || '')).trim().toLowerCase();
+        const reqRole = textValue((r.requestedByRole || '')).trim().toLowerCase();
         // Matches junior electricians (Rajesh G., Karthik M., or non-senior electrician)
         return (
           reqName.includes('rajesh') ||
@@ -331,9 +333,9 @@ export default function InventoryPage() {
     }
 
     if (role === 'ELECTRICIAN') {
-      const currentUserName = (user?.name || '').trim().toLowerCase();
+      const currentUserName = textValue((user?.name || '')).trim().toLowerCase();
       return requisitions.filter((r) => {
-        const reqName = (r.requestedBy || '').trim().toLowerCase();
+        const reqName = textValue((r.requestedBy || '')).trim().toLowerCase();
         if (currentUserName) {
           const userParts = currentUserName.split(' ').filter((p) => p.length > 2);
           const hasMatch = userParts.some((p) => reqName.includes(p));
@@ -346,9 +348,9 @@ export default function InventoryPage() {
     }
 
     if (role === 'MECHANIC' || role === 'SENIOR_MECHANIC') {
-      const currentUserName = (user?.name || '').trim().toLowerCase();
+      const currentUserName = textValue((user?.name || '')).trim().toLowerCase();
       return requisitions.filter((r) => {
-        const reqName = (r.requestedBy || '').trim().toLowerCase();
+        const reqName = textValue((r.requestedBy || '')).trim().toLowerCase();
         if (currentUserName) {
           const userParts = currentUserName.split(' ').filter((p) => p.length > 2);
           const hasMatch = userParts.some((p) => reqName.includes(p));
@@ -392,10 +394,10 @@ export default function InventoryPage() {
 
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
-        const matchName = p.name.toLowerCase().includes(q);
-        const matchSku = p.sku.toLowerCase().includes(q);
-        const matchCompat = p.compat.toLowerCase().includes(q);
-        const matchType = (p.machineType || '').toLowerCase().includes(q);
+        const matchName = textValue(p.name).toLowerCase().includes(q);
+        const matchSku = textValue(p.sku).toLowerCase().includes(q);
+        const matchCompat = textValue(p.compat).toLowerCase().includes(q);
+        const matchType = textValue((p.machineType || '')).toLowerCase().includes(q);
         if (!matchName && !matchSku && !matchCompat && !matchType) return false;
       }
       return true;

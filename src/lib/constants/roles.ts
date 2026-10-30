@@ -5,7 +5,7 @@ import { UserRole } from '@/types/cmms';
  * into a standardized UserRole constant.
  */
 export function normalizeRole(role?: string | null): UserRole {
-  if (!role) return 'MECHANIC';
+  if (typeof role !== 'string' || !role) return 'MECHANIC';
   const clean = role.trim().toUpperCase().replace(/[\s-]+/g, '_');
 
   if (clean.includes('CEO') || clean.includes('EXECUTIVE') || clean.includes('DIRECTOR')) {

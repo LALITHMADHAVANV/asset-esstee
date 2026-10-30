@@ -1,5 +1,7 @@
 'use client';
 
+import { textValue } from '@/lib/textValue';
+
 import React, { useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
@@ -24,7 +26,7 @@ export function RouteGuard({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    const userSlug = (user.companySlug || 'esstee').toLowerCase();
+    const userSlug = textValue((user.companySlug || 'esstee')).toLowerCase();
     const browserPath = typeof window !== 'undefined' ? window.location.pathname : pathname;
     const browserSegments = browserPath.split('/').filter(Boolean);
 

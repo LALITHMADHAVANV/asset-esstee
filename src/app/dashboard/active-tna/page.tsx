@@ -1,5 +1,7 @@
 'use client';
 
+import { textValue } from '@/lib/textValue';
+
 import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import {
@@ -127,7 +129,7 @@ export default function ActiveTnaPage() {
     repairs
       .filter((r) => r.status !== 'COMPLETED')
       .forEach((r) => {
-        const machine = machines.find((m) => m.id.toLowerCase() === (r.machineId || '').toLowerCase());
+        const machine = machines.find((m) => textValue(m.id).toLowerCase() === textValue((r.machineId || '')).toLowerCase());
         const repDate = new Date(r.reportedAt || (r as any).createdAt || now).getTime();
         const elapsedMinutes = Math.max(1, Math.round((now - repDate) / 60000));
 
@@ -162,7 +164,7 @@ export default function ActiveTnaPage() {
     ppmSchedules
       .filter((p) => p.status !== 'COMPLETED')
       .forEach((p) => {
-        const machine = machines.find((m) => m.id.toLowerCase() === (p.machineId || '').toLowerCase());
+        const machine = machines.find((m) => textValue(m.id).toLowerCase() === textValue((p.machineId || '')).toLowerCase());
         const dueObj = p.nextDue ? new Date(p.nextDue) : new Date();
         const elapsedMinutes = Math.max(1, Math.round((now - dueObj.getTime()) / 60000));
 
@@ -253,10 +255,10 @@ export default function ActiveTnaPage() {
       // 6. Technician filter
       if (selectedPerson !== 'ALL') {
         if (selectedPerson === 'MY') {
-          if (work.assignedTo.toLowerCase() !== (user?.name || '').toLowerCase()) {
+          if (textValue(work.assignedTo).toLowerCase() !== textValue((user?.name || '')).toLowerCase()) {
             return false;
           }
-        } else if (work.assignedTo.toLowerCase() !== selectedPerson.toLowerCase()) {
+        } else if (textValue(work.assignedTo).toLowerCase() !== selectedPerson.toLowerCase()) {
           return false;
         }
       }
@@ -265,14 +267,14 @@ export default function ActiveTnaPage() {
       if (searchQuery.trim()) {
         const query = searchQuery.toLowerCase();
         const match =
-          work.ticketId.toLowerCase().includes(query) ||
-          work.machineId.toLowerCase().includes(query) ||
-          work.machineName.toLowerCase().includes(query) ||
-          work.line.toLowerCase().includes(query) ||
-          work.stationNo.toLowerCase().includes(query) ||
-          work.assignedTo.toLowerCase().includes(query) ||
-          work.faultCategory.toLowerCase().includes(query) ||
-          work.faultDetails.toLowerCase().includes(query);
+          textValue(work.ticketId).toLowerCase().includes(query) ||
+          textValue(work.machineId).toLowerCase().includes(query) ||
+          textValue(work.machineName).toLowerCase().includes(query) ||
+          textValue(work.line).toLowerCase().includes(query) ||
+          textValue(work.stationNo).toLowerCase().includes(query) ||
+          textValue(work.assignedTo).toLowerCase().includes(query) ||
+          textValue(work.faultCategory).toLowerCase().includes(query) ||
+          textValue(work.faultDetails).toLowerCase().includes(query);
         if (!match) return false;
       }
 

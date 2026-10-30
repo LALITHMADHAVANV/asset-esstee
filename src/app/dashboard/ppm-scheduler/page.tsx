@@ -1,5 +1,7 @@
 'use client';
 
+import { textValue } from '@/lib/textValue';
+
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   CalendarCheck,
@@ -119,7 +121,7 @@ export default function PPMSchedulerPage() {
       .then((data) => {
         if (data.users && Array.isArray(data.users)) {
           const techs = data.users.filter((u: any) =>
-            ['MECHANIC', 'ELECTRICIAN', 'SENIOR_MECHANIC', 'SENIOR_ELECTRICIAN'].includes((u.role || '').toUpperCase())
+            ['MECHANIC', 'ELECTRICIAN', 'SENIOR_MECHANIC', 'SENIOR_ELECTRICIAN'].includes(textValue((u.role || '')).toUpperCase())
           );
           setTechUsers(techs);
         }
@@ -147,9 +149,9 @@ export default function PPMSchedulerPage() {
   // Filter PPM schedules based on selected unit
   const scopedPpm = useMemo(() => {
     if (isAdmin && selectedUnit === 'ALL') return ppmSchedules;
-    const allowedMachineIds = new Set(scopedMachines.map((m) => m.id.toLowerCase()));
+    const allowedMachineIds = new Set(scopedMachines.map((m) => textValue(m.id).toLowerCase()));
     return ppmSchedules.filter((p) => {
-      if (p.machineId && allowedMachineIds.has(p.machineId.toLowerCase())) return true;
+      if (p.machineId && allowedMachineIds.has(textValue(p.machineId).toLowerCase())) return true;
       if (p.unit && matchesUnit(p.unit, effectiveUnit)) return true;
       return false;
     });
@@ -174,7 +176,7 @@ export default function PPMSchedulerPage() {
     return scopedMachines.map((machine) => {
       // Find active (non-completed) or most recent PPM for this machine
       const machinePpms = scopedPpm.filter(
-        (p) => p.machineId.toLowerCase() === machine.id.toLowerCase()
+        (p) => textValue(p.machineId).toLowerCase() === textValue(machine.id).toLowerCase()
       );
 
       const activePpm =
@@ -236,12 +238,12 @@ export default function PPMSchedulerPage() {
       // Search filter
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim();
-        const matchesId = item.machine.id.toLowerCase().includes(q);
-        const matchesBrand = (item.machine.brand || '').toLowerCase().includes(q);
-        const matchesModel = (item.machine.model || '').toLowerCase().includes(q);
-        const matchesType = (item.machine.typeName || item.machine.type || '').toLowerCase().includes(q);
-        const matchesTech = (item.activePpm?.assignedTo || '').toLowerCase().includes(q);
-        const matchesTask = (item.activePpm?.task || '').toLowerCase().includes(q);
+        const matchesId = textValue(item.machine.id).toLowerCase().includes(q);
+        const matchesBrand = textValue((item.machine.brand || '')).toLowerCase().includes(q);
+        const matchesModel = textValue((item.machine.model || '')).toLowerCase().includes(q);
+        const matchesType = textValue((item.machine.typeName || item.machine.type || '')).toLowerCase().includes(q);
+        const matchesTech = textValue((item.activePpm?.assignedTo || '')).toLowerCase().includes(q);
+        const matchesTask = textValue((item.activePpm?.task || '')).toLowerCase().includes(q);
 
         if (!matchesId && !matchesBrand && !matchesModel && !matchesType && !matchesTech && !matchesTask) {
           return false;
@@ -284,7 +286,7 @@ export default function PPMSchedulerPage() {
       setNextDueDate(existingPpm.nextDue || toDateKey(new Date()));
       setAssignedTechnician(existingPpm.assignedTo || '');
     } else {
-      const isOverlock = (machine.type || '').toUpperCase().includes('OVERLOCK');
+      const isOverlock = textValue((machine.type || '')).toUpperCase().includes('OVERLOCK');
       const defaultTask = isOverlock
         ? 'Overlock Looper Clearance & Oil Circulator Overhaul'
         : `${machine.brand || 'Machinery'} Routine Preventive Maintenance & Calibration`;

@@ -1,5 +1,7 @@
 'use client';
 
+import { textValue } from '@/lib/textValue';
+
 import { assetScanUrl } from '@/lib/scanUrl';
 
 import React, { useState, useMemo, useEffect } from 'react';
@@ -151,12 +153,12 @@ export function BulkQrPrintModal({
 
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
-        const idMatch = a.id?.toLowerCase().includes(q);
-        const mcNoMatch = a.mcNo?.toLowerCase().includes(q);
-        const serialMatch = a.serialNo?.toLowerCase().includes(q) || a.serialNumber?.toLowerCase().includes(q);
-        const nameMatch = a.name?.toLowerCase().includes(q);
-        const brandMatch = a.brand?.toLowerCase().includes(q);
-        const modelMatch = a.model?.toLowerCase().includes(q);
+        const idMatch = textValue(a.id)?.toLowerCase().includes(q);
+        const mcNoMatch = textValue(a.mcNo)?.toLowerCase().includes(q);
+        const serialMatch = textValue(a.serialNo)?.toLowerCase().includes(q) || textValue(a.serialNumber)?.toLowerCase().includes(q);
+        const nameMatch = textValue(a.name)?.toLowerCase().includes(q);
+        const brandMatch = textValue(a.brand)?.toLowerCase().includes(q);
+        const modelMatch = textValue(a.model)?.toLowerCase().includes(q);
         if (!idMatch && !mcNoMatch && !serialMatch && !nameMatch && !brandMatch && !modelMatch) return false;
       }
 

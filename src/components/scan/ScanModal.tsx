@@ -1,5 +1,7 @@
 'use client';
 
+import { textValue } from '@/lib/textValue';
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { QrCode, X, AlertTriangle, ArrowRightLeft, Radio, Camera, UserCheck } from 'lucide-react';
 import { Machine, FloorLine, RepairUrgency } from '@/types/cmms';
@@ -51,7 +53,7 @@ export function ScanModal({
       .then((data) => {
         if (data.users && Array.isArray(data.users)) {
           const techs = data.users.filter((u: any) =>
-            ['MECHANIC', 'ELECTRICIAN', 'SENIOR_MECHANIC', 'SENIOR_ELECTRICIAN'].includes((u.role || '').toUpperCase())
+            ['MECHANIC', 'ELECTRICIAN', 'SENIOR_MECHANIC', 'SENIOR_ELECTRICIAN'].includes(textValue((u.role || '')).toUpperCase())
           );
           setRegisteredTechs(techs);
         }

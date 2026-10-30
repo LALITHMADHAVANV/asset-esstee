@@ -1,5 +1,7 @@
 'use client';
 
+import { textValue } from '@/lib/textValue';
+
 import React, { useState, useEffect, useMemo, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import {
@@ -281,12 +283,12 @@ function StoreInboxContent() {
 
       // Mechanic filter
       if (selectedMechanicFilter !== 'ALL') {
-        if (r.requestedBy?.toLowerCase() !== selectedMechanicFilter.toLowerCase()) return false;
+        if (textValue(r.requestedBy)?.toLowerCase() !== selectedMechanicFilter.toLowerCase()) return false;
       }
 
       // Line filter
       if (lineFilter !== 'ALL') {
-        if (!r.targetLine?.toLowerCase().includes(lineFilter.toLowerCase())) return false;
+        if (!textValue(r.targetLine)?.toLowerCase().includes(lineFilter.toLowerCase())) return false;
       }
 
       // Search query
@@ -619,11 +621,11 @@ function StoreInboxContent() {
 
           {requestingMechanics.map((mechName) => {
             const count = requisitions.filter(
-              (r) => r.requestedBy?.toLowerCase() === mechName.toLowerCase()
+              (r) => textValue(r.requestedBy)?.toLowerCase() === mechName.toLowerCase()
             ).length;
             const pendingMechCount = requisitions.filter(
               (r) =>
-                r.requestedBy?.toLowerCase() === mechName.toLowerCase() &&
+                textValue(r.requestedBy)?.toLowerCase() === mechName.toLowerCase() &&
                 r.status !== 'FULFILLED' &&
                 r.status !== 'REJECTED'
             ).length;

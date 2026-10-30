@@ -1,5 +1,7 @@
 'use client';
 
+import { textValue } from '@/lib/textValue';
+
 import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import {
@@ -532,15 +534,15 @@ export default function FloorTrackerPage() {
       // Search query
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
-        const idMatch = m.id.toLowerCase().includes(q);
-        const nameMatch = m.name?.toLowerCase().includes(q) || false;
-        const brandMatch = m.brand.toLowerCase().includes(q);
-        const modelMatch = m.model.toLowerCase().includes(q);
-        const stationMatch = m.stationNo.toLowerCase().includes(q);
+        const idMatch = textValue(m.id).toLowerCase().includes(q);
+        const nameMatch = textValue(m.name)?.toLowerCase().includes(q) || false;
+        const brandMatch = textValue(m.brand).toLowerCase().includes(q);
+        const modelMatch = textValue(m.model).toLowerCase().includes(q);
+        const stationMatch = textValue(m.stationNo).toLowerCase().includes(q);
         const deptMatch = dept.toLowerCase().includes(q);
-        const lineMatch = m.currentLine.toLowerCase().includes(q);
-        const specsMatch = m.specs?.toLowerCase().includes(q) || false;
-        const opMatch = m.operator?.toLowerCase().includes(q) || false;
+        const lineMatch = textValue(m.currentLine).toLowerCase().includes(q);
+        const specsMatch = textValue(m.specs)?.toLowerCase().includes(q) || false;
+        const opMatch = textValue(m.operator)?.toLowerCase().includes(q) || false;
         return (
           idMatch ||
           nameMatch ||

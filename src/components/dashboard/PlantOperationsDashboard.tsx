@@ -1,5 +1,7 @@
 'use client';
 
+import { textValue } from '@/lib/textValue';
+
 import React, { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import {
@@ -139,7 +141,7 @@ export function PlantOperationsDashboard({
   const router = useRouter();
   const { user, role } = useAuth();
   const { showToast } = useToast();
-  const companySlug = (user?.companySlug || 'esstee').toLowerCase();
+  const companySlug = textValue((user?.companySlug || 'esstee')).toLowerCase();
   const [isLogBreakdownModalOpen, setIsLogBreakdownModalOpen] = useState(false);
 
   const handleQuickCompletePPM = async (ppmId: string, machineId: string) => {
@@ -248,20 +250,20 @@ export function PlantOperationsDashboard({
 
     // Breakdown fault categories
     const mechanicalFaults = repairs.filter((r) =>
-      r.faultCategory?.toLowerCase().includes('needle') ||
-      r.faultCategory?.toLowerCase().includes('hook') ||
-      r.faultCategory?.toLowerCase().includes('feed') ||
-      r.faultCategory?.toLowerCase().includes('mechanical') ||
-      r.faultCategory?.toLowerCase().includes('tension') ||
-      r.faultCategory?.toLowerCase().includes('skip') ||
-      r.faultCategory?.toLowerCase().includes('break')
+      textValue(r.faultCategory)?.toLowerCase().includes('needle') ||
+      textValue(r.faultCategory)?.toLowerCase().includes('hook') ||
+      textValue(r.faultCategory)?.toLowerCase().includes('feed') ||
+      textValue(r.faultCategory)?.toLowerCase().includes('mechanical') ||
+      textValue(r.faultCategory)?.toLowerCase().includes('tension') ||
+      textValue(r.faultCategory)?.toLowerCase().includes('skip') ||
+      textValue(r.faultCategory)?.toLowerCase().includes('break')
     ).length;
     const electricalFaults = repairs.filter((r) =>
-      r.faultCategory?.toLowerCase().includes('motor') ||
-      r.faultCategory?.toLowerCase().includes('electric') ||
-      r.faultCategory?.toLowerCase().includes('servo') ||
-      r.faultCategory?.toLowerCase().includes('sensor') ||
-      r.faultCategory?.toLowerCase().includes('pedal')
+      textValue(r.faultCategory)?.toLowerCase().includes('motor') ||
+      textValue(r.faultCategory)?.toLowerCase().includes('electric') ||
+      textValue(r.faultCategory)?.toLowerCase().includes('servo') ||
+      textValue(r.faultCategory)?.toLowerCase().includes('sensor') ||
+      textValue(r.faultCategory)?.toLowerCase().includes('pedal')
     ).length;
     const otherFaults = Math.max(0, repairs.length - mechanicalFaults - electricalFaults);
 
@@ -292,7 +294,7 @@ export function PlantOperationsDashboard({
     { key: 'ppm_due', label: 'PPM Due', icon: <Calendar className="w-3.5 h-3.5" />, count: metrics.ppmDueSoon + metrics.ppmPending, color: 'text-indigo-700', bgColor: 'bg-indigo-50', borderColor: 'border-indigo-200' },
     { key: 'ppm_overdue', label: 'PPM Overdue', icon: <AlertTriangle className="w-3.5 h-3.5" />, count: metrics.ppmOverdue, color: 'text-rose-700', bgColor: 'bg-rose-50', borderColor: 'border-rose-200' },
     { key: 'awaiting_parts', label: 'Awaiting Spares', icon: <Package className="w-3.5 h-3.5" />, count: metrics.pendingReqs, color: 'text-purple-700', bgColor: 'bg-purple-50', borderColor: 'border-purple-200' },
-    { key: 'qa_signoff', label: 'QC Verification', icon: <CheckCircle2 className="w-3.5 h-3.5" />, count: repairs.filter((r) => r.status === 'COMPLETED' && r.actionTaken?.toLowerCase().includes('qc')).length, color: 'text-teal-700', bgColor: 'bg-teal-50', borderColor: 'border-teal-200' },
+    { key: 'qa_signoff', label: 'QC Verification', icon: <CheckCircle2 className="w-3.5 h-3.5" />, count: repairs.filter((r) => r.status === 'COMPLETED' && textValue(r.actionTaken)?.toLowerCase().includes('qc')).length, color: 'text-teal-700', bgColor: 'bg-teal-50', borderColor: 'border-teal-200' },
     { key: 'resolved', label: 'Resolved & Closed', icon: <Check className="w-3.5 h-3.5" />, count: metrics.completedTickets, color: 'text-emerald-700', bgColor: 'bg-emerald-50', borderColor: 'border-emerald-200' },
   ], [metrics]);
 
@@ -430,9 +432,9 @@ export function PlantOperationsDashboard({
         m.category === 'TABLE' ||
         (m.category === 'FURNITURE' &&
           (m.type?.includes('TABLE') ||
-            m.name?.toLowerCase().includes('table') ||
-            m.model?.toLowerCase().includes('desk') ||
-            m.model?.toLowerCase().includes('table')))
+            textValue(m.name)?.toLowerCase().includes('table') ||
+            textValue(m.model)?.toLowerCase().includes('desk') ||
+            textValue(m.model)?.toLowerCase().includes('table')))
     );
     const tableCost = tableMachines.reduce((sum, m) => sum + (m.cost || 0), 0);
 
@@ -443,9 +445,9 @@ export function PlantOperationsDashboard({
         (m.category === 'FURNITURE' &&
           !(
             m.type?.includes('TABLE') ||
-            m.name?.toLowerCase().includes('table') ||
-            m.model?.toLowerCase().includes('desk') ||
-            m.model?.toLowerCase().includes('table')
+            textValue(m.name)?.toLowerCase().includes('table') ||
+            textValue(m.model)?.toLowerCase().includes('desk') ||
+            textValue(m.model)?.toLowerCase().includes('table')
           ))
     );
     const chairCost = chairMachines.reduce((sum, m) => sum + (m.cost || 0), 0);
@@ -604,32 +606,32 @@ export function PlantOperationsDashboard({
 
     const looperCount = repairs.filter(
       (r) =>
-        r.faultCategory?.toLowerCase().includes('needle') ||
-        r.faultCategory?.toLowerCase().includes('looper') ||
-        r.faultCategory?.toLowerCase().includes('timing') ||
-        r.faultCategory?.toLowerCase().includes('stitch')
+        textValue(r.faultCategory)?.toLowerCase().includes('needle') ||
+        textValue(r.faultCategory)?.toLowerCase().includes('looper') ||
+        textValue(r.faultCategory)?.toLowerCase().includes('timing') ||
+        textValue(r.faultCategory)?.toLowerCase().includes('stitch')
     ).length;
 
     const motorCount = repairs.filter(
       (r) =>
-        r.faultCategory?.toLowerCase().includes('motor') ||
-        r.faultCategory?.toLowerCase().includes('drive') ||
-        r.faultCategory?.toLowerCase().includes('electrical') ||
-        r.faultCategory?.toLowerCase().includes('electronic')
+        textValue(r.faultCategory)?.toLowerCase().includes('motor') ||
+        textValue(r.faultCategory)?.toLowerCase().includes('drive') ||
+        textValue(r.faultCategory)?.toLowerCase().includes('electrical') ||
+        textValue(r.faultCategory)?.toLowerCase().includes('electronic')
     ).length;
 
     const pneumaticCount = repairs.filter(
       (r) =>
-        r.faultCategory?.toLowerCase().includes('pneumatic') ||
-        r.faultCategory?.toLowerCase().includes('air') ||
-        r.faultCategory?.toLowerCase().includes('pressure')
+        textValue(r.faultCategory)?.toLowerCase().includes('pneumatic') ||
+        textValue(r.faultCategory)?.toLowerCase().includes('air') ||
+        textValue(r.faultCategory)?.toLowerCase().includes('pressure')
     ).length;
 
     const operatorCount = repairs.filter(
       (r) =>
-        r.faultCategory?.toLowerCase().includes('operator') ||
-        r.faultCategory?.toLowerCase().includes('jam') ||
-        r.faultCategory?.toLowerCase().includes('fabric')
+        textValue(r.faultCategory)?.toLowerCase().includes('operator') ||
+        textValue(r.faultCategory)?.toLowerCase().includes('jam') ||
+        textValue(r.faultCategory)?.toLowerCase().includes('fabric')
     ).length;
 
     const sumIdentified = looperCount + motorCount + pneumaticCount + operatorCount || 1;

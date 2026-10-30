@@ -1,5 +1,7 @@
 'use client';
 
+import { textValue } from '@/lib/textValue';
+
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   Trophy,
@@ -132,7 +134,7 @@ export default function UserKpiPage() {
 
     // Seed preset mechanics roster
     FACTORY_MECHANICS_ROSTER.forEach((m) => {
-      staffPool.set(m.name.toLowerCase().trim(), {
+      staffPool.set(textValue(m.name).toLowerCase().trim(), {
         id: m.id,
         name: m.name,
         role: m.role,
@@ -149,7 +151,7 @@ export default function UserKpiPage() {
 
     // Add registered users
     techUsers.forEach((u) => {
-      const key = u.name.toLowerCase().trim();
+      const key = textValue(u.name).toLowerCase().trim();
       const isTech =
         u.role === 'MECHANIC' ||
         u.role === 'SENIOR_MECHANIC' ||
@@ -175,18 +177,18 @@ export default function UserKpiPage() {
 
     // Calculate score for each technician
     return Array.from(staffPool.values()).map((worker) => {
-      const wName = worker.name.toLowerCase().trim();
+      const wName = textValue(worker.name).toLowerCase().trim();
 
       // Matched repairs attended or assigned to this technician
       const matchedRepairs = repairs.filter((r) => {
-        const att = (r.attendedBy || '').toLowerCase();
-        const asg = ((r as any).assignedTo || '').toLowerCase();
+        const att = textValue((r.attendedBy || '')).toLowerCase();
+        const asg = textValue(((r as any).assignedTo || '')).toLowerCase();
         return att.includes(wName) || asg.includes(wName) || wName.includes(att) && att.length > 2;
       });
 
       // Matched PPM schedules
       const matchedPpm = ppmSchedules.filter((p) => {
-        const asg = (p.assignedTo || '').toLowerCase();
+        const asg = textValue((p.assignedTo || '')).toLowerCase();
         return asg.includes(wName) || wName.includes(asg) && asg.length > 2;
       });
 
@@ -299,10 +301,10 @@ export default function UserKpiPage() {
 
         if (searchQuery.trim()) {
           const q = searchQuery.toLowerCase().trim();
-          const matchesName = w.name.toLowerCase().includes(q);
-          const matchesRole = w.role.toLowerCase().includes(q);
-          const matchesId = w.id.toLowerCase().includes(q);
-          const matchesSpec = w.specialty.toLowerCase().includes(q);
+          const matchesName = textValue(w.name).toLowerCase().includes(q);
+          const matchesRole = textValue(w.role).toLowerCase().includes(q);
+          const matchesId = textValue(w.id).toLowerCase().includes(q);
+          const matchesSpec = textValue(w.specialty).toLowerCase().includes(q);
           if (!matchesName && !matchesRole && !matchesId && !matchesSpec) return false;
         }
 

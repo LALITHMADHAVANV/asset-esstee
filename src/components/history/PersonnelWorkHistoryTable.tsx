@@ -1,5 +1,7 @@
 'use client';
 
+import { textValue } from '@/lib/textValue';
+
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   Search,
@@ -112,7 +114,7 @@ export function PersonnelWorkHistoryTable() {
     const scopedMachines = !isAdmin
       ? machines.filter((m) => matchesUnit(m.unit, effectiveUnit))
       : machines;
-    const allowedMachineIds = new Set(scopedMachines.map((m) => m.id.toLowerCase()));
+    const allowedMachineIds = new Set(scopedMachines.map((m) => textValue(m.id).toLowerCase()));
 
     const machineMap = new Map<string, Machine>();
     scopedMachines.forEach((m) => machineMap.set(m.id, m));
@@ -121,7 +123,7 @@ export function PersonnelWorkHistoryTable() {
     const liveCompletedRows: PersonnelHistoryRow[] = repairs
       .filter((t) => {
         if (!isAdmin) {
-          const matchMach = t.machineId && allowedMachineIds.has(t.machineId.toLowerCase());
+          const matchMach = t.machineId && allowedMachineIds.has(textValue(t.machineId).toLowerCase());
           const matchUnit = t.unit && matchesUnit(t.unit, effectiveUnit);
           if (!matchMach && !matchUnit) return false;
         }
@@ -155,7 +157,7 @@ export function PersonnelWorkHistoryTable() {
             ? t.partsUsed.map((p) => `${p.name} x${p.quantity}`).join(', ')
             : 'Labor Only (0 Parts)';
 
-        const isPpm = t.faultCategory?.toLowerCase().includes('ppm') || t.reportedBy?.toLowerCase().includes('ppm');
+        const isPpm = textValue(t.faultCategory)?.toLowerCase().includes('ppm') || textValue(t.reportedBy)?.toLowerCase().includes('ppm');
 
         return {
           id: `LIVE-${t.id}`,
@@ -228,11 +230,11 @@ export function PersonnelWorkHistoryTable() {
 
     // For floor mechanics/electricians, show ONLY their own personal history
     if (isFloorTechnician) {
-      const userClean = (user?.name || '').toLowerCase().trim();
+      const userClean = textValue((user?.name || '')).toLowerCase().trim();
       const userFirst = userClean.split(' ')[0] || '';
 
       const myOnlyRows = combined.filter((r) => {
-        const pClean = (r.personName || '').toLowerCase().trim();
+        const pClean = textValue((r.personName || '')).toLowerCase().trim();
         return (
           pClean === userClean ||
           (userFirst.length > 2 && pClean.includes(userFirst)) ||
@@ -278,14 +280,14 @@ export function PersonnelWorkHistoryTable() {
     return allHistoryRows.filter((row) => {
       // 1. Person filter
       if (selectedPerson === 'MY') {
-        const pClean = row.personName.toLowerCase();
+        const pClean = textValue(row.personName).toLowerCase();
         const matchesMy =
           pClean === userClean ||
           (userFirst.length > 2 && pClean.includes(userFirst)) ||
           (pClean.split(' ')[0]?.length > 2 && userClean.includes(pClean.split(' ')[0]));
         if (!matchesMy) return false;
       } else if (selectedPerson !== 'ALL') {
-        if (row.personName.toLowerCase() !== selectedPerson.toLowerCase()) {
+        if (textValue(row.personName).toLowerCase() !== selectedPerson.toLowerCase()) {
           return false;
         }
       }
