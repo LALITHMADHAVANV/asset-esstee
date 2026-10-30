@@ -12,6 +12,7 @@ import {
 } from '@/types/cmms';
 import plantAssetsSeed from '@/data/plantAssetsSeed.json';
 import factorySparesSeed from '@/data/factorySparesSeed.json';
+import { hasAssetId } from '@/lib/assetIdentity';
 
 // Local storage keys for offline/immediate UI responsiveness
 const STORAGE_KEYS = {
@@ -190,14 +191,22 @@ export async function fetchMachinesOnce(force = false): Promise<void> {
 
 export function subscribeMachines(callback: (machines: Machine[]) => void): () => void {
   initLocalSeedData();
+  // Check both cached records and every later update, including optimistic writes.
+  const deliver = (records: Machine[]) => {
+    const valid = Array.isArray(records) ? records.filter(hasAssetId) : [];
+    if (Array.isArray(records) && valid.length !== records.length) {
+      console.warn(`Skipped ${records.length - valid.length} machine record(s) without a valid id. Correct the imported machines collection.`);
+    }
+    callback(valid);
+  };
   const current = getLocal<Machine[]>(STORAGE_KEYS.MACHINES, []);
-  callback(current);
-  listeners.machines.add(callback);
+  deliver(current);
+  listeners.machines.add(deliver);
 
   fetchMachinesOnce();
 
   return () => {
-    listeners.machines.delete(callback);
+    listeners.machines.delete(deliver);
   };
 }
 

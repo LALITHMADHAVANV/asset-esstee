@@ -1054,10 +1054,10 @@ export default function AllowancePage() {
 
     return combined.map((item) => {
       const machineRepairs = repairs.filter(
-        (r) => r.machineId?.trim().toLowerCase() === item.id.trim().toLowerCase()
+        (r) => typeof r.machineId === 'string' && r.machineId.trim().toLowerCase() === item.id.trim().toLowerCase()
       );
       const machinePpm = ppmList.filter(
-        (p) => p.machineId?.trim().toLowerCase() === item.id.trim().toLowerCase()
+        (p) => typeof p.machineId === 'string' && p.machineId.trim().toLowerCase() === item.id.trim().toLowerCase()
       );
       const allw = getAllowanceData(item.id, item.category, item.cost, machineRepairs, machinePpm);
 
