@@ -37,13 +37,52 @@ import { matchesUnit } from '@/lib/constants/units';
 function MobileScanContent() {
   const { user, isLoading } = useAuth();
   const pathname = usePathname();
-  const router = useRouter();
   const expected = (typeof window !== 'undefined' ? window.location.pathname : pathname).match(/^\/([^/]+)\/scan\//)?.[1]?.toLowerCase();
+
+  // If URL has company slug (e.g. /esstee/scan/MC-01), cache company tenant for public API queries
   useEffect(() => {
-    if (!isLoading && !user) router.replace('/login?next=' + encodeURIComponent(window.location.pathname + window.location.search));
-  }, [isLoading, user, router]);
-  if (isLoading || !user) return <p className="p-8">Opening secure asset scanner...</p>;
-  if (expected && expected !== user.companySlug) return <div className="p-8"><h1>Different company workspace</h1><p>Sign in with an account belonging to this asset’s company.</p><Link href="/login">Go to sign in</Link></div>;
+    if (expected && typeof window !== 'undefined') {
+      localStorage.setItem('cmms_active_company', expected);
+      localStorage.setItem('cmms_active_tenant', expected);
+    }
+  }, [expected]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-slate-50 text-slate-800 flex items-center justify-center p-4">
+        <div className="text-center space-y-3">
+          <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-sm font-semibold text-slate-600">Opening Asset Scanner...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Cross-tenant notice only if a logged-in user scans an asset from another company
+  if (user && expected && expected !== user.companySlug) {
+    return (
+      <div className="min-h-screen bg-slate-50 text-slate-800 flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-white rounded-3xl p-6 border border-slate-200 shadow-xl text-center space-y-4">
+          <div className="w-12 h-12 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center mx-auto border border-amber-200">
+            <AlertTriangle className="w-6 h-6" />
+          </div>
+          <h1 className="text-lg font-bold text-slate-900">Different Company Workspace</h1>
+          <p className="text-xs text-slate-500 leading-relaxed">
+            This asset tag belongs to <strong>{expected.toUpperCase()}</strong>, but you are signed in as <strong>{user.company || user.companySlug}</strong>.
+          </p>
+          <div className="pt-2 flex flex-col gap-2">
+            <Link
+              href="/login"
+              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-xl transition"
+            >
+              <span>Switch Account</span>
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return <AuthenticatedScanContent />;
 }
 
@@ -68,6 +107,7 @@ function AuthenticatedScanContent() {
   const [urgency, setUrgency] = useState<RepairUrgency>('CRITICAL');
   const [faultNotes, setFaultNotes] = useState('');
   const [selectedMechanic, setSelectedMechanic] = useState('');
+  const [reporterName, setReporterName] = useState('');
   const [registeredTechs, setRegisteredTechs] = useState<any[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -147,17 +187,21 @@ function AuthenticatedScanContent() {
     setIsSubmitting(true);
 
     try {
+      const reporterDisplay = user
+        ? `${user.name} (${user.title || 'Line'})`
+        : (reporterName.trim() ? `${reporterName.trim()} (Floor Operator)` : 'Floor Operator (QR Scan)');
+
       const ticketId = await createBreakdownTicket({
         machineId: machine.id,
         machineType: machine.typeName || machine.type,
         line: machine.currentLine,
         reportedAt: new Date().toISOString(),
-        reportedBy: `${user?.name || 'Floor Operator'} (${user?.title || 'Line'})`,
+        reportedBy: reporterDisplay,
         faultCategory: faultType,
         faultDetails: faultNotes.trim() || 'Logged via QR sticker scan on production floor.',
         urgency,
         attendedBy: selectedMechanic.trim() || null,
-        assignedBy: user?.name || 'Floor Dispatch',
+        assignedBy: user?.name || reporterName.trim() || 'Floor QR Dispatch',
       });
 
       showToast(
@@ -168,12 +212,15 @@ function AuthenticatedScanContent() {
       );
       setFaultNotes('');
       setSelectedMechanic('');
-      if (role === 'CEO') {
-        router.push('/dashboard/messages');
-      } else if (role === 'ADMIN' || role === 'ASSET_MANAGER') {
-        router.push('/dashboard/machines');
-      } else {
-        router.push('/dashboard/calendar');
+      setReporterName('');
+      if (user) {
+        if (role === 'CEO') {
+          router.push('/dashboard/messages');
+        } else if (role === 'ADMIN' || role === 'ASSET_MANAGER') {
+          router.push('/dashboard/machines');
+        } else {
+          router.push('/dashboard/calendar');
+        }
       }
     } catch (err) {
       showToast('Failed to dispatch breakdown ticket', 'error');
@@ -194,15 +241,17 @@ function AuthenticatedScanContent() {
         targetLine,
         targetStation || 'Station 01',
         relocateReason.trim() || 'Floor line balancing',
-        user?.name || 'Line Supervisor'
+        user?.name || reporterName.trim() || 'Floor Operator'
       );
 
       showToast(`Machine ${machine.id} relocated to ${targetLine} (${targetStation})`, 'success');
       setRelocateReason('');
-      if (role === 'ADMIN' || role === 'ASSET_MANAGER') {
-        router.push('/dashboard/floor-tracker');
-      } else {
-        router.push('/dashboard');
+      if (user) {
+        if (role === 'ADMIN' || role === 'ASSET_MANAGER') {
+          router.push('/dashboard/floor-tracker');
+        } else {
+          router.push('/dashboard');
+        }
       }
     } catch (err) {
       showToast('Failed to relocate machine', 'error');
@@ -235,11 +284,11 @@ function AuthenticatedScanContent() {
             Machine tag <code className="bg-slate-100 px-2 py-1 rounded text-amber-700 font-mono border border-slate-200">{machineId}</code> was not found in the factory registry.
           </p>
           <Link
-            href={role === 'CEO' ? '/dashboard' : '/dashboard/machines'}
+            href={user ? (role === 'CEO' ? '/dashboard' : '/dashboard/machines') : '/login'}
             className="inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-xl transition"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span>{role === 'CEO' ? 'Return to Executive Dashboard' : 'Return to Machine Registry'}</span>
+            <span>{user ? (role === 'CEO' ? 'Return to Executive Dashboard' : 'Return to Machine Registry') : 'Staff Sign In'}</span>
           </Link>
         </div>
       </div>
@@ -253,11 +302,11 @@ function AuthenticatedScanContent() {
       {/* Mobile Top Header with Prominent History Button */}
       <div className="max-w-lg w-full mx-auto flex items-center justify-between py-3 border-b border-slate-200 mb-4 gap-2">
         <Link
-          href={role === 'CEO' ? '/dashboard' : '/dashboard/machines'}
+          href={user ? (role === 'CEO' ? '/dashboard' : '/dashboard/machines') : '/login'}
           className="text-xs text-slate-600 hover:text-slate-900 flex items-center gap-1.5 transition font-semibold"
         >
           <ArrowLeft className="w-4 h-4 text-slate-500" />
-          <span>{role === 'CEO' ? 'Executive Dashboard' : 'Maintenance Dashboard'}</span>
+          <span>{user ? (role === 'CEO' ? 'Executive Dashboard' : 'Maintenance Dashboard') : 'Staff Sign In'}</span>
         </Link>
 
         {/* Top Actions: Edit Button + History Button + Live Status */}
@@ -580,6 +629,21 @@ function AuthenticatedScanContent() {
                   </label>
                 </div>
               </div>
+
+              {!user && (
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">
+                    Your Name / Operator ID (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={reporterName}
+                    onChange={(e) => setReporterName(e.target.value)}
+                    placeholder="e.g. Ramesh (Line 01 Operator)"
+                    className="w-full px-3.5 py-2.5 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-rose-500 text-slate-800 outline-none font-medium focus:bg-white transition"
+                  />
+                </div>
+              )}
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">

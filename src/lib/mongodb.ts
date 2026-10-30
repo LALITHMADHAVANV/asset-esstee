@@ -373,9 +373,6 @@ export async function resolveTenantFromRequest(req: Request): Promise<{
   // 1. Check for cryptographically signed session token
   const token = extractSessionToken(req);
   const sessionUser = token ? verifySessionToken(token) : null;
-  if (!sessionUser?.uid || !sessionUser.companySlug) {
-    throw new TenantError('Please sign in to continue.', 401, 'AUTH_REQUIRED');
-  }
 
   // 2. Extract any client-supplied company slug from header, cookie, or URL query
   let clientSuppliedSlug = '';
@@ -428,7 +425,15 @@ export async function resolveTenantFromRequest(req: Request): Promise<{
     return { db, company, sessionUser };
   }
 
-  throw new TenantError('Please sign in to continue.', 401, 'AUTH_REQUIRED');
+  // 4. For unauthenticated operations (e.g. public QR scanning, floor breakdown reporting):
+  const path = new URL(req.url).pathname;
+  if (req.method !== 'GET' && /\/api\/users/.test(path)) {
+    throw new TenantError('Administrator access required.', 403, 'FORBIDDEN');
+  }
+
+  const targetSlug = clientSuppliedSlug || 'esstee';
+  const { db, company } = await getCompanyDatabase(targetSlug);
+  return { db, company, sessionUser: null };
 }
 
 /**
