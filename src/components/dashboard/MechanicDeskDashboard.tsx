@@ -209,6 +209,7 @@ export function MechanicDeskDashboard({
   const [startSpareParts, setStartSpareParts] = useState<{ partId: string; qty: number }[]>([]);
   const [startShowAllSpares, setStartShowAllSpares] = useState(false);
   const [isStartingWork, setIsStartingWork] = useState(false);
+  const [stoppingTicketId, setStoppingTicketId] = useState<string | null>(null);
 
   const ticketToStartMachine = useMemo(() => {
     if (!ticketToStart) return null;
@@ -221,7 +222,21 @@ export function MechanicDeskDashboard({
   }, [ticketToStart, startShowAllSpares, parts, ticketToStartMachine]);
 
   // ─── Accept & Start Repair Ticket — opens Spare Selection first ───
-  const handleStartRepair = (ticket: RepairTicket) => {
+  const handleStartRepair = async (ticket: RepairTicket) => {
+    if (isStartingWork) return;
+    if (ticket.downtimeMinutes > 0) {
+      setIsStartingWork(true);
+      try {
+        await startRepairTicket(ticket.id, userName);
+        showToast(`Work resumed on ${ticket.id}. Previous work time retained.`, 'success');
+        onRefresh();
+      } catch {
+        showToast('Failed to resume work order', 'error');
+      } finally {
+        setIsStartingWork(false);
+      }
+      return;
+    }
     setTicketToStart(ticket);
     setStartSpareParts([{ partId: '', qty: 1 }]);
     setStartShowAllSpares(false);
@@ -276,21 +291,27 @@ export function MechanicDeskDashboard({
     }
   };
 
-  // ─── Stop / Pause kept for internal use (e.g., PPM stop) but hidden from UI ───
+  // Stop pauses work; completion remains a separate action with repair details.
   const handleStopRepair = async (ticket: RepairTicket) => {
+    if (stoppingTicketId) return;
+    setStoppingTicketId(ticket.id);
     try {
       await stopRepairTicket(ticket.id);
       showToast(`Work stopped on ${ticket.id}. Downtime recorded.`, 'info');
       setTimeout(() => { onRefresh(); }, 500);
     } catch {
       showToast('Failed to stop work order', 'error');
+    } finally {
+      setStoppingTicketId(null);
     }
   };
 
   const handleOpenResolve = (ticket: RepairTicket) => {
     setSelectedTicketToResolve(ticket);
-    const startMs = ticket.startedAt ? new Date(ticket.startedAt).getTime() : new Date(ticket.reportedAt).getTime();
-    const elapsed = Math.max(5, Math.round((Date.now() - startMs) / 60000));
+    const startMs = ticket.startedAt ? new Date(ticket.startedAt).getTime() : NaN;
+    const currentMinutes = ticket.status === 'IN_PROGRESS' && Number.isFinite(startMs)
+      ? Math.max(0, Math.round((Date.now() - startMs) / 60000)) : 0;
+    const elapsed = Math.max(1, (ticket.downtimeMinutes || 0) + currentMinutes);
     setDowntimeMinutes(elapsed);
     setActionTaken(ticket.actionTaken || '');
     setIssuesIdentified(ticket.issuesIdentified || ticket.faultDetails || '');
@@ -807,11 +828,13 @@ export function MechanicDeskDashboard({
               {!activeJob.startedAt || activeJob.status !== 'IN_PROGRESS' ? (
                 <div className="flex items-center gap-2">
                   <button
+                    type="button"
+                    disabled={isStartingWork}
                     onClick={() => handleStartRepair(activeJob)}
                     className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-lg shadow-indigo-600/25 transition cursor-pointer flex items-center gap-1.5"
                   >
                     <Package className="w-4 h-4" />
-                    <span>Select Spares &amp; Start Work</span>
+                    <span>{isStartingWork ? 'Starting...' : activeJob.downtimeMinutes > 0 ? 'Resume Work' : 'Select Spares & Start Work'}</span>
                   </button>
                   <button
                     onClick={() => handleOpenResolve(activeJob)}
@@ -824,7 +847,7 @@ export function MechanicDeskDashboard({
                 <div className="flex items-center gap-2">
                   {(() => {
                     const startMs = new Date(activeJob.startedAt).getTime();
-                    const totalSecs = Math.max(0, Math.floor((liveTimestamp - startMs) / 1000));
+                    const totalSecs = (activeJob.downtimeMinutes || 0) * 60 + Math.max(0, Math.floor((liveTimestamp - startMs) / 1000));
                     const hrs = Math.floor(totalSecs / 3600);
                     const mins = Math.floor((totalSecs % 3600) / 60);
                     const secs = totalSecs % 60;
@@ -842,6 +865,15 @@ export function MechanicDeskDashboard({
                       </div>
                     );
                   })()}
+                  <button
+                    type="button"
+                    disabled={stoppingTicketId !== null}
+                    onClick={() => handleStopRepair(activeJob)}
+                    className="px-4 py-2.5 bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold text-xs rounded-xl border border-amber-300 transition cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+                  >
+                    <Pause className="w-4 h-4" />
+                    <span>{stoppingTicketId === activeJob.id ? 'Stopping...' : 'Stop Work'}</span>
+                  </button>
                   <button
                     onClick={() => handleOpenResolve(activeJob)}
                     className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-lg shadow-emerald-600/25 transition cursor-pointer flex items-center gap-1.5"

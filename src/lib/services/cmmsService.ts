@@ -603,6 +603,10 @@ export async function startRepairTicket(
   partsUsedInputs: Array<{ partId: string; quantity: number }> = []
 ): Promise<void> {
   const currentRepairs = getLocal<RepairTicket[]>(STORAGE_KEYS.REPAIRS, []);
+  const existing = currentRepairs.find((ticket) => ticket.id === ticketId || (ticket as any).ticketId === ticketId);
+  if (!existing) throw new Error('Work order not found. Refresh and try again.');
+  if (existing.status === 'COMPLETED' || existing.status === 'REJECTED') throw new Error('This work order is already closed.');
+  if (existing.status === 'IN_PROGRESS' && existing.startedAt) return;
   const currentParts = getLocal<SparePart[]>(STORAGE_KEYS.PARTS, []);
   const startedAt = new Date().toISOString();
 
@@ -648,25 +652,8 @@ export async function startRepairTicket(
     } as unknown as RepairTicket);
   }
 
-  setLocal(STORAGE_KEYS.REPAIRS, updatedRepairs);
-  notifyLocal('repairs', updatedRepairs);
-
-  // Decrement parts stock immediately when reserved/used
-  if (resolvedPartsUsed.length > 0) {
-    const updatedParts = currentParts.map((part) => {
-      const used = resolvedPartsUsed.find((u) => u.partId === part.partId);
-      if (!used) return part;
-      return {
-        ...part,
-        stock: Math.max(0, part.stock - used.quantity),
-      };
-    });
-    setLocal(STORAGE_KEYS.PARTS, updatedParts);
-    notifyLocal('parts', updatedParts);
-  }
-
   try {
-    await apiFetch('/api/repairs', {
+    const response = await apiFetch('/api/repairs', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -679,15 +666,28 @@ export async function startRepairTicket(
         },
       }),
     });
+    if (!response.ok) throw new Error('Could not save the work start.');
+    setLocal(STORAGE_KEYS.REPAIRS, updatedRepairs);
+    notifyLocal('repairs', updatedRepairs);
+    if (resolvedPartsUsed.length > 0) {
+      const updatedParts = currentParts.map((part) => {
+        const used = resolvedPartsUsed.find((u) => u.partId === part.partId);
+        return used ? { ...part, stock: Math.max(0, part.stock - used.quantity) } : part;
+      });
+      setLocal(STORAGE_KEYS.PARTS, updatedParts);
+      notifyLocal('parts', updatedParts);
+    }
   } catch (e) {
     console.error('MongoDB startRepairTicket error:', e);
+    throw e;
   }
 }
 
 export async function stopRepairTicket(ticketId: string, notes?: string): Promise<void> {
   const currentRepairs = getLocal<RepairTicket[]>(STORAGE_KEYS.REPAIRS, []);
   const ticket = currentRepairs.find((t) => t.id === ticketId);
-  if (!ticket) return;
+  if (!ticket) throw new Error('Work order not found. Refresh and try again.');
+  if (ticket.status !== 'IN_PROGRESS' || !ticket.startedAt) return;
 
   const now = Date.now();
   let addedMinutes = 0;
@@ -714,11 +714,8 @@ export async function stopRepairTicket(ticketId: string, notes?: string): Promis
       }
       : t
   );
-  setLocal(STORAGE_KEYS.REPAIRS, updatedRepairs);
-  notifyLocal('repairs', updatedRepairs);
-
   try {
-    await apiFetch('/api/repairs', {
+    const response = await apiFetch('/api/repairs', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -731,8 +728,12 @@ export async function stopRepairTicket(ticketId: string, notes?: string): Promis
         },
       }),
     });
+    if (!response.ok) throw new Error('Could not save the work stop.');
+    setLocal(STORAGE_KEYS.REPAIRS, updatedRepairs);
+    notifyLocal('repairs', updatedRepairs);
   } catch (e) {
     console.error('MongoDB stopRepairTicket error:', e);
+    throw e;
   }
 }
 
@@ -875,7 +876,7 @@ export async function resolveRepairTicket(
   if (ticket.startedAt) {
     const startMs = new Date(ticket.startedAt).getTime();
     if (!isNaN(startMs)) {
-      calculatedTimeSpent = Math.max(1, Math.round((Date.now() - startMs) / 60000));
+      calculatedTimeSpent = (ticket.downtimeMinutes || 0) + Math.max(1, Math.round((Date.now() - startMs) / 60000));
     }
   }
 
