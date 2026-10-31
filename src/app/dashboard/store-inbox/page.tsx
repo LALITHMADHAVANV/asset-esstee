@@ -50,99 +50,6 @@ import {
 import { FACTORY_MECHANICS_ROSTER, MechanicDuty, userToMechanicDuty } from '@/lib/constants/mechanics';
 
 // Default initial urgent mechanic indents if database is empty
-const INITIAL_MECHANIC_INDENTS: PartRequisition[] = [
-  {
-    id: 'IND-2026-101',
-    type: 'URGENT_NEED',
-    partId: 'SP-001',
-    partName: 'NAVE SET',
-    sku: 'FLA-NAV-001',
-    quantity: 1,
-    unit: 'sets',
-    itemCount: 1,
-    estimatedCost: 420,
-    urgency: 'URGENT_MANAGER',
-    requiresCeoApproval: false,
-    requestedBy: 'Ramesh Kumar',
-    requestedByRole: 'MECHANIC',
-    monthYear: 'October 2026',
-    targetLine: 'Line 01',
-    targetMachineId: 'MC-FLA-101',
-    machineId: 'MC-FLA-101',
-    justification: 'Needle clamp vibration snapped nave set mounting during run. Machine stopped on Line 01.',
-    status: 'PENDING_MANAGER_APPROVAL',
-    createdAt: new Date(Date.now() - 25 * 60000).toISOString(),
-  },
-  {
-    id: 'IND-2026-102',
-    type: 'URGENT_NEED',
-    partId: 'SP-003',
-    partName: 'TENSION SET',
-    sku: 'FLA-TEN-003',
-    quantity: 2,
-    unit: 'sets',
-    itemCount: 2,
-    estimatedCost: 700,
-    urgency: 'URGENT_MANAGER',
-    requiresCeoApproval: false,
-    requestedBy: 'Murugan S.',
-    requestedByRole: 'MECHANIC',
-    monthYear: 'October 2026',
-    targetLine: 'Line 02',
-    targetMachineId: 'MC-OVK-204',
-    machineId: 'MC-OVK-204',
-    justification: 'Severe stitch skipping on rib neck attachment. Tension spring broken inside housing.',
-    status: 'PENDING_REVIEW',
-    createdAt: new Date(Date.now() - 65 * 60000).toISOString(),
-  },
-  {
-    id: 'IND-2026-103',
-    type: 'CRITICAL_CEO',
-    partId: 'SP-002',
-    partName: 'WAIST BAND CLIP',
-    sku: 'FLA-WAI-002',
-    quantity: 1,
-    unit: 'pcs',
-    itemCount: 1,
-    estimatedCost: 180,
-    urgency: 'CRITICAL_CEO_APPROVAL',
-    requiresCeoApproval: true,
-    requestedBy: 'Karthik N.',
-    requestedByRole: 'ELECTRICIAN',
-    monthYear: 'October 2026',
-    targetLine: 'Line 03',
-    targetMachineId: 'MC-SNLS-103',
-    machineId: 'MC-SNLS-103',
-    justification: 'Pneumatic folder binding clip cracked. Critical line stoppage.',
-    status: 'APPROVED_BY_CEO',
-    createdAt: new Date(Date.now() - 110 * 60000).toISOString(),
-  },
-  {
-    id: 'IND-2026-098',
-    type: 'URGENT_NEED',
-    partId: 'SP-002',
-    partName: 'WAIST BAND CLIP',
-    sku: 'FLA-WAI-002',
-    quantity: 1,
-    unit: 'pcs',
-    itemCount: 1,
-    estimatedCost: 180,
-    urgency: 'URGENT_MANAGER',
-    requiresCeoApproval: false,
-    requestedBy: 'Ramesh Kumar',
-    requestedByRole: 'MECHANIC',
-    monthYear: 'October 2026',
-    targetLine: 'Line 01',
-    targetMachineId: 'MC-FLA-108',
-    machineId: 'MC-FLA-108',
-    justification: 'Spring fatigue on waist guide. Replaced during shift preventive check.',
-    status: 'FULFILLED',
-    assignedStorePerson: 'M. Arumugam (Stores In-Charge)',
-    fulfilledAt: new Date(Date.now() - 180 * 60000).toISOString(),
-    storeNotes: 'Old sheared clip verified into scrap bin. Stock deducted and handed over to mechanic.',
-    createdAt: new Date(Date.now() - 240 * 60000).toISOString(),
-  },
-];
 
 interface GatePassData {
   slipNo: string;
@@ -237,7 +144,7 @@ function StoreInboxContent() {
       // Exclude monthly indents; keep urgent mechanic floor indents
       const mechanicOnly = reqs.filter((r) => r.type !== 'MONTHLY_INDENT');
       if (mechanicOnly.length === 0) {
-        setRequisitions(INITIAL_MECHANIC_INDENTS);
+        setRequisitions([]);
       } else {
         setRequisitions(mechanicOnly);
       }
