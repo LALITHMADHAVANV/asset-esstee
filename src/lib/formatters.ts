@@ -36,7 +36,7 @@ export function isZoneName(str?: string | null): boolean {
   const s = String(str).trim();
   return (
     /(^|\b)zone(\s*\d+)?\b/i.test(s) ||
-    /nethaji/i.test(s) ||
+    /-/i.test(s) ||
     /peacock/i.test(s) ||
     /^ho(\s*\([^)]*\))?$/i.test(s)
   );
@@ -44,7 +44,7 @@ export function isZoneName(str?: string | null): boolean {
 
 /**
  * Cleanly strips line and zone names from relocation or placement strings.
- * e.g. "UNIT - 1 • HO (Nethaji) • Line 04 • PF17773" => "UNIT - 1 • PF17773"
+ * e.g. "UNIT - 1 • HO (-) • Line 04 • PF17773" => "UNIT - 1 • PF17773"
  */
 export function cleanRelocationLocation(locationStr?: string | null): string {
   if (!locationStr) return '';
@@ -161,8 +161,8 @@ export function formatAssetLocation(m?: {
     m.area && m.area !== 'Unassigned Area' && !isZoneName(m.area) && !isLineName(m.area)
       ? m.area
       : m.department && m.department !== 'Sewing Floor' && !isLineName(m.department) && !isZoneName(m.department)
-      ? m.department
-      : undefined;
+        ? m.department
+        : undefined;
 
   if (primaryArea && !parts.includes(primaryArea)) {
     parts.push(primaryArea);

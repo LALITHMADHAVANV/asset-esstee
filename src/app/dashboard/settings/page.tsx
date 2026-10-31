@@ -89,8 +89,8 @@ const INITIAL_FACTORY_UNITS: FactoryUnitItem[] = [
   {
     id: 'UNIT - 1',
     code: 'UNIT - 1',
-    name: 'Plant Unit 1 — Nethaji Campus',
-    campus: 'Nethaji Apparel Park, Avinashi Road, Tirupur',
+    name: 'Plant Unit 1 — - Campus',
+    campus: '- Apparel Park, Avinashi Road, Tirupur',
     description: 'Primary garment manufacturing campus housing sewing lines 01–08, cutting tables, and boiler utilities.',
     status: 'ACTIVE',
     totalMachines: 246,
@@ -98,9 +98,9 @@ const INITIAL_FACTORY_UNITS: FactoryUnitItem[] = [
     headOfMaintenance: 'P. Arumugam (Sr. Maintenance Engr)',
     contactPhone: '+91 98421 22345',
     zones: [
-      { id: 'NETHAJI', name: 'NETHAJI (Main Sewing Complex)', linesCount: 8, description: 'Sewing lines 01–08' },
-      { id: 'NETHAJI - Cutting Bay', name: 'NETHAJI - Cutting & Fusing Bay', linesCount: 4, description: 'Cutting spreading tables' },
-      { id: 'NETHAJI - Finishing', name: 'NETHAJI - Finishing & Packing', linesCount: 4, description: 'Ironing & packing lines' },
+      { id: '-', name: '- (Main Sewing Complex)', linesCount: 8, description: 'Sewing lines 01–08' },
+      { id: '- - Cutting Bay', name: '- - Cutting & Fusing Bay', linesCount: 4, description: 'Cutting spreading tables' },
+      { id: '- - Finishing', name: '- - Finishing & Packing', linesCount: 4, description: 'Ironing & packing lines' },
     ],
   },
   {
@@ -834,9 +834,9 @@ function SettingsContent() {
     if (u.zones && u.zones.length > 0) return u.zones;
     if (u.code === 'UNIT - 1') {
       return [
-        { id: 'NETHAJI', name: 'NETHAJI (Main Sewing Complex)', linesCount: 8, description: 'Sewing lines 01–08' },
-        { id: 'NETHAJI - Cutting Bay', name: 'NETHAJI - Cutting & Fusing Bay', linesCount: 4, description: 'Cutting spreading tables' },
-        { id: 'NETHAJI - Finishing', name: 'NETHAJI - Finishing & Packing', linesCount: 4, description: 'Ironing & packing lines' },
+        { id: '-', name: '- (Main Sewing Complex)', linesCount: 8, description: 'Sewing lines 01–08' },
+        { id: '- - Cutting Bay', name: '- - Cutting & Fusing Bay', linesCount: 4, description: 'Cutting spreading tables' },
+        { id: '- - Finishing', name: '- - Finishing & Packing', linesCount: 4, description: 'Ironing & packing lines' },
       ];
     }
     if (u.code === 'UNIT-2') {
@@ -1429,8 +1429,8 @@ function SettingsContent() {
         <button
           onClick={() => setActiveTab('DEPARTMENTS')}
           className={`flex items-center gap-2 px-5 py-3.5 text-xs sm:text-sm font-bold border-b-2 transition cursor-pointer shrink-0 ${activeTab === 'DEPARTMENTS'
-              ? 'border-[#059669] text-[#059669] bg-emerald-50/50'
-              : 'border-transparent text-slate-500 hover:text-slate-900'
+            ? 'border-[#059669] text-[#059669] bg-emerald-50/50'
+            : 'border-transparent text-slate-500 hover:text-slate-900'
             }`}
         >
           <Building className={`w-4 h-4 ${activeTab === 'DEPARTMENTS' ? 'text-[#059669]' : 'text-slate-400'}`} />
@@ -1443,8 +1443,8 @@ function SettingsContent() {
         <button
           onClick={() => setActiveTab('UNITS')}
           className={`flex items-center gap-2 px-5 py-3.5 text-xs sm:text-sm font-bold border-b-2 transition cursor-pointer shrink-0 ${activeTab === 'UNITS'
-              ? 'border-[#059669] text-[#059669] bg-emerald-50/50'
-              : 'border-transparent text-slate-500 hover:text-slate-900'
+            ? 'border-[#059669] text-[#059669] bg-emerald-50/50'
+            : 'border-transparent text-slate-500 hover:text-slate-900'
             }`}
         >
           <Building2 className={`w-4 h-4 ${activeTab === 'UNITS' ? 'text-[#059669]' : 'text-slate-400'}`} />
@@ -1457,8 +1457,8 @@ function SettingsContent() {
         <button
           onClick={() => setActiveTab('USERS')}
           className={`flex items-center gap-2 px-5 py-3.5 text-xs sm:text-sm font-bold border-b-2 transition cursor-pointer shrink-0 ${activeTab === 'USERS'
-              ? 'border-[#059669] text-[#059669] bg-emerald-50/50'
-              : 'border-transparent text-slate-500 hover:text-slate-900'
+            ? 'border-[#059669] text-[#059669] bg-emerald-50/50'
+            : 'border-transparent text-slate-500 hover:text-slate-900'
             }`}
         >
           <Users className={`w-4 h-4 ${activeTab === 'USERS' ? 'text-[#059669]' : 'text-slate-400'}`} />
@@ -1471,8 +1471,8 @@ function SettingsContent() {
         <button
           onClick={() => setActiveTab('KPI')}
           className={`flex items-center gap-2 px-5 py-3.5 text-xs sm:text-sm font-bold border-b-2 transition cursor-pointer shrink-0 ${activeTab === 'KPI'
-              ? 'border-[#059669] text-[#059669] bg-emerald-50/50'
-              : 'border-transparent text-slate-500 hover:text-slate-900'
+            ? 'border-[#059669] text-[#059669] bg-emerald-50/50'
+            : 'border-transparent text-slate-500 hover:text-slate-900'
             }`}
         >
           <Trophy className="w-4 h-4 text-amber-500" />
@@ -1485,8 +1485,8 @@ function SettingsContent() {
         <button
           onClick={() => setActiveTab('TELEGRAM')}
           className={`flex items-center gap-2 px-5 py-3.5 text-sm sm:text-base font-bold border-b-2 transition cursor-pointer shrink-0 ${activeTab === 'TELEGRAM'
-              ? 'border-sky-500 text-sky-600 bg-sky-50/50'
-              : 'border-transparent text-slate-500 hover:text-slate-900'
+            ? 'border-sky-500 text-sky-600 bg-sky-50/50'
+            : 'border-transparent text-slate-500 hover:text-slate-900'
             }`}
         >
           <Send className={`w-4 h-4 ${activeTab === 'TELEGRAM' ? 'text-sky-500' : 'text-slate-400'}`} />
@@ -2505,11 +2505,10 @@ function SettingsContent() {
                 <button
                   type="button"
                   onClick={() => setTestTargetChannel('UNIT1')}
-                  className={`p-3.5 rounded-xl border text-left transition cursor-pointer ${
-                    testTargetChannel === 'UNIT1'
+                  className={`p-3.5 rounded-xl border text-left transition cursor-pointer ${testTargetChannel === 'UNIT1'
                       ? 'bg-sky-50 border-sky-300 ring-2 ring-sky-500/20 shadow-2xs'
                       : 'bg-slate-50 border-slate-200 hover:bg-slate-100/70'
-                  }`}
+                    }`}
                 >
                   <div className="flex items-center justify-between mb-1">
                     <span className="font-bold text-sm text-slate-800">Unit 1 Group</span>
@@ -2521,11 +2520,10 @@ function SettingsContent() {
                 <button
                   type="button"
                   onClick={() => setTestTargetChannel('UNIT2')}
-                  className={`p-3.5 rounded-xl border text-left transition cursor-pointer ${
-                    testTargetChannel === 'UNIT2'
+                  className={`p-3.5 rounded-xl border text-left transition cursor-pointer ${testTargetChannel === 'UNIT2'
                       ? 'bg-sky-50 border-sky-300 ring-2 ring-sky-500/20 shadow-2xs'
                       : 'bg-slate-50 border-slate-200 hover:bg-slate-100/70'
-                  }`}
+                    }`}
                 >
                   <div className="flex items-center justify-between mb-1">
                     <span className="font-bold text-sm text-slate-800">Unit 2 Group</span>
@@ -2537,11 +2535,10 @@ function SettingsContent() {
                 <button
                   type="button"
                   onClick={() => setTestTargetChannel('ADMIN')}
-                  className={`p-3.5 rounded-xl border text-left transition cursor-pointer ${
-                    testTargetChannel === 'ADMIN'
+                  className={`p-3.5 rounded-xl border text-left transition cursor-pointer ${testTargetChannel === 'ADMIN'
                       ? 'bg-sky-50 border-sky-300 ring-2 ring-sky-500/20 shadow-2xs'
                       : 'bg-slate-50 border-slate-200 hover:bg-slate-100/70'
-                  }`}
+                    }`}
                 >
                   <div className="flex items-center justify-between mb-1">
                     <span className="font-bold text-sm text-slate-800">Admin Direct</span>
@@ -3485,11 +3482,10 @@ function SettingsContent() {
                       type="button"
                       disabled={!newUnit || newUnit === 'All Units'}
                       onClick={() => setIsNewZoneDropdownOpen((prev) => !prev)}
-                      className={`w-full px-3 py-2 text-left bg-white border rounded-xl flex items-center justify-between transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
-                        isNewZoneDropdownOpen
+                      className={`w-full px-3 py-2 text-left bg-white border rounded-xl flex items-center justify-between transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${isNewZoneDropdownOpen
                           ? 'border-[#059669] ring-2 ring-[#059669]/20'
                           : 'border-slate-300 hover:border-slate-400'
-                      }`}
+                        }`}
                     >
                       <div className="flex items-center gap-2 truncate">
                         <Layers className="w-4 h-4 text-slate-400 shrink-0" />
@@ -3506,9 +3502,8 @@ function SettingsContent() {
                         )}
                       </div>
                       <ChevronDown
-                        className={`w-4 h-4 text-slate-500 shrink-0 transition-transform duration-200 ${
-                          isNewZoneDropdownOpen ? 'rotate-180' : ''
-                        }`}
+                        className={`w-4 h-4 text-slate-500 shrink-0 transition-transform duration-200 ${isNewZoneDropdownOpen ? 'rotate-180' : ''
+                          }`}
                       />
                     </button>
 
@@ -3558,17 +3553,16 @@ function SettingsContent() {
                                         : [...prev, zKey]
                                     );
                                   }}
-                                  className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition select-none text-xs ${
-                                    isChecked
+                                  className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition select-none text-xs ${isChecked
                                       ? 'bg-emerald-50 text-emerald-900 font-semibold'
                                       : 'hover:bg-slate-50 text-slate-700'
-                                  }`}
+                                    }`}
                                 >
                                   <div className="flex items-center gap-2.5">
                                     <input
                                       type="checkbox"
                                       checked={isChecked}
-                                      onChange={() => {}} // handled by parent div click
+                                      onChange={() => { }} // handled by parent div click
                                       className="w-4 h-4 text-[#059669] rounded border-slate-300 focus:ring-[#059669] cursor-pointer"
                                     />
                                     <span>{z.name}</span>
@@ -3820,11 +3814,10 @@ function SettingsContent() {
                       type="button"
                       disabled={!editUnit || editUnit === 'All Units'}
                       onClick={() => setIsEditZoneDropdownOpen((prev) => !prev)}
-                      className={`w-full px-3 py-2 text-left bg-white border rounded-xl flex items-center justify-between transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
-                        isEditZoneDropdownOpen
+                      className={`w-full px-3 py-2 text-left bg-white border rounded-xl flex items-center justify-between transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${isEditZoneDropdownOpen
                           ? 'border-[#059669] ring-2 ring-[#059669]/20'
                           : 'border-slate-300 hover:border-slate-400'
-                      }`}
+                        }`}
                     >
                       <div className="flex items-center gap-2 truncate">
                         <Layers className="w-4 h-4 text-slate-400 shrink-0" />
@@ -3841,9 +3834,8 @@ function SettingsContent() {
                         )}
                       </div>
                       <ChevronDown
-                        className={`w-4 h-4 text-slate-500 shrink-0 transition-transform duration-200 ${
-                          isEditZoneDropdownOpen ? 'rotate-180' : ''
-                        }`}
+                        className={`w-4 h-4 text-slate-500 shrink-0 transition-transform duration-200 ${isEditZoneDropdownOpen ? 'rotate-180' : ''
+                          }`}
                       />
                     </button>
 
@@ -3893,17 +3885,16 @@ function SettingsContent() {
                                         : [...prev, zKey]
                                     );
                                   }}
-                                  className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition select-none text-xs ${
-                                    isChecked
+                                  className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition select-none text-xs ${isChecked
                                       ? 'bg-emerald-50 text-emerald-900 font-semibold'
                                       : 'hover:bg-slate-50 text-slate-700'
-                                  }`}
+                                    }`}
                                 >
                                   <div className="flex items-center gap-2.5">
                                     <input
                                       type="checkbox"
                                       checked={isChecked}
-                                      onChange={() => {}}
+                                      onChange={() => { }}
                                       className="w-4 h-4 text-[#059669] rounded border-slate-300 focus:ring-[#059669] cursor-pointer"
                                     />
                                     <span>{z.name}</span>

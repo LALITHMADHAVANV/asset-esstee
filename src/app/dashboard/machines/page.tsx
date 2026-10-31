@@ -132,7 +132,7 @@ export default function MachinesPage() {
   }, [activeUnitValue]);
 
   // Zone / Area Dropdown & Custom State
-  const [mArea, setMArea] = useState<string>('NETHAJI');
+  const [mArea, setMArea] = useState<string>('-');
   const [isCustomZone, setIsCustomZone] = useState<boolean>(false);
   const [customZoneInput, setCustomZoneInput] = useState<string>('');
 
@@ -306,7 +306,7 @@ export default function MachinesPage() {
     setMDate('');
     setMCost('');
     setMUnit(!isAdmin ? effectiveUnit : 'UNIT - 1');
-    setMArea('NETHAJI');
+    setMArea('-');
     setIsCustomZone(false);
     setCustomZoneInput('');
     setMLine('Line 01');
@@ -382,14 +382,14 @@ export default function MachinesPage() {
         selectedCategory === 'FURNITURE'
           ? 'FUR-CST-'
           : selectedCategory === 'CHAIR'
-          ? 'CHR-CST-'
-          : selectedCategory === 'TABLE'
-          ? 'TBL-CST-'
-          : selectedCategory === 'UTILITY'
-          ? 'UTL-CST-'
-          : selectedCategory === 'VEHICLE'
-          ? 'VHC-CST-'
-          : 'MC-CST-';
+            ? 'CHR-CST-'
+            : selectedCategory === 'TABLE'
+              ? 'TBL-CST-'
+              : selectedCategory === 'UTILITY'
+                ? 'UTL-CST-'
+                : selectedCategory === 'VEHICLE'
+                  ? 'VHC-CST-'
+                  : 'MC-CST-';
 
       const newDef: AssetSubtypeDef = {
         id: customId as any,
@@ -425,8 +425,8 @@ export default function MachinesPage() {
           ? mType && mType.startsWith('OVERLOCK')
             ? 'OVERLOCK'
             : mType && mType.startsWith('FLATLOCK')
-            ? 'FLATLOCK'
-            : 'SINGLE_NEEDLE'
+              ? 'FLATLOCK'
+              : 'SINGLE_NEEDLE'
           : undefined,
       type: (mType || 'OVERLOCK_4_THREAD') as MachineType,
       typeName: finalTypeName,
@@ -471,15 +471,15 @@ export default function MachinesPage() {
       isCustomType && customTypeName.trim()
         ? customTypeName.trim()
         : (mType && ASSET_SUBTYPE_LOOKUP[mType]?.name) ||
-          customSubtypes.find((s) => s.id === mType)?.name ||
-          mType ||
-          'Asset';
+        customSubtypes.find((s) => s.id === mType)?.name ||
+        mType ||
+        'Asset';
     const specs =
       isCustomType && customSpecs.trim()
         ? customSpecs.trim()
         : (mType && ASSET_SUBTYPE_LOOKUP[mType]?.specs) ||
-          customSubtypes.find((s) => s.id === mType)?.specs ||
-          '';
+        customSubtypes.find((s) => s.id === mType)?.specs ||
+        '';
 
     const userDept = 'Factory Floor' as any;
 
@@ -549,9 +549,9 @@ export default function MachinesPage() {
       isCustomType && customTypeName.trim()
         ? customTypeName.trim()
         : (mType && ASSET_SUBTYPE_LOOKUP[mType]?.name) ||
-          customSubtypes.find((s) => s.id === mType)?.name ||
-          mType ||
-          '';
+        customSubtypes.find((s) => s.id === mType)?.name ||
+        mType ||
+        '';
 
     const params = new URLSearchParams({
       id: mId || '',
@@ -1012,11 +1012,10 @@ export default function MachinesPage() {
                     value={!isAdmin ? effectiveUnit : mUnit}
                     disabled={!isAdmin}
                     onChange={(e) => setMUnit(e.target.value)}
-                    className={`w-full px-3 py-2 text-sm border rounded-xl outline-none font-bold text-slate-800 ${
-                      !isAdmin
+                    className={`w-full px-3 py-2 text-sm border rounded-xl outline-none font-bold text-slate-800 ${!isAdmin
                         ? 'bg-slate-100 border-slate-200 cursor-not-allowed'
                         : 'bg-white border-slate-300 focus:ring-2 focus:ring-indigo-500 cursor-pointer shadow-2xs'
-                    }`}
+                      }`}
                   >
                     {configuredUnits.map((u) => (
                       <option key={u.code} value={u.code}>
@@ -1270,7 +1269,7 @@ export default function MachinesPage() {
                         </span>
                       </div>
                       <div className="text-[11px] text-slate-500 mt-0.5 flex items-center gap-2">
-                        <span>{m.area || 'NETHAJI'}</span>
+                        <span>{m.area || '-'}</span>
                         <span>•</span>
                         <span>{m.unit || 'UNIT - 1'}</span>
                         <span>•</span>

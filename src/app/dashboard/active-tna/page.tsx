@@ -636,7 +636,7 @@ export default function ActiveTnaPage() {
                   className="text-xs font-bold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-amber-500 cursor-pointer shadow-2xs"
                 >
                   <option value="ALL">All Units</option>
-                  <option value="UNIT - 1">Unit 1 (Nethaji)</option>
+                  <option value="UNIT - 1">Unit 1 (-)</option>
                   <option value="UNIT-2">Unit 2 (Perundurai)</option>
                 </select>
               </div>
@@ -650,22 +650,22 @@ export default function ActiveTnaPage() {
               selectedLine !== 'ALL' ||
               selectedUnit !== 'ALL' ||
               searchQuery) && (
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedPerson('ALL');
-                  setWorkTypeFilter('ALL');
-                  setUrgencyFilter('ALL');
-                  setSelectedStatus('ALL');
-                  setSelectedLine('ALL');
-                  setSelectedUnit('ALL');
-                  setSearchQuery('');
-                }}
-                className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 px-2 py-1 rounded-lg font-bold text-[11px] transition cursor-pointer border border-rose-200"
-              >
-                Reset
-              </button>
-            )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedPerson('ALL');
+                    setWorkTypeFilter('ALL');
+                    setUrgencyFilter('ALL');
+                    setSelectedStatus('ALL');
+                    setSelectedLine('ALL');
+                    setSelectedUnit('ALL');
+                    setSearchQuery('');
+                  }}
+                  className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 px-2 py-1 rounded-lg font-bold text-[11px] transition cursor-pointer border border-rose-200"
+                >
+                  Reset
+                </button>
+              )}
           </div>
         </div>
       </div>
@@ -735,13 +735,12 @@ export default function ActiveTnaPage() {
                         </span>
                         <div className="mt-1">
                           <span
-                            className={`px-1.5 py-0.2 rounded text-[9px] font-black uppercase ${
-                              isCritical
+                            className={`px-1.5 py-0.2 rounded text-[9px] font-black uppercase ${isCritical
                                 ? 'bg-rose-100 text-rose-800 border border-rose-200'
                                 : work.urgency === 'WARNING'
-                                ? 'bg-amber-100 text-amber-800 border border-amber-200'
-                                : 'bg-slate-100 text-slate-700 border border-slate-200'
-                            }`}
+                                  ? 'bg-amber-100 text-amber-800 border border-amber-200'
+                                  : 'bg-slate-100 text-slate-700 border border-slate-200'
+                              }`}
                           >
                             {work.urgency}
                           </span>
@@ -910,11 +909,10 @@ export default function ActiveTnaPage() {
                       key={pageNum}
                       type="button"
                       onClick={() => setCurrentPage(pageNum)}
-                      className={`w-7 h-7 rounded-lg text-xs font-bold transition cursor-pointer ${
-                        currentPage === pageNum
+                      className={`w-7 h-7 rounded-lg text-xs font-bold transition cursor-pointer ${currentPage === pageNum
                           ? 'bg-amber-600 text-white shadow-2xs'
                           : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100'
-                      }`}
+                        }`}
                     >
                       {pageNum}
                     </button>

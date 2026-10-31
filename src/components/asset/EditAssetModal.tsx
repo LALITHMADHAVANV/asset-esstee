@@ -96,7 +96,7 @@ export function EditAssetModal({ isOpen, onClose, asset, onSave }: EditAssetModa
   const [model, setModel] = useState('');
   const [year, setYear] = useState<string>('');
   const [purchaseDate, setPurchaseDate] = useState('');
-  const [area, setArea] = useState('NETHAJI');
+  const [area, setArea] = useState('-');
   const [zone, setZone] = useState('');
   const [unit, setUnit] = useState('UNIT - 1');
   const [currentLine, setCurrentLine] = useState<FloorLine>('Line 01');
@@ -118,13 +118,13 @@ export function EditAssetModal({ isOpen, onClose, asset, onSave }: EditAssetModa
       setType(asset.typeName || asset.type || '');
       setBrand(asset.brand || '');
       setModel(asset.model || '');
-      
+
       // Determine year
       const y = (asset as any).year || (asset.purchaseDate ? new Date(asset.purchaseDate).getFullYear() : 2023);
       setYear(String(y));
       setPurchaseDate(asset.purchaseDate || `${y}-01-01`);
 
-      setArea((asset as any).location || asset.area || 'NETHAJI');
+      setArea((asset as any).location || asset.area || '-');
       setZone((asset as any).zone || '');
       setUnit((asset as any).plant || asset.unit || 'UNIT - 1');
       setCurrentLine(asset.currentLine || 'Line 01');
@@ -424,7 +424,7 @@ export function EditAssetModal({ isOpen, onClose, asset, onSave }: EditAssetModa
                   type="text"
                   value={area}
                   onChange={(e) => setArea(e.target.value)}
-                  placeholder="e.g. NETHAJI, PEACOCK"
+                  placeholder="e.g. -, PEACOCK"
                   className="w-full px-3 py-2 text-xs font-semibold bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition uppercase"
                 />
               </div>

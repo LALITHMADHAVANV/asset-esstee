@@ -33,34 +33,34 @@ export const FACTORY_UNITS: FactoryUnitOption[] = [
 ];
 
 export interface FactoryZoneOption {
-  id: string; // Machine area/zone key: "NETHAJI", "PEACOCK 1", etc.
-  name: string; // Friendly label: "NETHAJI (Main Sewing Complex)"
+  id: string; // Machine area/zone key: "-", "PEACOCK 1", etc.
+  name: string; // Friendly label: "- (Main Sewing Complex)"
   description?: string;
   defaultLines: string[];
 }
 
 /**
  * Plant Unit ➔ Categorized Zones & Floor Lines mapping
- * - UNIT - 1: NETHAJI (Main Sewing Complex, Lines 01-08)
+ * - UNIT - 1: - (Main Sewing Complex, Lines 01-08)
  * - UNIT-2: PEACOCK 1, PEACOCK 2, PEACOCK 3, PEACOCK 4 (Lines 01-08)
  */
 export const FACTORY_UNIT_ZONES: Record<string, FactoryZoneOption[]> = {
   'UNIT - 1': [
     {
-      id: 'NETHAJI',
-      name: 'NETHAJI (Main Sewing Complex)',
+      id: '-',
+      name: '- (Main Sewing Complex)',
       description: 'Main production floor, Lines 01 to 08',
       defaultLines: ['Line 01', 'Line 02', 'Line 03', 'Line 04', 'Line 05', 'Line 06', 'Line 07', 'Line 08', 'Buffer Workshop', 'Scrap Bay'],
     },
     {
-      id: 'NETHAJI - Cutting Bay',
-      name: 'NETHAJI - Cutting & Fusing Bay',
+      id: '- - Cutting Bay',
+      name: '- - Cutting & Fusing Bay',
       description: 'Cutting spreading tables & fusing presses',
       defaultLines: ['Cutting Bay 01', 'Cutting Bay 02', 'Fusing Section', 'Band Knife Section'],
     },
     {
-      id: 'NETHAJI - Finishing',
-      name: 'NETHAJI - Finishing & Packing',
+      id: '- - Finishing',
+      name: '- - Finishing & Packing',
       description: 'Thread trimming, ironing & carton packing',
       defaultLines: ['Ironing Table 01', 'Ironing Table 02', 'Packing Line 01', 'Inspection Bay'],
     },
@@ -105,11 +105,11 @@ export function getFactoryUnitsFromSettings(): DynamicFactoryUnit[] {
         code: 'UNIT - 1',
         name: 'UNIT - 1',
         totalLines: 8,
-        campus: 'Nethaji Campus',
+        campus: '- Campus',
         zones: [
-          { id: 'NETHAJI', name: 'NETHAJI (Main Sewing Complex)', linesCount: 8 },
-          { id: 'NETHAJI - Cutting Bay', name: 'NETHAJI - Cutting & Fusing Bay', linesCount: 4 },
-          { id: 'NETHAJI - Finishing', name: 'NETHAJI - Finishing & Packing', linesCount: 4 },
+          { id: '-', name: '- (Main Sewing Complex)', linesCount: 8 },
+          { id: '- - Cutting Bay', name: '- - Cutting & Fusing Bay', linesCount: 4 },
+          { id: '- - Finishing', name: '- - Finishing & Packing', linesCount: 4 },
         ],
       },
       {
@@ -137,9 +137,9 @@ export function getFactoryUnitsFromSettings(): DynamicFactoryUnit[] {
             const norm = normalizeUnit(item.code || item.id);
             if (norm === 'unit1') {
               unitZones = [
-                { id: 'NETHAJI', name: 'NETHAJI (Main Sewing Complex)', linesCount: 8 },
-                { id: 'NETHAJI - Cutting Bay', name: 'NETHAJI - Cutting & Fusing Bay', linesCount: 4 },
-                { id: 'NETHAJI - Finishing', name: 'NETHAJI - Finishing & Packing', linesCount: 4 },
+                { id: '-', name: '- (Main Sewing Complex)', linesCount: 8 },
+                { id: '- - Cutting Bay', name: '- - Cutting & Fusing Bay', linesCount: 4 },
+                { id: '- - Finishing', name: '- - Finishing & Packing', linesCount: 4 },
               ];
             } else if (norm === 'unit2') {
               unitZones = [
@@ -173,11 +173,11 @@ export function getFactoryUnitsFromSettings(): DynamicFactoryUnit[] {
       code: 'UNIT - 1',
       name: 'UNIT - 1',
       totalLines: 8,
-      campus: 'Nethaji Campus',
+      campus: '- Campus',
       zones: [
-        { id: 'NETHAJI', name: 'NETHAJI (Main Sewing Complex)', linesCount: 8 },
-        { id: 'NETHAJI - Cutting Bay', name: 'NETHAJI - Cutting & Fusing Bay', linesCount: 4 },
-        { id: 'NETHAJI - Finishing', name: 'NETHAJI - Finishing & Packing', linesCount: 4 },
+        { id: '-', name: '- (Main Sewing Complex)', linesCount: 8 },
+        { id: '- - Cutting Bay', name: '- - Cutting & Fusing Bay', linesCount: 4 },
+        { id: '- - Finishing', name: '- - Finishing & Packing', linesCount: 4 },
       ],
     },
     {

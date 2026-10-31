@@ -30,10 +30,10 @@ const transformed = data.map((item) => {
       copy.specs = copy.specs.replace(/Zone\s+\d+/g, lineStr);
     }
     u2Count++;
-  } else if (copy.unit === 'UNIT - 1' || copy.location === 'NETHAJI') {
-    copy.zone = 'NETHAJI';
-    copy.location = 'NETHAJI';
-    if (!copy.area) copy.area = 'NETHAJI';
+  } else if (copy.unit === 'UNIT - 1' || copy.location === '-') {
+    copy.zone = '-';
+    copy.location = '-';
+    if (!copy.area) copy.area = '-';
     u1Count++;
   }
   return copy;
