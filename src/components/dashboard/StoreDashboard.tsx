@@ -41,6 +41,7 @@ import { useToast } from '@/context/ToastContext';
 import { useAuth } from '@/context/AuthContext';
 
 interface StoreIssueRecord {
+  repairUsage?: boolean;
   id: string; // e.g. SLIP-1082
   date: string; // ISO string or formatted
   mechanicId: string;
@@ -612,12 +613,38 @@ export function StoreDashboard({
   };
 
   // ─── FILTERED DATASETS ───────────────────────────────────────────
+  const allIssues = useMemo(() => {
+    const usage = repairs.flatMap((ticket) => (ticket.partsUsed || []).map((part, index): StoreIssueRecord => {
+      const mechanicName = part.usedByName || ticket.attendedBy || 'Unknown mechanic';
+      return {
+        id: ticket.id + '/' + part.partId + '/' + (index + 1),
+        date: part.usedAt || ticket.startedAt || ticket.reportedAt,
+        mechanicId: part.usedById || mechanicName,
+        mechanicName,
+        targetLine: ticket.line,
+        targetMachineId: ticket.machineId,
+        partId: part.partId,
+        partName: part.name,
+        sku: part.sku,
+        quantity: part.quantity,
+        unit: 'pcs',
+        oldPartReturned: false,
+        storekeeper: '',
+        remarks: 'Recorded on repair ' + ticket.id,
+        repairUsage: true,
+      };
+    }));
+    return [...usage, ...issueRecords].sort((a, b) => Date.parse(b.date) - Date.parse(a.date));
+  }, [repairs, issueRecords]);
+
+  const mechanicNames = Array.from(new Set(allIssues.map((row) => row.mechanicName))).sort();
+
   // Filtered Issue Log (Report 1)
   const filteredIssues = useMemo(() => {
-    return issueRecords.filter((r) => {
-      if (selectedMechanicFilter !== 'ALL' && r.mechanicId !== selectedMechanicFilter) return false;
+    return allIssues.filter((r) => {
+      if (selectedMechanicFilter !== 'ALL' && r.mechanicName !== selectedMechanicFilter) return false;
       if (scrapReturnFilter === 'RETURNED' && !r.oldPartReturned) return false;
-      if (scrapReturnFilter === 'PENDING' && r.oldPartReturned) return false;
+      if (scrapReturnFilter === 'PENDING' && (r.repairUsage || r.oldPartReturned)) return false;
 
       if (issueSearch.trim()) {
         const q = issueSearch.toLowerCase();
@@ -630,7 +657,7 @@ export function StoreDashboard({
       }
       return true;
     });
-  }, [issueRecords, selectedMechanicFilter, scrapReturnFilter, issueSearch]);
+  }, [allIssues, selectedMechanicFilter, scrapReturnFilter, issueSearch]);
 
   // Filtered Stock Balance (Report 2)
   const filteredStock = useMemo(() => {
@@ -831,7 +858,7 @@ export function StoreDashboard({
             <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Parts Issued</span>
             <Wrench className="w-4 h-4 text-emerald-600" />
           </div>
-          <div className="text-2xl font-black text-slate-900">{issueRecords.length}</div>
+          <div className="text-2xl font-black text-slate-900">{allIssues.length}</div>
           <div className="text-[11px] text-slate-500 mt-0.5">Total recorded chits</div>
         </div>
 
@@ -923,11 +950,9 @@ export function StoreDashboard({
               onChange={(e) => setSelectedMechanicFilter(e.target.value)}
               className="text-xs bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-slate-700 font-medium cursor-pointer"
             >
-              <option value="ALL">All Mechanics ({issueRecords.length})</option>
-              {activeStaffRoster.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.name} ({m.id})
-                </option>
+              <option value="ALL">All Mechanics ({allIssues.length})</option>
+              {mechanicNames.map((name) => (
+                <option key={name} value={name}>{name}</option>
               ))}
             </select>
 
@@ -1012,7 +1037,7 @@ export function StoreDashboard({
                         {r.quantity} {r.unit}
                       </td>
                       <td className="py-2 px-3 border-r border-slate-200 text-center whitespace-nowrap">
-                        {r.oldPartReturned ? (
+                        {r.repairUsage ? '—' : r.oldPartReturned ? (
                           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
                             <CheckCircle2 className="w-3 h-3 text-emerald-600" />
                             <span>Returned</span>
@@ -1028,13 +1053,13 @@ export function StoreDashboard({
                         {r.remarks || 'Standard maintenance issuance.'}
                       </td>
                       <td className="py-2 px-3 text-center whitespace-nowrap">
-                        <button
+                        {r.repairUsage ? 'Repair usage' : <button
                           onClick={() => handleToggleScrapReturn(r.id)}
                           className="text-[10px] font-bold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-2 py-1 rounded transition cursor-pointer"
                           title="Toggle Old Scrap Returned Status"
                         >
                           {r.oldPartReturned ? 'Mark Pending' : 'Mark Returned'}
-                        </button>
+                        </button>}
                       </td>
                     </tr>
                   );

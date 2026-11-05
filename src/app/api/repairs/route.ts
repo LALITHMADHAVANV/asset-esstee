@@ -116,6 +116,23 @@ export async function PATCH(req: Request) {
       $or: [{ id }, { ticketId: id }],
     });
 
+    if (Array.isArray(updates.partsUsed) && updates.partsUsed.length) {
+      if (!existingTicket?.machineId) {
+        return NextResponse.json({ error: 'A saved repair with a machine is required to record spares.' }, { status: 409 });
+      }
+      const actor = db.sessionUser;
+      if (!actor) return NextResponse.json({ error: 'Sign in to record spare usage.' }, { status: 401 });
+      const recordedAt = new Date().toISOString();
+      updates.partsUsed = updates.partsUsed.map((part: RepairTicket['partsUsed'][number]) => {
+        const prior = existingTicket.partsUsed?.find((p: RepairTicket['partsUsed'][number]) => p.partId === part.partId);
+        return {
+          ...part,
+          usedByName: prior ? prior.usedByName || existingTicket.attendedBy || 'Unknown mechanic' : actor.name || actor.email,
+          usedById: prior ? prior.usedById : actor.uid,
+          usedAt: prior?.usedAt || (prior && existingTicket.startedAt) || recordedAt,
+        };
+      });
+    }
     const ticketCompany = existingTicket?.company || updates.company || db.companyName;
     const authoritativeCompany = ticketCompany || db.companyName;
 
