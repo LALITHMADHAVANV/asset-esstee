@@ -1,0 +1,134 @@
+/* Approved Plant Command presentation. No data or workflow dependencies. */
+@theme inline {
+  --color-slate-50: #f8f9f3;
+  --color-slate-100: #f1f3e9;
+  --color-slate-200: #e1e4da;
+  --color-slate-300: #cbd2c3;
+  --color-slate-400: #819078;
+  --color-slate-500: #687660;
+  --color-slate-600: #52604c;
+  --color-slate-700: #3e4b39;
+  --color-slate-800: #303b2e;
+  --color-slate-900: #242c28;
+}
+
+@media screen {
+  body.plant-command {
+    color-scheme: light;
+    --background: #e5e9f0;
+    --foreground: #242c28;
+    background: #e5e9f0;
+    color: #242c28;
+    --color-indigo-50: #f3f7e8;
+    --color-indigo-100: #e9f0d7;
+    --color-indigo-200: #d4e2b4;
+    --color-indigo-300: #bed096;
+    --color-indigo-400: #9ab66b;
+    --color-indigo-500: #718e48;
+    --color-indigo-600: #536e32;
+    --color-indigo-700: #425b27;
+    --color-indigo-800: #32491c;
+    --color-indigo-900: #293c19;
+  }
+
+  .plant-command .workspace-shell { background: #f1f5f9; }
+  .plant-command .workspace-topbar { background: #fffefa; border-color: #e1e4da; min-height: 76px; }
+  .plant-command .workspace-breadcrumb { color: #74806b; }
+  .plant-command .workspace-breadcrumb > span { color: #394631; }
+  .plant-command .workspace-unit { color: #687660; border-color: #e1e4da; }
+  .plant-command .workspace-avatar { background: #edf2df; color: #536b37; }
+  .plant-command .workspace-icon-button { color: #687660; }
+  .plant-command .workspace-icon-button:hover { background: #edf2df; color: #425b27; }
+  .plant-command .workspace-sidebar { background: #fffefa; color: #52604c; border-color: #e1e4da; }
+  .plant-command .sidebar-expanded > div:first-child { padding: 24px 16px 20px; border-color: #e1e4da; }
+  .plant-command .workspace-brand { display: flex; align-items: center; gap: 8px; color: #2d3929; font-weight: 600; letter-spacing: -.8px; }
+  .plant-command .workspace-brand-mark { display: grid; place-items: center; width: 32px; height: 34px; border-radius: 10px; background: #d7ee86; color: #34442a; font-size: 23px; }
+  .plant-command .workspace-sidebar .text-slate-400 { color: #75836b; }
+  .plant-command .workspace-sidebar :is(.text-slate-500, .text-slate-600) { color: #627257; }
+  .plant-command .workspace-sidebar nav { padding: 16px 12px; }
+  .plant-command .workspace-sidebar nav > div { margin-bottom: 18px; }
+  .plant-command .workspace-sidebar .sidebar-link { color: #5f6f54; border-color: transparent; font-weight: 500; border-radius: 8px; }
+  .plant-command .workspace-sidebar .sidebar-link:hover { background: #f2f5e9; color: #35472a; }
+  .plant-command .workspace-sidebar .sidebar-link[aria-current="page"] { background: #eaf2d6; color: #405727; border-color: #e0e9cb; box-shadow: none; }
+  .plant-command .workspace-sidebar .sidebar-link[aria-current="page"] svg { color: #66853d; }
+  .plant-command .workspace-sidebar .sidebar-link[aria-current="page"] > span { background: #d7e7b3; color: #3e542c; box-shadow: none; }
+  .plant-command .sidebar-profile { background: #f8f9f3; border-color: #e1e4da; }
+  .plant-command .sidebar-profile .text-slate-800 { color: #394631; }
+  .plant-command .sidebar-profile > div:hover { background: #edf2e1; }
+  .plant-command .workspace-sidebar > div:last-child { border-color: #e1e4da; }
+
+  .plant-command .workspace-shell main { padding-top: 30px; }
+  .plant-command .workspace-shell main h1 { font-weight: 500; letter-spacing: -.04em; line-height: 1.2; }
+  .plant-command .workspace-shell main :is(h2, h3) { letter-spacing: -.02em; }
+  .plant-command .workspace-shell main .bg-white {
+    background-color: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+    box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.07), 0 2px 4px -2px rgba(15, 23, 42, 0.05) !important;
+  }
+  .plant-command .workspace-shell main :is(.shadow-xs, .shadow-sm, .shadow-2xs) {
+    box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.07), 0 2px 4px -2px rgba(15, 23, 42, 0.05) !important;
+  }
+  .plant-command .workspace-shell main .rounded-2xl { border-radius: 16px; }
+  .plant-command .workspace-shell main .rounded-3xl { border-radius: 20px; }
+  .plant-command :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]), select, textarea) { accent-color: #087f6c; }
+  .plant-command .workspace-shell main :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]), select, textarea) { border-color: #cbd5e1; border-radius: 8px; }
+  .plant-command :focus-visible { outline: 2px solid #087f6c; outline-offset: 3px; }
+  .plant-command .workspace-shell table { font-variant-numeric: tabular-nums; }
+  .plant-command .workspace-shell main table th { background: #f8fafc; color: #475569; letter-spacing: .06em; font-weight: 600; }
+  .plant-command .workspace-shell main table td { border-color: #e2e8f0; padding-top: 15px; padding-bottom: 15px; }
+  .plant-command .workspace-shell main tbody tr:hover { background-color: #f8fafc; }
+  .plant-command .overview-metrics { gap: 0.875rem !important; background: transparent !important; border: 0 !important; padding: 0 !important; }
+  .plant-command .overview-metrics > div {
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 16px !important;
+    padding: 16px 18px !important;
+    background: #ffffff !important;
+    box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.07), 0 2px 4px -2px rgba(15, 23, 42, 0.05) !important;
+  }
+  .plant-command .overview-metrics > div:hover {
+    border-color: #6366f1 !important;
+    box-shadow: 0 10px 15px -3px rgba(15, 23, 42, 0.1) !important;
+  }
+  .plant-command .overview-metrics .font-mono { font-size: 28px; font-weight: 700; }
+  .plant-command .workspace-shell > div > footer { background: #e5e9f0; border-color: #cbd5e1; color: #64748b; font-size: 11px; letter-spacing: .03em; }
+
+  /* Public sign-in surface uses the same light palette. */
+  .plant-command .login-page { background: #fffefa; }
+  .plant-command .login-story { background: #eef2e3; color: #293925; border-right: 1px solid #dde5cf; }
+  .plant-command .login-story::before { opacity: .18; background-image: radial-gradient(#8c9d70 .7px, transparent .7px); }
+  .plant-command .login-brand, .plant-command .login-story h1 { color: #2d3d25; }
+  .plant-command .login-brand .text-teal-300, .plant-command .login-story h1 > span { color: #6f8b3f; }
+  .plant-command .brand-mark { background: #d7ee86; color: #405627; border-color: #cddd9b; }
+  .plant-command :is(.login-eyebrow, .login-story-content > p, .login-features p, .login-features span, .login-story-footer) { color: #677859; }
+  .plant-command .login-eyebrow > span { background: #7a9846; }
+  .plant-command .login-features { border-color: #d4dec7; }
+  .plant-command .machine-top { background: #e1e9d2; color: #6b8052; border-color: #aab993; }
+  .plant-command .machine-body { background: #f7f9ee; border-color: #aab993; }
+  .plant-command .machine-body i, .plant-command .machine-top span { background: #9bb77a; }
+  .plant-command .machine-feet { border-color: #aab993; }
+  .plant-command .plant-line { background: #b9c6a5; }
+  .plant-command .login-submit { background: #d7ee86; color: #34442a; box-shadow: none; }
+  .plant-command .login-submit:hover { background: #c9e478; }
+  .plant-command .login-form-icon { background: #edf2df; border-color: #dce5cc; color: #647d42; }
+  .plant-command .login-input-wrap:focus-within { border-color: #87a65b; box-shadow: 0 0 0 3px #87a65b16; }
+  .plant-command .login-form-side { background: #fffefa; }
+  .plant-command .login-form-content h2 { color: #293925; }
+  .plant-command .login-security { border-color: #e1e4da; color: #6c7e5d; }
+
+  @media (max-width: 767px) {
+    .plant-command .workspace-shell main { padding-top: 20px; }
+    .plant-command .overview-metrics { row-gap: 20px; }
+    .plant-command .overview-metrics > div { padding: 4px 12px; }
+  }
+}
+
+@media screen {
+  .plant-command .workspace-unavailable { background: #f5f4ef; background-image: none; }
+  .plant-command .workspace-unavailable > div { background: #fffefa; border-color: #e1e4da; box-shadow: 0 12px 50px #38472b08; }
+  .plant-command .workspace-unavailable h1 { color: #293925; font-weight: 500; }
+  .plant-command .workspace-unavailable [class*="bg-slate-9"],
+  .plant-command .workspace-unavailable [class*="bg-slate-7"] { background: #f1f4e8; border-color: #dce4ce; }
+  .plant-command .workspace-unavailable [class*="text-slate-3"],
+  .plant-command .workspace-unavailable [class*="text-slate-4"] { color: #68795c; }
+  .plant-command .workspace-unavailable .text-white { color: #34442a; }
+}
