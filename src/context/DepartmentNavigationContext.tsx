@@ -2,7 +2,7 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { useAuth } from './AuthContext';
 import { apiFetch } from '@/lib/services/cmmsService';
-import { DepartmentConfiguration, departmentSelection, NavigationHref } from '@/lib/departmentNavigation';
+import { DepartmentConfiguration, departmentSelection, NavigationHref, navigationItemVisible } from '@/lib/departmentNavigation';
 
 interface DepartmentState {
   departments: DepartmentConfiguration[] | null;
@@ -10,6 +10,7 @@ interface DepartmentState {
   saving: boolean;
   error: string;
   selection: NavigationHref[] | null;
+  isVisible: (href: string) => boolean;
   save: (items: DepartmentConfiguration[]) => Promise<void>;
 }
 const Context = createContext<DepartmentState | null>(null);
@@ -59,7 +60,11 @@ export function DepartmentNavigationProvider({ children }: { children: React.Rea
     } finally { busy.current = false; setSaving(false); }
   };
   const departments = snapshot.identity === identity ? snapshot.departments : null;
-  return <Context.Provider value={{ departments, ready: ready && snapshot.identity === identity, saving, error, save, selection: departmentSelection(departments || [], user) }}>{children}</Context.Provider>;
+  const selection = departmentSelection(departments || [], user);
+  const navigationReady = ready && snapshot.identity === identity;
+  return <Context.Provider value={{ departments, ready: navigationReady, saving, error, save, selection,
+    isVisible: href => navigationItemVisible(href, selection, user?.role, navigationReady),
+  }}>{children}</Context.Provider>;
 }
 export function useDepartmentNavigation() {
   const value = useContext(Context);

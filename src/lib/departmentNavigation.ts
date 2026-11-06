@@ -16,6 +16,8 @@ export const DEPARTMENT_NAVIGATION = [
   { href: '/dashboard/inventory', label: 'Stock Maintenance', group: 'Stores & reporting' },
   { href: '/dashboard/kpi', label: 'Department KPI', group: 'Stores & reporting' },
   { href: '/dashboard/messages', label: 'Notifications', group: 'Stores & reporting' },
+  { href: '/dashboard/settings', label: 'Settings', group: 'Administration', adminOnly: true },
+  { href: '/dashboard/users', label: 'User Access', group: 'Administration', adminOnly: true },
 ] as const;
 export type NavigationHref = typeof DEPARTMENT_NAVIGATION[number]['href'];
 export interface DepartmentConfiguration {
@@ -34,18 +36,18 @@ export function departmentSelection(departments: DepartmentConfiguration[], user
     || departments.find(item => key(item.name) === key(user.role) || item.previousNames?.some(name => key(name) === key(user.role)));
   return department?.navigation ?? null;
 }
-export function departmentMenu<T extends { href: string; label: string }>(defaults: T[], selection: NavigationHref[] | null, role: string | null | undefined, fallback: (item: typeof DEPARTMENT_NAVIGATION[number]) => T): T[] {
+export function navigationItemVisible(href: string, selection: NavigationHref[] | null, role: string | null | undefined, ready = true): boolean {
+  if (!ready) return false;
+  const route = href.split('?')[0].replace(/^\/[^/]+(?=\/dashboard)/, '').replace(/\/$/, '') || '/';
+  const option = DEPARTMENT_NAVIGATION.find(item => item.href === route);
+  if (!option || ('adminOnly' in option && option.adminOnly && normalizeRole(role) !== 'ADMIN')) return false;
+  return (selection === null || selection.includes(option.href)) && canAccessRoute(role, route);
+}
+export function departmentMenu<T extends { href: string; label: string }>(defaults: T[], selection: NavigationHref[] | null, role: string | null | undefined, fallback: (item: typeof DEPARTMENT_NAVIGATION[number]) => T, ready = true): T[] {
+  if (!ready) return [];
   if (selection === null) return defaults;
-  const result = DEPARTMENT_NAVIGATION.filter(item => selection.includes(item.href) && canAccessRoute(role, item.href))
+  return DEPARTMENT_NAVIGATION.filter(item => navigationItemVisible(item.href, selection, role))
     .map(item => defaults.find(existing => existing.href.split('?')[0] === item.href) || fallback(item));
-  // Administrators must retain the controls used to manage department menus.
-  if (normalizeRole(role) === 'ADMIN') {
-    for (const href of ['/dashboard/settings', '/dashboard/users']) {
-      const item = defaults.find(existing => existing.href === href);
-      if (item) result.push(item);
-    }
-  }
-  return result;
 }
 export function validateDepartments(input: unknown): DepartmentConfiguration[] {
   if (!Array.isArray(input) || input.length > 100) throw new Error('Provide up to 100 departments.');

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Bell, ChevronRight, Factory } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { useDepartmentNavigation } from '@/context/DepartmentNavigationContext';
 
 const titles: Record<string, string> = {
   'assign-task': 'Assign a task', 'active-tna': 'Active task tracking',
@@ -18,6 +19,7 @@ const titles: Record<string, string> = {
 export function WorkspaceHeader() {
   const pathname = usePathname();
   const { user } = useAuth();
+  const { isVisible } = useDepartmentNavigation();
   const companySlug = user?.companySlug || 'esstee';
   const companyName = user?.company || (companySlug ? companySlug.charAt(0).toUpperCase() + companySlug.slice(1) : 'Esstee');
 
@@ -34,9 +36,9 @@ export function WorkspaceHeader() {
       </div>
       <div className="workspace-topbar-actions">
         <span className="workspace-unit">{user?.unit || `${companyName} Operations`}</span>
-        <Link href={`/${companySlug}/dashboard/messages`} aria-label="View notifications" className="workspace-icon-button">
+        {isVisible('/dashboard/messages') && <Link href={`/${companySlug}/dashboard/messages`} aria-label="View notifications" className="workspace-icon-button">
           <Bell size={18} />
-        </Link>
+        </Link>}
         <div className="workspace-avatar" title={user?.name || 'My account'}>
           {user?.name?.charAt(0).toUpperCase() || 'M'}
         </div>

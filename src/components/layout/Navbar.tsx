@@ -62,7 +62,7 @@ export interface NavTab {
 export function Navbar() {
   const pathname = usePathname();
   const { user, role, logout } = useAuth();
-  const { selection } = useDepartmentNavigation();
+  const { selection, ready: navigationReady } = useDepartmentNavigation();
   const { isNavHidden, toggleNav, openMobileNav } = useNav();
 
   const [lowStockCount, setLowStockCount] = useState<number>(0);
@@ -406,7 +406,7 @@ export function Navbar() {
     };
 
     const defaultTabs = departmentMenu(buildTabs(), selection, user?.role || role,
-      item => ({ href: item.href, label: item.label, icon: Layers }));
+      item => ({ href: item.href, label: item.label, icon: Layers }), navigationReady);
     const companySlug = user?.companySlug || 'esstee';
     return defaultTabs.map((tab) => ({
       ...tab,
@@ -423,6 +423,7 @@ export function Navbar() {
     unattendedBreachCount,
     user?.companySlug,
     selection,
+    navigationReady,
     user?.role,
     role,
   ]);

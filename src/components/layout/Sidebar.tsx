@@ -65,7 +65,7 @@ export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const { user, role, logout } = useAuth();
-  const { selection } = useDepartmentNavigation();
+  const { selection, ready: navigationReady, isVisible } = useDepartmentNavigation();
   const { isNavHidden, showNav, hideNav, isMobileOpen, setIsMobileOpen, closeMobileNav } = useNav();
 
   const [lowStockCount, setLowStockCount] = useState<number>(0);
@@ -494,7 +494,7 @@ export function Sidebar() {
       ];
     };
     const defaults = buildSections();
-    const rawSections = selection === null ? defaults : [{
+    const rawSections = !navigationReady ? [] : selection === null ? defaults : [{
       title: 'Department menu',
       items: departmentMenu(defaults.flatMap(section => section.items), selection, user?.role || role,
         item => ({ href: item.href, label: item.label, icon: Layers })),
@@ -507,7 +507,7 @@ export function Sidebar() {
         href: it.href.startsWith('/dashboard') ? `/${companySlug}${it.href}` : it.href,
       })),
     }));
-  }, [currentRole, pendingTicketsCount, pendingPpmCount, activeInChargesCount, pendingCeoCount, pendingStoreCount, lowStockCount, user?.companySlug, selection, user?.role, role]);
+  }, [currentRole, pendingTicketsCount, pendingPpmCount, activeInChargesCount, pendingCeoCount, pendingStoreCount, lowStockCount, user?.companySlug, selection, user?.role, role, navigationReady]);
 
   const userInitial = useMemo(() => {
     if (currentRole === 'ADMIN') return 'A';
@@ -544,7 +544,7 @@ export function Sidebar() {
 
           <div className="flex items-center gap-1.5">
             {/* Top Notification Bell with unseen counter */}
-            <Link
+            {isVisible('/dashboard/messages') && (<Link
               href={`/${user?.companySlug || 'esstee'}/dashboard/messages`}
               className="relative p-1.5 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition cursor-pointer flex items-center justify-center group"
               title={`${unattendedBreachCount} unseen alerts & notifications`}
@@ -555,7 +555,7 @@ export function Sidebar() {
                   {unattendedBreachCount}
                 </span>
               )}
-            </Link>
+            </Link>)}
 
             {/* Desktop hide button */}
             <button
@@ -661,14 +661,14 @@ export function Sidebar() {
 
           <div className="flex items-center gap-1 shrink-0">
             {/* Settings trigger */}
-            <button
+            {isVisible('/dashboard/settings') && (<button
               type="button"
               onClick={() => router.push(`/${companySlug}/dashboard/settings`)}
               className="p-1.5 text-slate-400 hover:text-emerald-600 rounded-lg hover:bg-emerald-50 transition cursor-pointer"
               title="System Settings"
             >
               <Settings className="w-4 h-4" />
-            </button>
+            </button>)}
 
             {/* Logout arrow icon */}
             <button
@@ -699,7 +699,7 @@ export function Sidebar() {
         </Link>
 
         {/* Top Notification Bell with unseen counter */}
-        <Link
+        {isVisible('/dashboard/messages') && (<Link
           href={`/${companySlug}/dashboard/messages`}
           className="relative p-2 text-slate-600 hover:text-rose-600 hover:bg-slate-50 rounded-xl transition cursor-pointer flex items-center justify-center group"
           title={`${unattendedBreachCount} unseen alerts & notifications`}
@@ -710,7 +710,7 @@ export function Sidebar() {
               {unattendedBreachCount}
             </span>
           )}
-        </Link>
+        </Link>)}
 
         {/* Open/Expand Navbar button */}
         <button
@@ -767,14 +767,14 @@ export function Sidebar() {
         </div>
 
         {/* Sparkles / performance icon */}
-        <button
+        {isVisible('/dashboard/kpi') && (<button
           type="button"
           onClick={() => router.push(`/${companySlug}/dashboard/kpi`)}
           className="p-1.5 text-slate-400 hover:text-amber-500 rounded-lg hover:bg-white transition cursor-pointer"
           title="Department KPI & Performance"
         >
           <Sparkles className="w-4 h-4" />
-        </button>
+        </button>)}
 
         {/* Sign out button */}
         <button

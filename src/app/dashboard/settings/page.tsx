@@ -414,7 +414,7 @@ function SettingsContent() {
   // Add Department Modal
   const [isAddDeptModalOpen, setIsAddDeptModalOpen] = useState(false);
   const [newDeptName, setNewDeptName] = useState('');
-  const [newDeptNavigation, setNewDeptNavigation] = useState<NavigationHref[] | undefined>(undefined);
+  const [newDeptNavigation, setNewDeptNavigation] = useState<NavigationHref[]>(['/dashboard', '/dashboard/messages']);
   const [newDeptDesc, setNewDeptDesc] = useState('');
   const [newDeptUsers, setNewDeptUsers] = useState<number>(0);
   const [newDeptKpi1Weight, setNewDeptKpi1Weight] = useState(40);
@@ -701,7 +701,7 @@ function SettingsContent() {
     showToast(`Department "${created.name}" created successfully!`, 'success');
     setIsAddDeptModalOpen(false);
     setNewDeptName('');
-    setNewDeptNavigation(undefined);
+    setNewDeptNavigation(['/dashboard', '/dashboard/messages']);
     setNewDeptDesc('');
     setNewDeptUsers(0);
   };
@@ -1560,7 +1560,7 @@ function SettingsContent() {
                     <div className="flex items-center gap-2 shrink-0">
                       <button
                         type="button"
-                        onClick={() => setEditingDept(dept)}
+                        onClick={() => setEditingDept({ ...dept, navigation: dept.navigation ?? [] })}
                         className="text-slate-400 hover:text-slate-700 transition cursor-pointer"
                         title={`Edit ${dept.name}`}
                       >
