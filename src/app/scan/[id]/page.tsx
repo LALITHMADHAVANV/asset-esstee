@@ -130,7 +130,7 @@ function AuthenticatedScanContent() {
           setRegisteredTechs(techs);
         }
       })
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   // Show all registered technicians across all units (prioritizing machine's unit first)
@@ -304,11 +304,11 @@ function AuthenticatedScanContent() {
       {/* Mobile Top Header with Prominent History Button */}
       <div className="max-w-lg w-full mx-auto flex items-center justify-between py-3 border-b border-slate-200 mb-4 gap-2">
         <Link
-          href={user ? (role === 'CEO' ? '/dashboard' : '/dashboard/machines') : '/login'}
+          href={user ? '/dashboard' : '/login'}
           className="text-xs text-slate-600 hover:text-slate-900 flex items-center gap-1.5 transition font-semibold"
         >
           <ArrowLeft className="w-4 h-4 text-slate-500" />
-          <span>{user ? (role === 'CEO' ? 'Executive Dashboard' : 'Maintenance Dashboard') : 'Staff Sign In'}</span>
+          <span>{user ? 'Maintenance Dashboard' : 'Staff Sign In'}</span>
         </Link>
 
         {/* Top Actions: Edit Button + History Button + Live Status */}
@@ -371,13 +371,12 @@ function AuthenticatedScanContent() {
             </div>
             <div className="flex flex-col items-end gap-1.5">
               <span
-                className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
-                  isDown
-                    ? 'bg-rose-50 text-rose-700 border border-rose-200 urgent-pulse'
-                    : machine.status === 'BUFFER'
+                className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${isDown
+                  ? 'bg-rose-50 text-rose-700 border border-rose-200 urgent-pulse'
+                  : machine.status === 'BUFFER'
                     ? 'bg-amber-50 text-amber-700 border border-amber-200'
                     : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                }`}
+                  }`}
               >
                 {machine.status}
               </span>
@@ -438,11 +437,10 @@ function AuthenticatedScanContent() {
           <button
             type="button"
             onClick={() => setActiveTab('report')}
-            className={`flex-1 py-3.5 text-center border-b-2 transition flex items-center justify-center gap-2 cursor-pointer ${
-              activeTab === 'report'
-                ? 'border-rose-600 text-rose-700 bg-rose-50/60 font-extrabold'
-                : 'border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-100'
-            }`}
+            className={`flex-1 py-3.5 text-center border-b-2 transition flex items-center justify-center gap-2 cursor-pointer ${activeTab === 'report'
+              ? 'border-rose-600 text-rose-700 bg-rose-50/60 font-extrabold'
+              : 'border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-100'
+              }`}
           >
             <AlertTriangle className="w-4 h-4 text-rose-600" />
             <span>1. Report Breakdown</span>
@@ -450,11 +448,10 @@ function AuthenticatedScanContent() {
           <button
             type="button"
             onClick={() => setActiveTab('relocate')}
-            className={`flex-1 py-3.5 text-center border-b-2 transition flex items-center justify-center gap-2 cursor-pointer ${
-              activeTab === 'relocate'
-                ? 'border-indigo-600 text-indigo-700 bg-indigo-50/60 font-extrabold'
-                : 'border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-100'
-            }`}
+            className={`flex-1 py-3.5 text-center border-b-2 transition flex items-center justify-center gap-2 cursor-pointer ${activeTab === 'relocate'
+              ? 'border-indigo-600 text-indigo-700 bg-indigo-50/60 font-extrabold'
+              : 'border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-100'
+              }`}
           >
             <ArrowRightLeft className="w-4 h-4 text-indigo-600" />
             <span>2. Relocate Asset</span>
@@ -598,11 +595,10 @@ function AuthenticatedScanContent() {
                 </label>
                 <div className="grid grid-cols-2 gap-3">
                   <label
-                    className={`flex items-center p-3 rounded-xl border text-xs font-bold cursor-pointer transition ${
-                      urgency === 'CRITICAL'
-                        ? 'border-rose-500 bg-rose-50 text-rose-700 ring-2 ring-rose-500'
-                        : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100'
-                    }`}
+                    className={`flex items-center p-3 rounded-xl border text-xs font-bold cursor-pointer transition ${urgency === 'CRITICAL'
+                      ? 'border-rose-500 bg-rose-50 text-rose-700 ring-2 ring-rose-500'
+                      : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100'
+                      }`}
                   >
                     <input
                       type="radio"
@@ -614,11 +610,10 @@ function AuthenticatedScanContent() {
                     <span>Critical (Line Stopped)</span>
                   </label>
                   <label
-                    className={`flex items-center p-3 rounded-xl border text-xs font-bold cursor-pointer transition ${
-                      urgency === 'WARNING'
-                        ? 'border-amber-500 bg-amber-50 text-amber-700 ring-2 ring-amber-500'
-                        : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100'
-                    }`}
+                    className={`flex items-center p-3 rounded-xl border text-xs font-bold cursor-pointer transition ${urgency === 'WARNING'
+                      ? 'border-amber-500 bg-amber-50 text-amber-700 ring-2 ring-amber-500'
+                      : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100'
+                      }`}
                   >
                     <input
                       type="radio"

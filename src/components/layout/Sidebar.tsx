@@ -537,25 +537,12 @@ export function Sidebar() {
         <div className="flex items-center justify-between">
           <Link href={`/${user?.companySlug || 'esstee'}/dashboard`} className="flex items-center gap-2 group">
             <span className="workspace-brand text-lg font-bold tracking-tight hover:opacity-90 transition font-sans">
-              <span className="workspace-brand-mark" aria-hidden="true">m.</span>
-              <span>maintain</span>
+              <span className="workspace-brand-mark" aria-hidden="true">a.</span>
+              <span>Asset</span>
             </span>
           </Link>
 
           <div className="flex items-center gap-1.5">
-            {/* Top Notification Bell with unseen counter */}
-            {isVisible('/dashboard/messages') && (<Link
-              href={`/${user?.companySlug || 'esstee'}/dashboard/messages`}
-              className="relative p-1.5 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition cursor-pointer flex items-center justify-center group"
-              title={`${unattendedBreachCount} unseen alerts & notifications`}
-            >
-              <Bell className="w-4 h-4 text-slate-600 group-hover:text-rose-600 transition" />
-              {unattendedBreachCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-[#f43f5e] text-white text-[10px] font-extrabold flex items-center justify-center shadow-2xs animate-pulse">
-                  {unattendedBreachCount}
-                </span>
-              )}
-            </Link>)}
 
             {/* Desktop hide button */}
             <button
@@ -609,15 +596,15 @@ export function Sidebar() {
                   onClick={closeMobileNav}
                   aria-current={isActive ? 'page' : undefined}
                   className={`sidebar-link flex items-center justify-between px-3 py-2.5 rounded-lg text-[13px] transition group cursor-pointer ${isActive
-                      ? 'bg-[#eef9f5] text-[#065f46] border border-[#a7f3d0] font-bold shadow-2xs'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50 font-medium border border-transparent'
+                    ? 'bg-[#eef9f5] text-[#065f46] border border-[#a7f3d0] font-bold shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50 font-medium border border-transparent'
                     }`}
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <Icon
                       className={`w-4 h-4 shrink-0 transition ${isActive
-                          ? 'text-[#059669]'
-                          : 'text-slate-400 group-hover:text-slate-700'
+                        ? 'text-[#059669]'
+                        : 'text-slate-400 group-hover:text-slate-700'
                         }`}
                     />
                     <span className="truncate">{item.label}</span>
@@ -626,8 +613,8 @@ export function Sidebar() {
                   {item.badge !== null && item.badge !== undefined && (
                     <span
                       className={`px-2 py-0.5 text-[10px] rounded-full font-semibold shrink-0 ${isActive
-                          ? 'bg-[#10b981] text-white shadow-2xs'
-                          : item.badgeColor || 'bg-slate-100 text-slate-600'
+                        ? 'bg-[#10b981] text-white shadow-2xs'
+                        : item.badgeColor || 'bg-slate-100 text-slate-600'
                         }`}
                     >
                       {item.badge}
@@ -698,19 +685,7 @@ export function Sidebar() {
           ASSET MODULE
         </Link>
 
-        {/* Top Notification Bell with unseen counter */}
-        {isVisible('/dashboard/messages') && (<Link
-          href={`/${companySlug}/dashboard/messages`}
-          className="relative p-2 text-slate-600 hover:text-rose-600 hover:bg-slate-50 rounded-xl transition cursor-pointer flex items-center justify-center group"
-          title={`${unattendedBreachCount} unseen alerts & notifications`}
-        >
-          <Bell className="w-5 h-5 text-slate-600 group-hover:text-rose-600 transition" />
-          {unattendedBreachCount > 0 && (
-            <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-[#f43f5e] text-white text-[10px] font-extrabold flex items-center justify-center shadow-2xs animate-pulse">
-              {unattendedBreachCount}
-            </span>
-          )}
-        </Link>)}
+
 
         {/* Open/Expand Navbar button */}
         <button
@@ -740,8 +715,8 @@ export function Sidebar() {
                   key={item.href}
                   href={item.href}
                   className={`relative w-11 h-11 rounded-2xl flex items-center justify-center transition cursor-pointer ${isActive
-                      ? 'bg-[#e6f7f4] border border-[#a7f3d0] text-[#00897b] font-bold shadow-2xs ring-1 ring-[#00897b]/20'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50 border border-slate-200/60 hover:border-slate-300'
+                    ? 'bg-[#e6f7f4] border border-[#a7f3d0] text-[#00897b] font-bold shadow-2xs ring-1 ring-[#00897b]/20'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50 border border-slate-200/60 hover:border-slate-300'
                     }`}
                   title={item.label}
                 >

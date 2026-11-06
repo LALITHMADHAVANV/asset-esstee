@@ -861,8 +861,8 @@ export default function NotificationsPage() {
             type="button"
             onClick={() => setIsMuted(!isMuted)}
             className={`p-2 rounded-xl border text-xs font-semibold transition cursor-pointer flex items-center gap-1.5 ${isMuted
-                ? 'bg-slate-100 border-slate-200 text-slate-600 hover:bg-slate-200'
-                : 'bg-emerald-50 border-emerald-200 text-emerald-800 hover:bg-emerald-100'
+              ? 'bg-slate-100 border-slate-200 text-slate-600 hover:bg-slate-200'
+              : 'bg-emerald-50 border-emerald-200 text-emerald-800 hover:bg-emerald-100'
               }`}
             title={isMuted ? 'Alert sounds muted' : 'Alert sound alerts active'}
           >
@@ -893,44 +893,6 @@ export default function NotificationsPage() {
         </div>
       </div>
 
-      {/* ─── 2. ACTIVE SCOPING CONTEXT BANNER ─────────────────────────────── */}
-      <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-2.5 text-xs">
-          <div className="flex items-center gap-1.5 font-bold text-slate-700">
-            <Filter className="w-4 h-4 text-indigo-600" />
-            <span>Active Feed Scope:</span>
-          </div>
-
-          {/* Role Scope Pill */}
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-indigo-50 text-indigo-700 border border-indigo-200 font-bold">
-            <User className="w-3.5 h-3.5" />
-            <span>{getRoleScopeLabel(selectedRoleScope)}</span>
-          </span>
-
-          {/* Unit Scope Pill */}
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold">
-            <Building2 className="w-3.5 h-3.5 text-emerald-600" />
-            <span>
-              {effectiveUnit === 'ALL' || effectiveUnit === 'All Units'
-                ? 'All Plant Units (Plant-wide)'
-                : effectiveUnit === 'UNIT - 1'
-                  ? 'Plant Unit 1 — - Campus'
-                  : effectiveUnit === 'UNIT-2'
-                    ? 'Plant Unit 2 — Perundurai Campus'
-                    : effectiveUnit}
-            </span>
-            {!isAdmin && userAssignedUnit !== 'All Units' && (
-              <span className="ml-1 text-[10px] text-emerald-600 font-normal italic flex items-center gap-0.5">
-                <Lock className="w-2.5 h-2.5" /> (Locked to Assigned Unit)
-              </span>
-            )}
-          </span>
-        </div>
-
-        <div className="text-[11px] text-slate-500 font-medium">
-          Showing <strong>{filteredNotifications.length}</strong> active alerts
-        </div>
-      </div>
 
       {/* ─── 3. HIGHLIGHT: UNATTENDED ISSUES > 5 MINUTES SLA ESCALATION BANNER ──── */}
       {unattended5MCount > 0 && (
@@ -973,8 +935,8 @@ export default function NotificationsPage() {
         <div
           onClick={() => setActiveTab('UNATTENDED_5M')}
           className={`p-4 rounded-2xl border transition cursor-pointer shadow-2xs ${activeTab === 'UNATTENDED_5M'
-              ? 'bg-rose-50/80 border-rose-400 ring-2 ring-rose-500/20'
-              : 'bg-white border-slate-200/80 hover:border-rose-300'
+            ? 'bg-rose-50/80 border-rose-400 ring-2 ring-rose-500/20'
+            : 'bg-white border-slate-200/80 hover:border-rose-300'
             }`}
         >
           <div className="flex items-center justify-between text-xs font-bold text-slate-500 mb-1.5">
@@ -989,8 +951,8 @@ export default function NotificationsPage() {
         <div
           onClick={() => setActiveTab('BREAKDOWN_WARNING')}
           className={`p-4 rounded-2xl border transition cursor-pointer shadow-2xs ${activeTab === 'BREAKDOWN_WARNING'
-              ? 'bg-amber-50/80 border-amber-400 ring-2 ring-amber-500/20'
-              : 'bg-white border-slate-200/80 hover:border-amber-300'
+            ? 'bg-amber-50/80 border-amber-400 ring-2 ring-amber-500/20'
+            : 'bg-white border-slate-200/80 hover:border-amber-300'
             }`}
         >
           <div className="flex items-center justify-between text-xs font-bold text-slate-500 mb-1.5">
@@ -1005,8 +967,8 @@ export default function NotificationsPage() {
         <div
           onClick={() => setActiveTab('ASSET_ACTIONS')}
           className={`p-4 rounded-2xl border transition cursor-pointer shadow-2xs ${activeTab === 'ASSET_ACTIONS'
-              ? 'bg-indigo-50/80 border-indigo-400 ring-2 ring-indigo-500/20'
-              : 'bg-white border-slate-200/80 hover:border-indigo-300'
+            ? 'bg-indigo-50/80 border-indigo-400 ring-2 ring-indigo-500/20'
+            : 'bg-white border-slate-200/80 hover:border-indigo-300'
             }`}
         >
           <div className="flex items-center justify-between text-xs font-bold text-slate-500 mb-1.5">
@@ -1021,8 +983,8 @@ export default function NotificationsPage() {
         <div
           onClick={() => setActiveTab('PPM_OVERDUE')}
           className={`p-4 rounded-2xl border transition cursor-pointer shadow-2xs ${activeTab === 'PPM_OVERDUE'
-              ? 'bg-blue-50/80 border-blue-400 ring-2 ring-blue-500/20'
-              : 'bg-white border-slate-200/80 hover:border-blue-300'
+            ? 'bg-blue-50/80 border-blue-400 ring-2 ring-blue-500/20'
+            : 'bg-white border-slate-200/80 hover:border-blue-300'
             }`}
         >
           <div className="flex items-center justify-between text-xs font-bold text-slate-500 mb-1.5">
@@ -1037,8 +999,8 @@ export default function NotificationsPage() {
         <div
           onClick={() => setActiveTab('LOW_STOCK')}
           className={`p-4 rounded-2xl border transition cursor-pointer shadow-2xs ${activeTab === 'LOW_STOCK'
-              ? 'bg-orange-50/80 border-orange-400 ring-2 ring-orange-500/20'
-              : 'bg-white border-slate-200/80 hover:border-orange-300'
+            ? 'bg-orange-50/80 border-orange-400 ring-2 ring-orange-500/20'
+            : 'bg-white border-slate-200/80 hover:border-orange-300'
             }`}
         >
           <div className="flex items-center justify-between text-xs font-bold text-slate-500 mb-1.5">
@@ -1053,8 +1015,8 @@ export default function NotificationsPage() {
         <div
           onClick={() => setActiveTab('APPROVALS')}
           className={`p-4 rounded-2xl border transition cursor-pointer shadow-2xs col-span-2 md:col-span-1 ${activeTab === 'APPROVALS'
-              ? 'bg-emerald-50/80 border-emerald-400 ring-2 ring-emerald-500/20'
-              : 'bg-white border-slate-200/80 hover:border-emerald-300'
+            ? 'bg-emerald-50/80 border-emerald-400 ring-2 ring-emerald-500/20'
+            : 'bg-white border-slate-200/80 hover:border-emerald-300'
             }`}
         >
           <div className="flex items-center justify-between text-xs font-bold text-slate-500 mb-1.5">
@@ -1074,8 +1036,8 @@ export default function NotificationsPage() {
             type="button"
             onClick={() => setActiveTab('ALL')}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 ${activeTab === 'ALL'
-                ? 'bg-slate-900 text-white shadow-xs'
-                : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'
+              ? 'bg-slate-900 text-white shadow-xs'
+              : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'
               }`}
           >
             All Alerts ({roleAndUnitScopedNotifications.length})
@@ -1085,8 +1047,8 @@ export default function NotificationsPage() {
             type="button"
             onClick={() => setActiveTab('UNATTENDED_5M')}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 flex items-center gap-1.5 ${activeTab === 'UNATTENDED_5M'
-                ? 'bg-rose-600 text-white shadow-xs'
-                : 'bg-white border border-slate-200 text-rose-700 hover:bg-rose-50'
+              ? 'bg-rose-600 text-white shadow-xs'
+              : 'bg-white border border-slate-200 text-rose-700 hover:bg-rose-50'
               }`}
           >
             <Flame className="w-3.5 h-3.5" />
@@ -1097,8 +1059,8 @@ export default function NotificationsPage() {
             type="button"
             onClick={() => setActiveTab('BREAKDOWN_WARNING')}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 ${activeTab === 'BREAKDOWN_WARNING'
-                ? 'bg-amber-600 text-white shadow-xs'
-                : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'
+              ? 'bg-amber-600 text-white shadow-xs'
+              : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'
               }`}
           >
             Breakdowns ({breakdownWarningCount})
@@ -1108,8 +1070,8 @@ export default function NotificationsPage() {
             type="button"
             onClick={() => setActiveTab('ASSET_ACTIONS')}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 ${activeTab === 'ASSET_ACTIONS'
-                ? 'bg-indigo-600 text-white shadow-xs'
-                : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'
+              ? 'bg-indigo-600 text-white shadow-xs'
+              : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'
               }`}
           >
             Asset Actions ({assetActionsCount})
@@ -1119,8 +1081,8 @@ export default function NotificationsPage() {
             type="button"
             onClick={() => setActiveTab('PPM_OVERDUE')}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 ${activeTab === 'PPM_OVERDUE'
-                ? 'bg-blue-600 text-white shadow-xs'
-                : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'
+              ? 'bg-blue-600 text-white shadow-xs'
+              : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'
               }`}
           >
             Overdue PPM ({ppmOverdueCount})
@@ -1130,8 +1092,8 @@ export default function NotificationsPage() {
             type="button"
             onClick={() => setActiveTab('LOW_STOCK')}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 ${activeTab === 'LOW_STOCK'
-                ? 'bg-orange-600 text-white shadow-xs'
-                : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'
+              ? 'bg-orange-600 text-white shadow-xs'
+              : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'
               }`}
           >
             Tool Crib Spares ({lowStockCount})
@@ -1141,8 +1103,8 @@ export default function NotificationsPage() {
             type="button"
             onClick={() => setActiveTab('APPROVALS')}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 ${activeTab === 'APPROVALS'
-                ? 'bg-emerald-600 text-white shadow-xs'
-                : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'
+              ? 'bg-emerald-600 text-white shadow-xs'
+              : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'
               }`}
           >
             Executive Capex ({approvalsCount})
@@ -1248,23 +1210,23 @@ export default function NotificationsPage() {
               <div
                 key={item.id}
                 className={`bg-white rounded-2xl border transition-all p-4 sm:p-5 shadow-2xs hover:shadow-xs relative overflow-hidden ${isUnattended
-                    ? 'border-rose-300 ring-1 ring-rose-500/20 bg-rose-50/15'
-                    : isAssetAction
-                      ? 'border-indigo-200/90 bg-indigo-50/10'
-                      : item.severity === 'CRITICAL'
-                        ? 'border-rose-200'
-                        : 'border-slate-200/80'
+                  ? 'border-rose-300 ring-1 ring-rose-500/20 bg-rose-50/15'
+                  : isAssetAction
+                    ? 'border-indigo-200/90 bg-indigo-50/10'
+                    : item.severity === 'CRITICAL'
+                      ? 'border-rose-200'
+                      : 'border-slate-200/80'
                   }`}
               >
                 {/* Left Accent Bar */}
                 <div
                   className={`absolute left-0 top-0 bottom-0 w-1.5 ${isUnattended
-                      ? 'bg-rose-600'
-                      : isAssetAction
-                        ? 'bg-indigo-600'
-                        : item.severity === 'CRITICAL'
-                          ? 'bg-rose-500'
-                          : 'bg-amber-500'
+                    ? 'bg-rose-600'
+                    : isAssetAction
+                      ? 'bg-indigo-600'
+                      : item.severity === 'CRITICAL'
+                        ? 'bg-rose-500'
+                        : 'bg-amber-500'
                     }`}
                 />
 
@@ -1348,10 +1310,10 @@ export default function NotificationsPage() {
 
                         <span
                           className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${item.severity === 'CRITICAL'
-                              ? 'bg-rose-100 text-rose-800 border border-rose-200'
-                              : isAssetAction
-                                ? 'bg-indigo-50 text-indigo-700 border border-indigo-200'
-                                : 'bg-amber-100 text-amber-900 border border-amber-200'
+                            ? 'bg-rose-100 text-rose-800 border border-rose-200'
+                            : isAssetAction
+                              ? 'bg-indigo-50 text-indigo-700 border border-indigo-200'
+                              : 'bg-amber-100 text-amber-900 border border-amber-200'
                             }`}
                         >
                           {item.severity}
@@ -1523,15 +1485,15 @@ export default function NotificationsPage() {
                         key={mech.name}
                         onClick={() => setSelectedMechanic(mech.name)}
                         className={`p-3 rounded-xl border transition cursor-pointer flex items-center justify-between text-xs ${isSelected
-                            ? 'bg-emerald-50/80 border-emerald-500 ring-1 ring-emerald-500/20'
-                            : 'bg-white border-slate-200 hover:border-slate-300'
+                          ? 'bg-emerald-50/80 border-emerald-500 ring-1 ring-emerald-500/20'
+                          : 'bg-white border-slate-200 hover:border-slate-300'
                           }`}
                       >
                         <div className="flex items-center gap-3">
                           <span
                             className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs ${isSelected
-                                ? 'bg-emerald-600 text-white'
-                                : 'bg-slate-100 text-slate-700'
+                              ? 'bg-emerald-600 text-white'
+                              : 'bg-slate-100 text-slate-700'
                               }`}
                           >
                             {mech.name.slice(0, 2).toUpperCase()}
