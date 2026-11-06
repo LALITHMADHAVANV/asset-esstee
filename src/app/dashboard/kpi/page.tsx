@@ -319,16 +319,10 @@ export default function UserKpiPage() {
   }, [userKpiProfiles, tradeFilter, tierFilter, selectedUnit, searchQuery, sortBy]);
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-16 font-sans p-6 md:p-8">
+    <div className="space-y-6 max-w-7xl mx-auto pb-16 font-sans">
       {/* ─── Header Section ─── */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-white/95 flex flex-col md:flex-row md:items-center justify-between gap-4 rounded-2xl p-3">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
-              Department &amp; User Performance
-            </span>
-            <span className="text-xs text-slate-400 font-medium">Live CMMS Sync</span>
-          </div>
           <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2.5">
             <Award className="w-8 h-8 text-[#059669]" />
             <span>Users KPI Scorecard</span>
@@ -343,21 +337,19 @@ export default function UserKpiPage() {
           <div className="bg-slate-200/80 p-1 rounded-xl flex items-center text-xs font-bold">
             <button
               onClick={() => setViewMode('CARDS')}
-              className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${
-                viewMode === 'CARDS'
-                  ? 'bg-white text-slate-900 shadow-2xs'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
+              className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${viewMode === 'CARDS'
+                ? 'bg-white text-slate-900 shadow-2xs'
+                : 'text-slate-600 hover:text-slate-900'
+                }`}
             >
               Cards
             </button>
             <button
               onClick={() => setViewMode('TABLE')}
-              className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${
-                viewMode === 'TABLE'
-                  ? 'bg-white text-slate-900 shadow-2xs'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
+              className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${viewMode === 'TABLE'
+                ? 'bg-white text-slate-900 shadow-2xs'
+                : 'text-slate-600 hover:text-slate-900'
+                }`}
             >
               Leaderboard Table
             </button>
@@ -727,13 +719,12 @@ export default function UserKpiPage() {
                       {/* MTTR Column */}
                       <td className="py-3.5 px-4 text-center whitespace-nowrap">
                         <span
-                          className={`inline-block px-2 py-0.5 rounded-md font-bold text-xs ${
-                            w.avgMttrMinutes <= 25
-                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                              : w.avgMttrMinutes <= 40
+                          className={`inline-block px-2 py-0.5 rounded-md font-bold text-xs ${w.avgMttrMinutes <= 25
+                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                            : w.avgMttrMinutes <= 40
                               ? 'bg-blue-50 text-blue-700 border border-blue-200'
                               : 'bg-amber-50 text-amber-700 border border-amber-200'
-                          }`}
+                            }`}
                         >
                           {w.avgMttrMinutes}m
                         </span>

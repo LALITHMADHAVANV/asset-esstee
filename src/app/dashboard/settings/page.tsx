@@ -1356,7 +1356,7 @@ function SettingsContent() {
   }, [workerKpiList, kpiSearchQuery, kpiTradeFilter, kpiSortBy]);
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
+    <div className="max-w-7xl mx-auto space-y-6">
       {/* ─────────────────────────────────────────────────────────────────────────
           HEADER SECTION & TABS
       ────────────────────────────────────────────────────────────────────────── */}
@@ -2511,8 +2511,8 @@ function SettingsContent() {
                   type="button"
                   onClick={() => setTestTargetChannel('UNIT1')}
                   className={`p-3.5 rounded-xl border text-left transition cursor-pointer ${testTargetChannel === 'UNIT1'
-                      ? 'bg-sky-50 border-sky-300 ring-2 ring-sky-500/20 shadow-2xs'
-                      : 'bg-slate-50 border-slate-200 hover:bg-slate-100/70'
+                    ? 'bg-sky-50 border-sky-300 ring-2 ring-sky-500/20 shadow-2xs'
+                    : 'bg-slate-50 border-slate-200 hover:bg-slate-100/70'
                     }`}
                 >
                   <div className="flex items-center justify-between mb-1">
@@ -2526,8 +2526,8 @@ function SettingsContent() {
                   type="button"
                   onClick={() => setTestTargetChannel('UNIT2')}
                   className={`p-3.5 rounded-xl border text-left transition cursor-pointer ${testTargetChannel === 'UNIT2'
-                      ? 'bg-sky-50 border-sky-300 ring-2 ring-sky-500/20 shadow-2xs'
-                      : 'bg-slate-50 border-slate-200 hover:bg-slate-100/70'
+                    ? 'bg-sky-50 border-sky-300 ring-2 ring-sky-500/20 shadow-2xs'
+                    : 'bg-slate-50 border-slate-200 hover:bg-slate-100/70'
                     }`}
                 >
                   <div className="flex items-center justify-between mb-1">
@@ -2541,8 +2541,8 @@ function SettingsContent() {
                   type="button"
                   onClick={() => setTestTargetChannel('ADMIN')}
                   className={`p-3.5 rounded-xl border text-left transition cursor-pointer ${testTargetChannel === 'ADMIN'
-                      ? 'bg-sky-50 border-sky-300 ring-2 ring-sky-500/20 shadow-2xs'
-                      : 'bg-slate-50 border-slate-200 hover:bg-slate-100/70'
+                    ? 'bg-sky-50 border-sky-300 ring-2 ring-sky-500/20 shadow-2xs'
+                    : 'bg-slate-50 border-slate-200 hover:bg-slate-100/70'
                     }`}
                 >
                   <div className="flex items-center justify-between mb-1">
@@ -3494,8 +3494,8 @@ function SettingsContent() {
                       disabled={!newUnit || newUnit === 'All Units'}
                       onClick={() => setIsNewZoneDropdownOpen((prev) => !prev)}
                       className={`w-full px-3 py-2 text-left bg-white border rounded-xl flex items-center justify-between transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${isNewZoneDropdownOpen
-                          ? 'border-[#059669] ring-2 ring-[#059669]/20'
-                          : 'border-slate-300 hover:border-slate-400'
+                        ? 'border-[#059669] ring-2 ring-[#059669]/20'
+                        : 'border-slate-300 hover:border-slate-400'
                         }`}
                     >
                       <div className="flex items-center gap-2 truncate">
@@ -3565,8 +3565,8 @@ function SettingsContent() {
                                     );
                                   }}
                                   className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition select-none text-xs ${isChecked
-                                      ? 'bg-emerald-50 text-emerald-900 font-semibold'
-                                      : 'hover:bg-slate-50 text-slate-700'
+                                    ? 'bg-emerald-50 text-emerald-900 font-semibold'
+                                    : 'hover:bg-slate-50 text-slate-700'
                                     }`}
                                 >
                                   <div className="flex items-center gap-2.5">
@@ -3826,8 +3826,8 @@ function SettingsContent() {
                       disabled={!editUnit || editUnit === 'All Units'}
                       onClick={() => setIsEditZoneDropdownOpen((prev) => !prev)}
                       className={`w-full px-3 py-2 text-left bg-white border rounded-xl flex items-center justify-between transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${isEditZoneDropdownOpen
-                          ? 'border-[#059669] ring-2 ring-[#059669]/20'
-                          : 'border-slate-300 hover:border-slate-400'
+                        ? 'border-[#059669] ring-2 ring-[#059669]/20'
+                        : 'border-slate-300 hover:border-slate-400'
                         }`}
                     >
                       <div className="flex items-center gap-2 truncate">
@@ -3897,8 +3897,8 @@ function SettingsContent() {
                                     );
                                   }}
                                   className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition select-none text-xs ${isChecked
-                                      ? 'bg-emerald-50 text-emerald-900 font-semibold'
-                                      : 'hover:bg-slate-50 text-slate-700'
+                                    ? 'bg-emerald-50 text-emerald-900 font-semibold'
+                                    : 'hover:bg-slate-50 text-slate-700'
                                     }`}
                                 >
                                   <div className="flex items-center gap-2.5">
