@@ -111,62 +111,20 @@ export function StoreDashboard({
     if (typeof window === 'undefined') return;
     try {
       const raw = localStorage.getItem(STORAGE_STORE_ISSUES);
-      if (raw) {
-        setIssueRecords(JSON.parse(raw));
-      } else {
-        // Initial empty or sample records if needed
-        const initial: StoreIssueRecord[] = [
-          {
-            id: 'SLIP-1082',
-            date: new Date(Date.now() - 45 * 60000).toISOString(),
-            mechanicId: 'MEC-01',
-            mechanicName: 'Ramesh Kumar',
-            targetLine: 'Line 01',
-            targetMachineId: 'MC-OVK-101',
-            partId: 'PRT-02',
-            partName: 'Rotary Hook Hirose Koban HSH-7.94BTR',
-            sku: 'HK-KOB-794',
-            quantity: 1,
-            unit: 'units',
-            oldPartReturned: true,
-            remarks: 'Replaced sheared gear hook. Old unit received into scrap bin.',
-            storekeeper: user?.name || 'Store In-Charge',
-          },
-          {
-            id: 'SLIP-1081',
-            date: new Date(Date.now() - 140 * 60000).toISOString(),
-            mechanicId: 'MEC-02',
-            mechanicName: 'Murugan S.',
-            targetLine: 'Line 02',
-            targetMachineId: 'MC-SNLS-102',
-            partId: 'PRT-01',
-            partName: 'Organ Needles DBx1 (#14/90) Knit & Woven',
-            sku: 'NDL-DBX1-14',
-            quantity: 20,
-            unit: 'pcs',
-            oldPartReturned: true,
-            remarks: 'Daily line needle packet replacement.',
-            storekeeper: user?.name || 'Store In-Charge',
-          },
-          {
-            id: 'SLIP-1079',
-            date: new Date(Date.now() - 24 * 3600000).toISOString(),
-            mechanicId: 'ELE-02',
-            mechanicName: 'Karthik N.',
-            targetLine: 'Line 03',
-            targetMachineId: 'MC-BTN-103',
-            partId: 'PRT-07',
-            partName: 'Direct-Drive Servo Motor Cogged Belt M-42',
-            sku: 'MOT-SRV-BLT',
-            quantity: 1,
-            unit: 'pcs',
-            oldPartReturned: false,
-            remarks: 'Snaped belt on floor. Scrap pending return to tool crib.',
-            storekeeper: user?.name || 'Store In-Charge',
-          },
-        ];
-        setIssueRecords(initial);
-        localStorage.setItem(STORAGE_STORE_ISSUES, JSON.stringify(initial));
+      const stored: StoreIssueRecord[] = raw ? JSON.parse(raw) : [];
+      if (!Array.isArray(stored)) return;
+      const retiredSamples = [
+        { id: 'SLIP-1082', mechanicId: 'MEC-01', partId: 'PRT-02', targetMachineId: 'MC-OVK-101' },
+        { id: 'SLIP-1081', mechanicId: 'MEC-02', partId: 'PRT-01', targetMachineId: 'MC-SNLS-102' },
+        { id: 'SLIP-1079', mechanicId: 'ELE-02', partId: 'PRT-07', targetMachineId: 'MC-BTN-103' },
+      ];
+      const records = stored.filter((record) => !retiredSamples.some((sample) =>
+        record.id === sample.id && record.mechanicId === sample.mechanicId &&
+        record.partId === sample.partId && record.targetMachineId === sample.targetMachineId
+      ));
+      setIssueRecords(records);
+      if (records.length !== stored.length) {
+        localStorage.setItem(STORAGE_STORE_ISSUES, JSON.stringify(records));
       }
     } catch {
       // Ignore

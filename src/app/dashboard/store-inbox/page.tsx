@@ -49,7 +49,13 @@ import {
 } from '@/lib/services/cmmsService';
 import { FACTORY_MECHANICS_ROSTER, MechanicDuty, userToMechanicDuty } from '@/lib/constants/mechanics';
 
-// Default initial urgent mechanic indents if database is empty
+// Retired demo requests: match all identifiers to preserve genuine requests.
+const RETIRED_DEMO_INDENTS = [
+  { id: 'IND-2026-101', requestedBy: 'Ramesh Kumar', partId: 'SP-001', targetMachineId: 'MC-FLA-101' },
+  { id: 'IND-2026-102', requestedBy: 'Murugan S.', partId: 'SP-003', targetMachineId: 'MC-OVK-204' },
+  { id: 'IND-2026-103', requestedBy: 'Karthik N.', partId: 'SP-002', targetMachineId: 'MC-SNLS-103' },
+  { id: 'IND-2026-098', requestedBy: 'Ramesh Kumar', partId: 'SP-002', targetMachineId: 'MC-FLA-108' },
+];
 
 interface GatePassData {
   slipNo: string;
@@ -142,12 +148,13 @@ function StoreInboxContent() {
   useEffect(() => {
     const unsubReqs = subscribeRequisitions((reqs) => {
       // Exclude monthly indents; keep urgent mechanic floor indents
-      const mechanicOnly = reqs.filter((r) => r.type !== 'MONTHLY_INDENT');
-      if (mechanicOnly.length === 0) {
-        setRequisitions([]);
-      } else {
-        setRequisitions(mechanicOnly);
-      }
+      setRequisitions(reqs.filter((r) =>
+        r.type !== 'MONTHLY_INDENT' &&
+        !RETIRED_DEMO_INDENTS.some((demo) =>
+          r.id === demo.id && r.requestedBy === demo.requestedBy &&
+          r.partId === demo.partId && r.targetMachineId === demo.targetMachineId
+        )
+      ));
     });
 
     const unsubParts = subscribeParts((allParts) => {

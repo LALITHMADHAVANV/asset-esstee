@@ -1,6 +1,8 @@
 'use client';
 
 import { textValue } from '@/lib/textValue';
+import { useDepartmentNavigation } from '@/context/DepartmentNavigationContext';
+import { departmentMenu } from '@/lib/departmentNavigation';
 
 import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
@@ -63,6 +65,7 @@ export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const { user, role, logout } = useAuth();
+  const { selection } = useDepartmentNavigation();
   const { isNavHidden, showNav, hideNav, isMobileOpen, setIsMobileOpen, closeMobileNav } = useNav();
 
   const [lowStockCount, setLowStockCount] = useState<number>(0);
@@ -490,7 +493,12 @@ export function Sidebar() {
         },
       ];
     };
-    const rawSections = buildSections();
+    const defaults = buildSections();
+    const rawSections = selection === null ? defaults : [{
+      title: 'Department menu',
+      items: departmentMenu(defaults.flatMap(section => section.items), selection, user?.role || role,
+        item => ({ href: item.href, label: item.label, icon: Layers })),
+    }];
     const companySlug = user?.companySlug || 'esstee';
     return rawSections.map((sec) => ({
       ...sec,
@@ -499,7 +507,7 @@ export function Sidebar() {
         href: it.href.startsWith('/dashboard') ? `/${companySlug}${it.href}` : it.href,
       })),
     }));
-  }, [currentRole, pendingTicketsCount, pendingPpmCount, activeInChargesCount, pendingCeoCount, pendingStoreCount, lowStockCount, user?.companySlug]);
+  }, [currentRole, pendingTicketsCount, pendingPpmCount, activeInChargesCount, pendingCeoCount, pendingStoreCount, lowStockCount, user?.companySlug, selection, user?.role, role]);
 
   const userInitial = useMemo(() => {
     if (currentRole === 'ADMIN') return 'A';

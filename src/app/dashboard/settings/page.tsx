@@ -2,6 +2,10 @@
 
 import { textValue } from '@/lib/textValue';
 
+import { DepartmentNavigationPicker } from '@/components/settings/DepartmentNavigationPicker';
+import { useDepartmentNavigation } from '@/context/DepartmentNavigationContext';
+import type { NavigationHref } from '@/lib/departmentNavigation';
+
 import { tenantPreferences } from '@/lib/tenantPreferences';
 
 import React, { useState, useEffect, useMemo, useRef, Suspense } from 'react';
@@ -122,6 +126,7 @@ const INITIAL_FACTORY_UNITS: FactoryUnitItem[] = [
 
 // ─── DEPARTMENT DATA MODEL ───
 export interface DepartmentItem {
+  navigation?: NavigationHref[];
   id: string;
   name: string;
   badge?: string;
@@ -384,37 +389,32 @@ function SettingsContent() {
     }
   };
 
-  // Departments State (All preset/dummy items cleared)
+  const departmentSettings = useDepartmentNavigation();
   const [departments, setDepartments] = useState<DepartmentItem[]>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const hasCleared = tenantPreferences.getItem('cmms_settings_dept_wiped_v2');
-        if (!hasCleared) {
-          tenantPreferences.removeItem('cmms_settings_departments');
-          tenantPreferences.setItem('cmms_settings_dept_wiped_v2', 'true');
-          return [];
-        }
-        const saved = tenantPreferences.getItem('cmms_settings_departments');
-        if (saved) return JSON.parse(saved);
-      } catch {
-        // ignore
-      }
-    }
-    return INITIAL_DEPARTMENTS;
-  });
-
-  const saveDepartments = (items: DepartmentItem[]) => {
-    setDepartments(items);
     try {
-      tenantPreferences.setItem('cmms_settings_departments', JSON.stringify(items));
-    } catch {
-      // ignore
+      const saved = tenantPreferences.getItem('cmms_settings_departments');
+      return saved ? JSON.parse(saved) : INITIAL_DEPARTMENTS;
+    } catch { return INITIAL_DEPARTMENTS; }
+  });
+  useEffect(() => {
+    if (departmentSettings.departments !== null) setDepartments(departmentSettings.departments);
+  }, [departmentSettings.departments]);
+  const saveDepartments = async (items: DepartmentItem[]) => {
+    try {
+      await departmentSettings.save(items);
+      setDepartments(items);
+      try { tenantPreferences.setItem('cmms_settings_departments', JSON.stringify(items)); } catch { /* Browser storage is optional. */ }
+      return true;
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : 'Could not save departments.', 'error');
+      return false;
     }
   };
 
   // Add Department Modal
   const [isAddDeptModalOpen, setIsAddDeptModalOpen] = useState(false);
   const [newDeptName, setNewDeptName] = useState('');
+  const [newDeptNavigation, setNewDeptNavigation] = useState<NavigationHref[] | undefined>(undefined);
   const [newDeptDesc, setNewDeptDesc] = useState('');
   const [newDeptUsers, setNewDeptUsers] = useState<number>(0);
   const [newDeptKpi1Weight, setNewDeptKpi1Weight] = useState(40);
@@ -674,7 +674,7 @@ function SettingsContent() {
   };
 
   // ─── Department Handlers ───
-  const handleCreateDepartment = (e: React.FormEvent) => {
+  const handleCreateDepartment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newDeptName.trim()) {
       showToast('Department name is required', 'error');
@@ -683,6 +683,7 @@ function SettingsContent() {
     const created: DepartmentItem = {
       id: `dept-${Date.now()}`,
       name: newDeptName.trim(),
+      navigation: newDeptNavigation,
       description: newDeptDesc.trim(),
       userCount: Number(newDeptUsers) || 0,
       kpi1Name: 'Stage on time',
@@ -696,15 +697,16 @@ function SettingsContent() {
       kpi3Weight: Number(newDeptKpi3Weight) || 30,
     };
     const updated = [created, ...departments];
-    saveDepartments(updated);
+    if (!(await saveDepartments(updated))) return;
     showToast(`Department "${created.name}" created successfully!`, 'success');
     setIsAddDeptModalOpen(false);
     setNewDeptName('');
+    setNewDeptNavigation(undefined);
     setNewDeptDesc('');
     setNewDeptUsers(0);
   };
 
-  const handleSaveEditDept = (e: React.FormEvent) => {
+  const handleSaveEditDept = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingDept) return;
     if (!textValue(editingDept.name).trim()) {
@@ -712,17 +714,17 @@ function SettingsContent() {
       return;
     }
     const updated = departments.map((d) => (d.id === editingDept.id ? editingDept : d));
-    saveDepartments(updated);
+    if (!(await saveDepartments(updated))) return;
     showToast(`Department "${editingDept.name}" updated!`, 'success');
     setEditingDept(null);
   };
 
-  const handleDeleteDept = (id: string) => {
+  const handleDeleteDept = async (id: string) => {
     const target = departments.find((d) => d.id === id);
     if (!target) return;
     if (window.confirm(`Are you sure you want to remove department "${target.name}"?`)) {
       const updated = departments.filter((d) => d.id !== id);
-      saveDepartments(updated);
+      if (!(await saveDepartments(updated))) return;
       showToast(`Department "${target.name}" removed`, 'success');
     }
   };
@@ -1577,6 +1579,9 @@ function SettingsContent() {
 
                   <p className="text-xs text-slate-400 font-normal">
                     {dept.description || 'No description'}
+                  </p>
+                  <p className="text-xs text-emerald-700">
+                    {dept.navigation === undefined ? 'Navigation: standard role menu' : `Navigation: ${dept.navigation.length} menu items selected`}
                   </p>
 
                   <div>
@@ -2726,7 +2731,7 @@ function SettingsContent() {
       ────────────────────────────────────────────────────────────────────────── */}
       {isAddDeptModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+          <div className="bg-white rounded-2xl max-w-xl w-full max-h-[90dvh] overflow-y-auto p-6 shadow-2xl border border-slate-200 space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="font-bold text-base text-slate-900 flex items-center gap-2">
                 <span className="w-3.5 h-3.5 rounded-xs bg-[#059669]" />
@@ -2742,6 +2747,7 @@ function SettingsContent() {
             </div>
 
             <form onSubmit={handleCreateDepartment} className="space-y-3.5 text-xs">
+              {departmentSettings.error && <p role="alert" className="text-rose-700">{departmentSettings.error}</p>}
               <div>
                 <label className="block font-bold text-slate-700 mb-1">Department Name *</label>
                 <input
@@ -2777,6 +2783,7 @@ function SettingsContent() {
                 />
               </div>
 
+              <DepartmentNavigationPicker value={newDeptNavigation} onChange={setNewDeptNavigation} />
               <div className="grid grid-cols-3 gap-2 pt-2 border-t border-slate-100">
                 <div>
                   <label className="block text-[10px] font-bold text-slate-600 mb-0.5">KPI 1 Weight (%)</label>
@@ -2817,9 +2824,10 @@ function SettingsContent() {
                 </button>
                 <button
                   type="submit"
+                  disabled={departmentSettings.saving || !departmentSettings.ready}
                   className="px-4 py-2 font-bold text-white bg-[#059669] hover:bg-[#047857] rounded-xl shadow-xs transition cursor-pointer"
                 >
-                  Save Department
+                  {departmentSettings.saving ? 'Saving...' : 'Save Department'}
                 </button>
               </div>
             </form>
@@ -2832,7 +2840,7 @@ function SettingsContent() {
       ────────────────────────────────────────────────────────────────────────── */}
       {editingDept && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+          <div className="bg-white rounded-2xl max-w-xl w-full max-h-[90dvh] overflow-y-auto p-6 shadow-2xl border border-slate-200 space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="font-bold text-base text-slate-900 flex items-center gap-2">
                 <span className="w-3.5 h-3.5 rounded-xs bg-[#059669]" />
@@ -2880,6 +2888,8 @@ function SettingsContent() {
                 />
               </div>
 
+              {departmentSettings.error && <p role="alert" className="text-rose-700">{departmentSettings.error}</p>}
+              <DepartmentNavigationPicker value={editingDept.navigation} onChange={navigation => setEditingDept({ ...editingDept, navigation })} />
               <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
                 <button
                   type="button"
@@ -2890,9 +2900,10 @@ function SettingsContent() {
                 </button>
                 <button
                   type="submit"
+                  disabled={departmentSettings.saving || !departmentSettings.ready}
                   className="px-4 py-2 font-bold text-white bg-[#059669] hover:bg-[#047857] rounded-xl shadow-xs transition cursor-pointer"
                 >
-                  Save Changes
+                  {departmentSettings.saving ? 'Saving...' : 'Save Changes'}
                 </button>
               </div>
             </form>
@@ -3196,7 +3207,7 @@ function SettingsContent() {
       ────────────────────────────────────────────────────────────────────────── */}
       {zoneModalUnit && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+          <div className="bg-white rounded-2xl max-w-xl w-full max-h-[90dvh] overflow-y-auto p-6 shadow-2xl border border-slate-200 space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="font-bold text-base text-slate-900 flex items-center gap-2">
                 <Layers className="w-5 h-5 text-[#059669]" />
@@ -3283,7 +3294,7 @@ function SettingsContent() {
       ────────────────────────────────────────────────────────────────────────── */}
       {editingZone && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+          <div className="bg-white rounded-2xl max-w-xl w-full max-h-[90dvh] overflow-y-auto p-6 shadow-2xl border border-slate-200 space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="font-bold text-base text-slate-900 flex items-center gap-2">
                 <Pencil className="w-5 h-5 text-[#059669]" />
