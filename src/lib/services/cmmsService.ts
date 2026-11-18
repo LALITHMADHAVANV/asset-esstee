@@ -11,6 +11,7 @@ import {
   RequisitionStatus,
   AppNotification,
 } from '@/types/cmms';
+import plantAssetsSeed from '@/data/plantAssetsSeed.json';
 import factorySparesSeed from '@/data/factorySparesSeed.json';
 import { hasAssetId } from '@/lib/assetIdentity';
 
@@ -60,6 +61,8 @@ function getLocal<T>(key: string, defaultVal: T): T {
     const scopedRaw = localStorage.getItem(tenantKey);
     if (scopedRaw) return JSON.parse(scopedRaw);
 
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : defaultVal;
     return defaultVal;
   } catch {
     return defaultVal;
@@ -72,6 +75,7 @@ function setLocal<T>(key: string, val: T): void {
     const tenant = getActiveTenant();
     const tenantKey = `${tenant}_${key}`;
     localStorage.setItem(tenantKey, JSON.stringify(val));
+    localStorage.setItem(key, JSON.stringify(val));
   } catch (err) {
     console.warn('LocalStorage error:', err);
   }
@@ -101,18 +105,20 @@ export function apiFetch(url: string, init?: RequestInit): Promise<Response> {
     } catch { }
   }
 
-  const tenant = getActiveTenant();
-  return fetch(target, { credentials: 'include', ...init, headers }).then(response => {
-    if (tenant !== getActiveTenant()) throw new Error('Workspace changed during the request.');
-    return response;
-  });
+  return fetch(target, { credentials: 'include', ...init, headers });
 }
 
 /**
  * Initialize local storage state with plantAssetsSeed when cache is empty
  */
 export function initLocalSeedData(): void {
-  // Tenant assets are loaded from the server; never populate another workspace with demo data.
+  if (typeof window === 'undefined') return;
+  const current = getLocal<Machine[]>(STORAGE_KEYS.MACHINES, []);
+  if (!current || current.length === 0) {
+    if (plantAssetsSeed && Array.isArray(plantAssetsSeed) && plantAssetsSeed.length > 0) {
+      setLocal(STORAGE_KEYS.MACHINES, plantAssetsSeed as unknown as Machine[]);
+    }
+  }
 }
 
 /**
@@ -161,7 +167,6 @@ let lastFetchMachinesTime = 0;
 let inFlightMachines: Promise<void> | null = null;
 
 export async function fetchMachinesOnce(force = false): Promise<void> {
-  const requestTenant = getActiveTenant();
   const now = Date.now();
   if (!force && now - lastFetchMachinesTime < 3000) {
     if (inFlightMachines) return inFlightMachines;
@@ -172,7 +177,6 @@ export async function fetchMachinesOnce(force = false): Promise<void> {
     try {
       const res = await apiFetch('/api/machines');
       const json = await res.json();
-      if (requestTenant !== getActiveTenant()) return;
       if (json.success && Array.isArray(json.data)) {
         setLocal(STORAGE_KEYS.MACHINES, json.data);
         notifyLocal('machines', json.data);
@@ -218,14 +222,18 @@ export async function createMachine(machine: Machine): Promise<void> {
   } else {
     updated = [machine, ...current];
   }
-  const response = await apiFetch('/api/machines', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(machine),
-  });
-  const result = await response.json();
-  if (!response.ok || !result.success) throw new Error(result.error || 'Could not save the asset.');
   setLocal(STORAGE_KEYS.MACHINES, updated);
   notifyLocal('machines', updated);
-  await fetchMachinesOnce(true);
+
+  try {
+    await apiFetch('/api/machines', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(machine),
+    });
+  } catch (e) {
+    console.error('MongoDB createMachine error:', e);
+  }
 }
 
 export async function relocateMachine(
@@ -278,7 +286,7 @@ export async function relocateMachine(
 
   // Log relocation event in repairs history ledger
   const relocationRecord: RepairTicket = {
-    id: 'HIST-' + (globalThis.crypto?.randomUUID?.() || Date.now().toString(36) + Math.random().toString(36).slice(2)),
+    id: `HIST-${Date.now().toString().slice(-4)}`,
     machineId,
     machineType: machine.typeName || machine.type,
     line: targetLine,
@@ -401,7 +409,6 @@ let lastFetchPartsTime = 0;
 let inFlightParts: Promise<void> | null = null;
 
 export async function fetchPartsOnce(force = false): Promise<void> {
-  const requestTenant = getActiveTenant();
   const now = Date.now();
   if (!force && now - lastFetchPartsTime < 3000) {
     if (inFlightParts) return inFlightParts;
@@ -412,7 +419,6 @@ export async function fetchPartsOnce(force = false): Promise<void> {
     try {
       const res = await apiFetch('/api/parts');
       const json = await res.json();
-      if (requestTenant !== getActiveTenant()) return;
       if (json.success && Array.isArray(json.data)) {
         setLocal(STORAGE_KEYS.PARTS, json.data);
         notifyLocal('parts', json.data);
@@ -440,20 +446,50 @@ export function subscribeParts(callback: (parts: SparePart[]) => void): () => vo
 }
 
 export async function adjustPartStock(partId: string, delta: number): Promise<void> {
-  if (!Number.isFinite(delta) || delta === 0) throw new Error('Enter a non-zero stock adjustment.');
-  const response = await apiFetch('/api/parts', {
-    method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ partId, delta }),
-  });
-  const result = await response.json();
-  if (!response.ok || !result.success) throw new Error(result.error || 'Could not adjust stock.');
-  const updated = getLocal<SparePart[]>(STORAGE_KEYS.PARTS, []).map(part => part.partId === partId ? result.data : part);
-  setLocal(STORAGE_KEYS.PARTS, updated);
-  notifyLocal('parts', updated);
+  const currentParts = getLocal<SparePart[]>(STORAGE_KEYS.PARTS, []);
+  const target = currentParts.find((p) => p.partId === partId);
+  if (!target) return;
+
+  const newStock = Math.max(0, target.stock + delta);
+  const updatedParts = currentParts.map((p) =>
+    p.partId === partId ? { ...p, stock: newStock } : p
+  );
+  setLocal(STORAGE_KEYS.PARTS, updatedParts);
+  notifyLocal('parts', updatedParts);
+
+  try {
+    await apiFetch('/api/parts', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ partId, updates: { stock: newStock } }),
+    });
+  } catch (e) {
+    console.error('MongoDB adjustPartStock error:', e);
+  }
 }
 
 export async function restockPart(partId: string, quantity: number, poRef?: string): Promise<void> {
-  if (!Number.isFinite(quantity) || quantity <= 0) throw new Error('Enter a positive stock quantity.');
-  await adjustPartStock(partId, quantity);
+  if (quantity <= 0) return;
+  const currentParts = getLocal<SparePart[]>(STORAGE_KEYS.PARTS, []);
+  const target = currentParts.find((p) => p.partId === partId);
+  if (!target) return;
+
+  const newStock = target.stock + quantity;
+  const updatedParts = currentParts.map((p) =>
+    p.partId === partId ? { ...p, stock: newStock } : p
+  );
+  setLocal(STORAGE_KEYS.PARTS, updatedParts);
+  notifyLocal('parts', updatedParts);
+
+  try {
+    await apiFetch('/api/parts', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ partId, updates: { stock: newStock } }),
+    });
+  } catch (e) {
+    console.error('MongoDB restockPart error:', e);
+  }
 }
 
 /* ======================================================================
@@ -464,7 +500,6 @@ let lastFetchRepairsTime = 0;
 let inFlightRepairs: Promise<void> | null = null;
 
 export async function fetchRepairsOnce(force = false): Promise<void> {
-  const requestTenant = getActiveTenant();
   const now = Date.now();
   if (!force && now - lastFetchRepairsTime < 3000) {
     if (inFlightRepairs) return inFlightRepairs;
@@ -475,7 +510,6 @@ export async function fetchRepairsOnce(force = false): Promise<void> {
     try {
       const res = await apiFetch('/api/repairs');
       const json = await res.json();
-      if (requestTenant !== getActiveTenant()) return;
       if (json.success && Array.isArray(json.data)) {
         setLocal(STORAGE_KEYS.REPAIRS, json.data);
         notifyLocal('repairs', json.data);
@@ -504,7 +538,6 @@ export function subscribeRepairs(callback: (repairs: RepairTicket[]) => void): (
 
 if (typeof window !== 'undefined') {
   window.addEventListener('cmms_tenant_changed', () => {
-    for (const channel of Object.keys(listeners) as Array<keyof typeof listeners>) notifyLocal(channel, []);
     initLocalSeedData();
     fetchMachinesOnce(true);
     fetchPartsOnce(true);
@@ -519,7 +552,7 @@ export async function createBreakdownTicket(
     'id' | 'status' | 'resolvedAt' | 'downtimeMinutes' | 'actionTaken' | 'partsUsed' | 'attendedBy'
   > & { attendedBy?: string | null; assignedBy?: string }
 ): Promise<string> {
-  const ticketId = 'WO-' + (globalThis.crypto?.randomUUID?.() || Date.now().toString(36) + Math.random().toString(36).slice(2));
+  const ticketId = `WO-${Math.floor(1000 + Math.random() * 9000)}`;
   const newTicket: RepairTicket = {
     ...ticketData,
     id: ticketId,
@@ -532,16 +565,34 @@ export async function createBreakdownTicket(
     partsUsed: [],
   };
 
-  const response = await apiFetch('/api/repairs', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newTicket),
-  });
-  const result = await response.json();
-  if (!response.ok || !result.success) throw new Error(result.error || 'Could not create the breakdown ticket.');
+  // 1. Update repairs list
   const currentRepairs = getLocal<RepairTicket[]>(STORAGE_KEYS.REPAIRS, []);
-  const updatedRepairs = [result.data || newTicket, ...currentRepairs];
+  const updatedRepairs = [newTicket, ...currentRepairs];
   setLocal(STORAGE_KEYS.REPAIRS, updatedRepairs);
   notifyLocal('repairs', updatedRepairs);
-  await fetchMachinesOnce(true);
+
+  // 2. Set machine status to BREAKDOWN
+  const currentMachines = getLocal<Machine[]>(STORAGE_KEYS.MACHINES, []);
+  const updatedMachines = currentMachines.map((m) =>
+    m.id === ticketData.machineId ? { ...m, status: 'BREAKDOWN' as const } : m
+  );
+  setLocal(STORAGE_KEYS.MACHINES, updatedMachines);
+  notifyLocal('machines', updatedMachines);
+
+  try {
+    await apiFetch('/api/repairs', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newTicket),
+    });
+    await apiFetch('/api/machines', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: ticketData.machineId, updates: { status: 'BREAKDOWN' } }),
+    });
+  } catch (e) {
+    console.error('MongoDB createBreakdownTicket error:', e);
+  }
 
   return ticketId;
 }
@@ -618,7 +669,14 @@ export async function startRepairTicket(
     if (!response.ok) throw new Error('Could not save the work start.');
     setLocal(STORAGE_KEYS.REPAIRS, updatedRepairs);
     notifyLocal('repairs', updatedRepairs);
-
+    if (resolvedPartsUsed.length > 0) {
+      const updatedParts = currentParts.map((part) => {
+        const used = resolvedPartsUsed.find((u) => u.partId === part.partId);
+        return used ? { ...part, stock: Math.max(0, part.stock - used.quantity) } : part;
+      });
+      setLocal(STORAGE_KEYS.PARTS, updatedParts);
+      notifyLocal('parts', updatedParts);
+    }
   } catch (e) {
     console.error('MongoDB startRepairTicket error:', e);
     throw e;
@@ -679,43 +737,284 @@ export async function stopRepairTicket(ticketId: string, notes?: string): Promis
   }
 }
 
-export async function rejectRepairTicket(ticketId: string, rejectedBy = 'Supervisor', reason = 'False report / operator error'): Promise<void> {
-  const response = await apiFetch('/api/repairs', {
-    method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ id: ticketId, updates: { status: 'REJECTED', actionTaken: reason, attendedBy: rejectedBy, rejectedBy, rejectionReason: reason } }),
-  });
-  const result = await response.json();
-  if (!response.ok || !result.success) throw new Error(result.error || 'Could not reject the repair.');
-  await Promise.all([fetchRepairsOnce(true), fetchMachinesOnce(true)]);
+export async function rejectRepairTicket(
+  ticketId: string,
+  rejectedBy: string = 'Supervisor',
+  reason: string = 'False report / operator error'
+): Promise<void> {
+  const currentRepairs = getLocal<RepairTicket[]>(STORAGE_KEYS.REPAIRS, []);
+  const currentMachines = getLocal<Machine[]>(STORAGE_KEYS.MACHINES, []);
+
+  const ticket = currentRepairs.find((t) => t.id === ticketId);
+  if (!ticket) return;
+
+  const nowIso = new Date().toISOString();
+  const rejectionNote = reason.trim()
+    ? `Rejected by ${rejectedBy}: ${reason.trim()}`
+    : `Rejected by ${rejectedBy}`;
+
+  // 1. Update ticket status to REJECTED and record who declined it
+  const updatedRepairs = currentRepairs.map((t) =>
+    t.id === ticketId
+      ? {
+        ...t,
+        status: 'REJECTED' as const,
+        resolvedAt: nowIso,
+        completedAt: nowIso,
+        actionTaken: rejectionNote,
+        attendedBy: rejectedBy,
+      }
+      : t
+  );
+
+  // 2. Restore machine status to ACTIVE immediately
+  const updatedMachines = currentMachines.map((m) =>
+    m.id === ticket.machineId ? { ...m, status: 'ACTIVE' as const } : m
+  );
+
+  setLocal(STORAGE_KEYS.REPAIRS, updatedRepairs);
+  setLocal(STORAGE_KEYS.MACHINES, updatedMachines);
+  notifyLocal('repairs', updatedRepairs);
+  notifyLocal('machines', updatedMachines);
+
+  try {
+    await apiFetch('/api/repairs', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id: ticketId,
+        updates: {
+          status: 'REJECTED',
+          resolvedAt: nowIso,
+          completedAt: nowIso,
+          actionTaken: rejectionNote,
+          attendedBy: rejectedBy,
+          rejectedBy,
+          rejectionReason: reason,
+        },
+      }),
+    });
+
+    await apiFetch('/api/machines', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id: ticket.machineId,
+        updates: { status: 'ACTIVE' },
+      }),
+    });
+  } catch (e) {
+    console.error('MongoDB rejectRepairTicket error:', e);
+  }
 }
 
 export async function resolveRepairTicket(
-  ticketId: string, downtimeMinutes: number, actionTaken: string, attendedBy: string,
+  ticketId: string,
+  downtimeMinutes: number,
+  actionTaken: string,
+  attendedBy: string,
   partsUsedInputs: Array<{ partId: string; quantity: number }> = [],
-  details?: { repairCost?: number; partsCost?: number; issuesIdentified?: string; proofImage?: string; completedAt?: string }
+  details?: {
+    repairCost?: number;
+    laborCost?: number;
+    partsCost?: number;
+    issuesIdentified?: string;
+    proofImage?: string;
+    completedAt?: string;
+  }
 ): Promise<void> {
   const currentRepairs = getLocal<RepairTicket[]>(STORAGE_KEYS.REPAIRS, []);
-  const ticket = currentRepairs.find(t => t.id === ticketId || (t as any).ticketId === ticketId);
-  if (ticket?.status === 'REJECTED') throw new Error('This work order was rejected.');
-  const response = await apiFetch('/api/repairs', {
-    method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ id: ticketId, updates: {
-      status: 'COMPLETED', downtimeMinutes, actionTaken, attendedBy,
-      partsUsed: partsUsedInputs.length ? partsUsedInputs : ticket?.partsUsed,
-      issuesIdentified: details?.issuesIdentified, completionProofImage: details?.proofImage,
-      completedAt: details?.completedAt,
-    } }),
-  });
-  const result = await response.json().catch(() => ({}));
-  if (!response.ok || !result.success) throw new Error(result.error || 'Could not save the completed repair.');
-  if (result.data) {
-    const latest = getLocal<RepairTicket[]>(STORAGE_KEYS.REPAIRS, []);
-    const updated = latest.some(t => t.id === ticketId) ? latest.map(t => t.id === ticketId ? result.data : t) : [result.data, ...latest];
-    setLocal(STORAGE_KEYS.REPAIRS, updated);
-    notifyLocal('repairs', updated);
+  const currentParts = getLocal<SparePart[]>(STORAGE_KEYS.PARTS, []);
+  const currentMachines = getLocal<Machine[]>(STORAGE_KEYS.MACHINES, []);
+
+  let ticket = currentRepairs.find((t) => t.id === ticketId || (t as any).ticketId === ticketId);
+  if (!ticket) {
+    // If ticket was not yet stored in localStorage, construct a fallback ticket so resolving never crashes!
+    ticket = {
+      id: ticketId,
+      machineId: '',
+      machineType: '',
+      faultCategory: 'Mechanical Fault',
+      urgency: 'HIGH',
+      status: 'IN_PROGRESS',
+      reportedAt: new Date().toISOString(),
+      startedAt: new Date().toISOString(),
+      attendedBy,
+    } as unknown as RepairTicket;
   }
-  await Promise.all([fetchRepairsOnce(true), fetchPartsOnce(true), fetchMachinesOnce(true)]);
+
+  // If partsUsedInputs was provided, use it; otherwise, use parts already reserved on the ticket from the start step!
+  const effectivePartsInputs = (partsUsedInputs && partsUsedInputs.length > 0)
+    ? partsUsedInputs
+    : (ticket.partsUsed || []).map((p) => ({ partId: p.partId, quantity: p.quantity }));
+
+  const resolvedPartsUsed = effectivePartsInputs
+    .filter((pu) => pu.partId && pu.quantity > 0)
+    .map((pu) => {
+      const part = currentParts.find((p) => p.partId === pu.partId);
+      return {
+        partId: pu.partId,
+        sku: part?.sku || pu.partId,
+        name: part?.name || 'Standard Spare Part',
+        quantity: pu.quantity,
+      };
+    });
+
+  // Calculate default parts cost if not passed
+  const calculatedPartsCost = resolvedPartsUsed.reduce((sum, pu) => {
+    const part = currentParts.find((p) => p.partId === pu.partId);
+    return sum + (part ? part.unitCost * pu.quantity : pu.quantity * 250);
+  }, 0);
+  const calculatedLaborCost = Math.round(((downtimeMinutes || 30) / 60) * 350);
+  const finalRepairCost = typeof details?.repairCost === 'number' && details.repairCost >= 0
+    ? details.repairCost
+    : calculatedPartsCost + calculatedLaborCost;
+
+  const nowIso = details?.completedAt || new Date().toISOString();
+
+  let calculatedTimeSpent = downtimeMinutes;
+  if (ticket.startedAt) {
+    const startMs = new Date(ticket.startedAt).getTime();
+    if (!isNaN(startMs)) {
+      calculatedTimeSpent = (ticket.downtimeMinutes || 0) + Math.max(1, Math.round((Date.now() - startMs) / 60000));
+    }
+  }
+
+  // 1. Update repairs document
+  let ticketUpdated = false;
+  const updatedRepairs = currentRepairs.map((t) => {
+    if (t.id === ticketId || (t as any).ticketId === ticketId) {
+      ticketUpdated = true;
+      return {
+        ...t,
+        status: 'COMPLETED' as const,
+        resolvedAt: nowIso,
+        completedAt: nowIso,
+        downtimeMinutes,
+        actionTaken,
+        attendedBy,
+        partsUsed: resolvedPartsUsed,
+        repairCost: finalRepairCost,
+        laborCost: details?.laborCost ?? calculatedLaborCost,
+        partsCost: details?.partsCost ?? calculatedPartsCost,
+        issuesIdentified: details?.issuesIdentified || t.faultDetails || '',
+        completionProofImage: details?.proofImage || t.completionProofImage,
+      };
+    }
+    return t;
+  });
+
+  if (!ticketUpdated) {
+    updatedRepairs.unshift({
+      ...ticket,
+      status: 'COMPLETED' as const,
+      resolvedAt: nowIso,
+      completedAt: nowIso,
+      downtimeMinutes,
+      actionTaken,
+      attendedBy,
+      partsUsed: resolvedPartsUsed,
+      repairCost: finalRepairCost,
+      laborCost: details?.laborCost ?? calculatedLaborCost,
+      partsCost: details?.partsCost ?? calculatedPartsCost,
+      issuesIdentified: details?.issuesIdentified || '',
+      completionProofImage: details?.proofImage,
+    });
+  }
+
+  // 2. Decrement parts stock
+  const updatedParts = currentParts.map((part) => {
+    const used = resolvedPartsUsed.find((u) => u.partId === part.partId);
+    if (!used) return part;
+    return {
+      ...part,
+      stock: Math.max(0, part.stock - used.quantity),
+    };
+  });
+
+  // 3. Set machine status to ACTIVE and increment totalDowntimeMinutes
+  const updatedMachines = currentMachines.map((m) => {
+    if (m.id !== ticket.machineId) return m;
+    return {
+      ...m,
+      status: 'ACTIVE' as const,
+      totalDowntimeMinutes: (m.totalDowntimeMinutes || 0) + downtimeMinutes,
+    };
+  });
+
+  setLocal(STORAGE_KEYS.REPAIRS, updatedRepairs);
+  setLocal(STORAGE_KEYS.PARTS, updatedParts);
+  setLocal(STORAGE_KEYS.MACHINES, updatedMachines);
+
+  notifyLocal('repairs', updatedRepairs);
+  notifyLocal('parts', updatedParts);
+  notifyLocal('machines', updatedMachines);
+
+  try {
+    const res = await apiFetch('/api/repairs', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id: ticketId,
+        updates: {
+          status: 'COMPLETED',
+          resolvedAt: nowIso,
+          completedAt: nowIso,
+          startedAt: ticket.startedAt,
+          downtimeMinutes,
+          timeSpentMinutes: calculatedTimeSpent,
+          actionTaken,
+          attendedBy,
+          partsUsed: resolvedPartsUsed,
+          repairCost: finalRepairCost,
+          issuesIdentified: details?.issuesIdentified,
+          completionProofImage: details?.proofImage,
+        },
+      }),
+    });
+
+    if (!res.ok) {
+      const errJson = await res.json().catch(() => ({}));
+      console.warn(`apiFetch PATCH /api/repairs status ${res.status}:`, errJson);
+    }
+
+    for (const p of resolvedPartsUsed) {
+      const partDoc = currentParts.find((cp) => cp.partId === p.partId);
+      if (partDoc) {
+        await apiFetch('/api/parts', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            partId: p.partId,
+            updates: { stock: Math.max(0, partDoc.stock - p.quantity) },
+          }),
+        }).catch((e) => console.warn('parts stock patch warning:', e));
+      }
+    }
+
+    if (ticket.machineId) {
+      const machineDoc = currentMachines.find((m) => m.id === ticket.machineId);
+      await apiFetch('/api/machines', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: ticket.machineId,
+          updates: {
+            status: 'ACTIVE',
+            totalDowntimeMinutes: (machineDoc?.totalDowntimeMinutes || 0) + downtimeMinutes,
+          },
+        }),
+      }).catch((e) => console.warn('machines patch warning:', e));
+    }
+  } catch (err) {
+    console.error('MongoDB resolveRepairTicket error:', err);
+    throw err;
+  }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// NOTIFICATIONS SERVICE
+// ─────────────────────────────────────────────────────────────────────────────
 
 export function subscribeNotifications(callback: (notifications: AppNotification[]) => void): () => void {
   initLocalSeedData();
@@ -762,14 +1061,41 @@ export function acknowledgeAppNotification(id: string): void {
   notifyLocal('notifications', updated);
 }
 
-export async function assignRepairTicket(ticketId: string, mechanicName: string, assignedBy?: string): Promise<void> {
-  const response = await apiFetch('/api/repairs', {
-    method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ id: ticketId, updates: { attendedBy: mechanicName, assignedBy, status: 'ASSIGNED' } }),
-  });
-  const result = await response.json();
-  if (!response.ok || !result.success) throw new Error(result.error || 'Could not assign this repair.');
-  await fetchRepairsOnce(true);
+export async function assignRepairTicket(
+  ticketId: string,
+  mechanicName: string,
+  assignedBy?: string
+): Promise<void> {
+  const currentRepairs = getLocal<RepairTicket[]>(STORAGE_KEYS.REPAIRS, []);
+  const updatedRepairs = currentRepairs.map((r) =>
+    r.id === ticketId
+      ? {
+        ...r,
+        attendedBy: mechanicName,
+        assignedBy: assignedBy || r.assignedBy || 'Senior Mechanic',
+        status: (r.status === 'COMPLETED' ? 'COMPLETED' : 'ASSIGNED') as RepairTicket['status'],
+      }
+      : r
+  );
+  setLocal(STORAGE_KEYS.REPAIRS, updatedRepairs);
+  notifyLocal('repairs', updatedRepairs);
+
+  try {
+    await apiFetch('/api/repairs', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id: ticketId,
+        updates: {
+          attendedBy: mechanicName,
+          assignedBy: assignedBy || 'Senior Mechanic',
+          status: 'ASSIGNED',
+        },
+      }),
+    });
+  } catch (e) {
+    console.error('MongoDB assignRepairTicket error:', e);
+  }
 }
 
 export interface AssignMechanicTaskInput {
@@ -796,7 +1122,7 @@ export async function assignMechanicTask(input: AssignMechanicTaskInput): Promis
     input.machineType || targetMachine?.typeName || targetMachine?.type || 'Sewing Machine';
   const line = input.line || targetMachine?.currentLine || 'Line 01';
 
-  const ticketId = 'WO-' + (globalThis.crypto?.randomUUID?.() || Date.now().toString(36) + Math.random().toString(36).slice(2));
+  const ticketId = `WO-${Math.floor(1000 + Math.random() * 9000)}`;
   const now = new Date();
   const timeStr = now.toTimeString().split(' ')[0];
   const isoTimestamp = `${input.scheduledDate}T${timeStr}.000Z`;
@@ -820,12 +1146,40 @@ export async function assignMechanicTask(input: AssignMechanicTaskInput): Promis
     partsUsed: [],
   };
 
-  const response = await apiFetch('/api/repairs', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newTicket),
-  });
-  const result = await response.json();
-  if (!response.ok || !result.success) throw new Error(result.error || 'Could not assign this task.');
-  await Promise.all([fetchRepairsOnce(true), fetchMachinesOnce(true)]);
+  const currentRepairs = getLocal<RepairTicket[]>(STORAGE_KEYS.REPAIRS, []);
+  const updatedRepairs = [newTicket, ...currentRepairs];
+  setLocal(STORAGE_KEYS.REPAIRS, updatedRepairs);
+  notifyLocal('repairs', updatedRepairs);
+
+  if (targetMachine) {
+    const newStatus: MachineStatus =
+      input.urgency === 'CRITICAL' ? 'BREAKDOWN' : 'UNDER_MAINTENANCE';
+    const updatedMachines = currentMachines.map((m) =>
+      textValue(m.id).toLowerCase() === textValue(input.machineId).toLowerCase() ? { ...m, status: newStatus } : m
+    );
+    setLocal(STORAGE_KEYS.MACHINES, updatedMachines);
+    notifyLocal('machines', updatedMachines);
+
+    try {
+      await apiFetch('/api/machines', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: targetMachine.id, updates: { status: newStatus } }),
+      });
+    } catch (e) {
+      console.error('MongoDB assignMechanicTask machine update error:', e);
+    }
+  }
+
+  try {
+    await apiFetch('/api/repairs', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newTicket),
+    });
+  } catch (e) {
+    console.error('MongoDB assignMechanicTask ticket insert error:', e);
+  }
 
   if (input.taskCategory === 'PPM') {
     const newPPM: PPMSchedule = {
@@ -865,7 +1219,6 @@ let lastFetchPPMTime = 0;
 let inFlightPPM: Promise<void> | null = null;
 
 export async function fetchPPMSchedulesOnce(force = false): Promise<void> {
-  const requestTenant = getActiveTenant();
   const now = Date.now();
   if (!force && now - lastFetchPPMTime < 3000) {
     if (inFlightPPM) return inFlightPPM;
@@ -876,7 +1229,6 @@ export async function fetchPPMSchedulesOnce(force = false): Promise<void> {
     try {
       const res = await apiFetch('/api/ppm');
       const json = await res.json();
-      if (requestTenant !== getActiveTenant()) return;
       if (json.success && Array.isArray(json.data)) {
         setLocal(STORAGE_KEYS.PPM, json.data);
         notifyLocal('ppm', json.data);
@@ -1014,7 +1366,7 @@ export async function completePPMTask(
   notifyLocal('ppm', updatedSchedules);
 
   const ppmHistoryEntry: RepairTicket = {
-    id: 'HIST-' + (globalThis.crypto?.randomUUID?.() || Date.now().toString(36) + Math.random().toString(36).slice(2)),
+    id: `HIST-${Math.floor(1000 + Math.random() * 9000)}`,
     machineId: target.machineId,
     machineType: 'Sewing Machinery',
     line: 'Floor Maintenance',
@@ -1090,7 +1442,6 @@ let lastFetchRequisitionsTime = 0;
 let inFlightRequisitions: Promise<void> | null = null;
 
 export async function fetchRequisitionsOnce(force = false): Promise<void> {
-  const requestTenant = getActiveTenant();
   const now = Date.now();
   if (!force && now - lastFetchRequisitionsTime < 3000) {
     if (inFlightRequisitions) return inFlightRequisitions;
@@ -1101,7 +1452,6 @@ export async function fetchRequisitionsOnce(force = false): Promise<void> {
     try {
       const res = await apiFetch('/api/requisitions');
       const json = await res.json();
-      if (requestTenant !== getActiveTenant()) return;
       if (json.success && Array.isArray(json.data)) {
         setLocal(STORAGE_KEYS.REQUISITIONS, json.data);
         notifyLocal('requisitions', json.data);
@@ -1135,7 +1485,7 @@ export async function createRequisition(
     status?: PartRequisition['status'];
   }
 ): Promise<string> {
-  const reqId = 'REQ-' + (globalThis.crypto?.randomUUID?.() || Date.now().toString(36) + Math.random().toString(36).slice(2));
+  const reqId = `REQ-${new Date().getFullYear()}-${Math.floor(100 + Math.random() * 900)}`;
   const defaultStatus =
     reqData.status ||
     (reqData.type === 'CRITICAL_CEO'
@@ -1151,12 +1501,20 @@ export async function createRequisition(
     createdAt: new Date().toISOString(),
   };
 
-  const response = await apiFetch('/api/requisitions', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newReq),
-  });
-  const result = await response.json();
-  if (!response.ok || !result.success) throw new Error(result.error || 'Could not create the requisition.');
-  await fetchRequisitionsOnce(true);
+  const currentReqs = getLocal<PartRequisition[]>(STORAGE_KEYS.REQUISITIONS, []);
+  const updated = [newReq, ...currentReqs];
+  setLocal(STORAGE_KEYS.REQUISITIONS, updated);
+  notifyLocal('requisitions', updated);
+
+  try {
+    await apiFetch('/api/requisitions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newReq),
+    });
+  } catch (err) {
+    console.error('MongoDB createRequisition error:', err);
+  }
 
   return reqId;
 }
@@ -1166,13 +1524,28 @@ export async function updateRequisitionStatus(
   status: RequisitionStatus,
   reviewerNotes?: string
 ): Promise<void> {
-  const response = await apiFetch('/api/requisitions', {
-    method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ id: reqId, updates: { status, reviewNotes: reviewerNotes } }),
-  });
-  const result = await response.json();
-  if (!response.ok || !result.success) throw new Error(result.error || 'Could not update the requisition.');
-  await fetchRequisitionsOnce(true);
+  const currentReqs = getLocal<PartRequisition[]>(STORAGE_KEYS.REQUISITIONS, []);
+  const updated = currentReqs.map((r) =>
+    r.id === reqId ? { ...r, status, reviewNotes: reviewerNotes || r.reviewNotes } : r
+  );
+  setLocal(STORAGE_KEYS.REQUISITIONS, updated);
+  notifyLocal('requisitions', updated);
+
+  try {
+    await apiFetch('/api/requisitions', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id: reqId,
+        updates: {
+          status,
+          reviewNotes: reviewerNotes || undefined,
+        },
+      }),
+    });
+  } catch (err) {
+    console.error('MongoDB updateRequisitionStatus error:', err);
+  }
 }
 
 export async function approveRequisition(

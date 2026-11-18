@@ -1,68 +1,110 @@
-﻿import { NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { getDatabase, TenantError } from '@/lib/mongodb';
-import { readBody, identifier, nonnegative, pickFields, record } from '@/lib/apiValidation';
+import { SparePart } from '@/types/cmms';
 
 export const dynamic = 'force-dynamic';
-const fields = ['sku', 'name', 'category', 'machineType', 'compat', 'stock', 'minStock', 'monthlyAllowance', 'unitCost', 'unit', 'compatibleTypes', 'shelfLocation', 'oldPartReturnRequired', 'vendor', 'sNo'];
-function validate(value: unknown) {
-  const result = pickFields(value, fields);
-  for (const key of ['stock', 'minStock', 'monthlyAllowance', 'unitCost']) if (result[key] !== undefined) nonnegative(result[key], key);
-  for (const key of ['sku', 'name', 'category', 'machineType', 'compat', 'unit', 'shelfLocation', 'vendor']) if (result[key] !== undefined && typeof result[key] !== 'string') throw new TenantError('Invalid spare details.', 400);
-  if (result.compatibleTypes !== undefined && (!Array.isArray(result.compatibleTypes) || result.compatibleTypes.some(value => typeof value !== 'string'))) throw new TenantError('Invalid compatible asset types.', 400);
-  return result;
-}
-function failure(error: unknown) {
-  return NextResponse.json({ error: error instanceof TenantError ? error.message : 'Spare request failed.' }, { status: error instanceof TenantError ? error.statusCode : 500 });
-}
+export const revalidate = 0;
+
 export async function GET(req: Request) {
   try {
     const db = await getDatabase(req);
-    const parts = await db.collection('spare_parts').find({}).toArray();
-    return NextResponse.json({ success: true, data: parts.map(({ _id, ...part }) => ({ ...part, company: db.companyName, companySlug: db.tenant })), count: parts.length });
-  } catch (error) { return failure(error); }
+    const col = db.collection<SparePart>('spare_parts');
+    const parts = await col.find({}).toArray();
+
+    const cleanParts = (parts || []).map(({ _id, ...p }: any) => ({
+      ...p,
+      company: p.company || db.companyName,
+      companySlug: db.tenant,
+    }));
+    return NextResponse.json({ success: true, data: cleanParts, count: cleanParts.length });
+  } catch (err: unknown) {
+    if (err instanceof TenantError) {
+      return NextResponse.json({ error: err.message, code: err.code }, { status: err.statusCode });
+    }
+    console.error('Error fetching parts from MongoDB:', err);
+    return NextResponse.json({ success: false, error: (err as any)?.message || 'Failed to fetch parts', data: [] }, { status: 500 });
+  }
 }
+
 export async function POST(req: Request) {
   try {
+    const part = (await req.json()) as Partial<SparePart> & { id?: string; company?: string; companySlug?: string };
+    const key = part.partId || part.id;
+    if (!key) {
+      return NextResponse.json({ error: 'Part ID is required' }, { status: 400 });
+    }
+
     const db = await getDatabase(req);
-    const body = (await readBody(req));
-    const partId = identifier(body.partId || body.id, 'Spare ID');
-    const values = validate(body);
-    if (values.stock !== undefined) values.currentStock = values.stock;
-    await db.collection('spare_parts').updateOne({ $or: [{ id: partId }, { partId }] }, { $set: { ...values, partId, company: db.companyName, companySlug: db.tenant } }, { upsert: true });
-    return NextResponse.json({ success: true });
-  } catch (error) { return failure(error); }
+    part.company = db.companyName;
+    part.companySlug = db.tenant;
+
+    await db.collection('spare_parts').updateOne(
+      { $or: [{ id: key }, { partId: key }] },
+      { $set: part },
+      { upsert: true }
+    );
+
+    return NextResponse.json({ success: true, message: `Part ${key} saved in ${db.companyName}` });
+  } catch (err: unknown) {
+    if (err instanceof TenantError) {
+      return NextResponse.json({ error: err.message, code: err.code }, { status: err.statusCode });
+    }
+    console.error('Error saving part in MongoDB:', err);
+    return NextResponse.json({ error: (err as any)?.message || 'Failed to save part' }, { status: 500 });
+  }
 }
+
 export async function PATCH(req: Request) {
   try {
-    const db = await getDatabase(req);
-    const body = record(await req.json());
-    const partId = identifier(body.partId || body.id, 'Spare ID');
-    const values = validate(body.updates || {});
-    if (body.stock !== undefined) values.stock = nonnegative(body.stock, 'Stock');
-    const filter: Record<string, unknown> = { $or: [{ id: partId }, { partId }] };
-    let update: Record<string, unknown> | Record<string, unknown>[];
-    if (body.delta !== undefined) {
-      if (typeof body.delta !== 'number' || !Number.isFinite(body.delta) || body.delta === 0 || values.stock !== undefined) throw new TenantError('Invalid stock adjustment.', 400);
-      if (body.delta < 0) filter.stock = { $gte: -body.delta };
-      update = [{ $set: { stock: { $add: ['$stock', body.delta] } } }, { $set: { currentStock: '$stock' } }];
-    } else {
-      if (values.stock !== undefined) values.currentStock = values.stock;
-      update = { $set: { ...values, company: db.companyName, companySlug: db.tenant } };
+    const { id, partId, stock, updates } = await req.json();
+    const key = partId || id;
+    if (!key) {
+      return NextResponse.json({ error: 'Part ID is required' }, { status: 400 });
     }
-    const part = await db.collection('spare_parts').findOneAndUpdate(filter, update, { returnDocument: 'after' });
-    if (!part) throw new TenantError('Spare not found or insufficient stock.', 409);
-    const { _id, ...data } = part;
-    return NextResponse.json({ success: true, data });
-  } catch (error) { return failure(error); }
+
+    const db = await getDatabase(req);
+    const updatePayload = updates || {};
+    if (typeof stock === 'number') {
+      updatePayload.stock = stock;
+      updatePayload.currentStock = stock;
+    }
+    updatePayload.company = db.companyName;
+    updatePayload.companySlug = db.tenant;
+
+    await db.collection('spare_parts').updateOne(
+      { $or: [{ id: key }, { partId: key }] },
+      { $set: updatePayload }
+    );
+
+    return NextResponse.json({ success: true, message: `Part ${key} updated in ${db.companyName}` });
+  } catch (err: unknown) {
+    if (err instanceof TenantError) {
+      return NextResponse.json({ error: err.message, code: err.code }, { status: err.statusCode });
+    }
+    console.error('Error updating part stock in MongoDB:', err);
+    return NextResponse.json({ error: (err as any)?.message || 'Failed to update part' }, { status: 500 });
+  }
 }
+
 export async function DELETE(req: Request) {
   try {
+    const { id, partId } = await req.json();
+    const key = partId || id;
+    if (!key) {
+      return NextResponse.json({ error: 'Part ID is required' }, { status: 400 });
+    }
+
     const db = await getDatabase(req);
-    const body = record(await req.json());
-    const partId = identifier(body.partId || body.id, 'Spare ID');
-    if (await db.collection('repair_tickets').findOne({ 'partsUsed.partId': partId })) throw new TenantError('Spares with usage history cannot be deleted.', 409);
-    const result = await db.collection('spare_parts').deleteOne({ $or: [{ id: partId }, { partId }] });
-    if (!result.deletedCount) throw new TenantError('Spare not found.', 404);
-    return NextResponse.json({ success: true });
-  } catch (error) { return failure(error); }
+    await db.collection('spare_parts').deleteOne({
+      $or: [{ id: key }, { partId: key }],
+    });
+
+    return NextResponse.json({ success: true, message: `Part ${key} deleted from ${db.companyName}` });
+  } catch (err: unknown) {
+    if (err instanceof TenantError) {
+      return NextResponse.json({ error: err.message, code: err.code }, { status: err.statusCode });
+    }
+    console.error('Error deleting part from MongoDB:', err);
+    return NextResponse.json({ error: (err as any)?.message || 'Failed to delete part' }, { status: 500 });
+  }
 }

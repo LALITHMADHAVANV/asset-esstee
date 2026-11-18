@@ -9,11 +9,6 @@ const eslintConfig = defineConfig([
   globalIgnores([
     // Default ignores of eslint-config-next:
     ".next/**",
-    "**/node_modules/**",
-    "backups/**",
-    "my-mongodb-app/**",
-    "tmp/**",
-    ".npm-cache/**",
     "out/**",
     "build/**",
     "next-env.d.ts",

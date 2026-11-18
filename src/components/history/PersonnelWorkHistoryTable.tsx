@@ -155,7 +155,7 @@ export function PersonnelWorkHistoryTable() {
         const partsStr =
           t.partsUsed && t.partsUsed.length > 0
             ? t.partsUsed.map((p) => `${p.name} x${p.quantity}`).join(', ')
-            : 'No spares used';
+            : 'Labor Only (0 Parts)';
 
         const isPpm = textValue(t.faultCategory)?.toLowerCase().includes('ppm') || textValue(t.reportedBy)?.toLowerCase().includes('ppm');
 
@@ -215,7 +215,7 @@ export function PersonnelWorkHistoryTable() {
           faultCategory: p.task || 'Preventive Maintenance Overhaul',
           faultDetails: `Interval: ${p.intervalDays} days (${p.frequency})`,
           actionTaken: 'Completed multi-point preventive maintenance inspection, lubricated bearings, and verified safety cutoff.',
-          partsUsedText: 'No spares used',
+          partsUsedText: 'Labor Only (0 Parts)',
           partsUsedCount: 0,
           downtimeMinutes: 30,
           status: 'COMPLETED',

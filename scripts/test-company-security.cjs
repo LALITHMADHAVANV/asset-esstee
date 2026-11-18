@@ -13,7 +13,6 @@ let session = null, account = { uid: 'u1', role: 'MECHANIC', status: 'ACTIVE' },
 const client = { connect: async () => { connections++; }, db: () => ({ collection: () => ({ findOne: async () => account }) }) };
 const mongodb = load('src/lib/mongodb.ts', {
   './mongoUri': load('src/lib/mongoUri.ts', {}),
-  './apiAccess': load('src/lib/apiAccess.ts', {}),
   './companyIdentity': { canonicalCompanySlug: s => String(s || '').toLowerCase() },
   mongodb: { MongoClient: class { constructor() { return client; } }, ObjectId: { isValid: () => false } },
   './registry': { ensureRegistryInitialized: async () => {}, validateActiveCompany: async () => ({ valid: true, company }) },

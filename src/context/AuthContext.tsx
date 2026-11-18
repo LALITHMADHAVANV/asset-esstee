@@ -3,6 +3,17 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { UserProfile, UserRole } from '@/types/cmms';
 
+export const ROLE_PASSWORDS: Record<UserRole, string> = {
+  CEO: 'ceo123',
+  ADMIN: 'admin123',
+  ASSET_MANAGER: 'admin123',
+  SENIOR_MECHANIC: 'senior123',
+  MECHANIC: 'mechanic123',
+  SENIOR_ELECTRICIAN: 'senior123',
+  ELECTRICIAN: 'electrician123',
+  STORE_PERSON: 'stores123',
+};
+
 interface AuthContextType {
   user: UserProfile | null;
   role: UserRole | null;

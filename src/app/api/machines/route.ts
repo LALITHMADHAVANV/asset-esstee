@@ -1,77 +1,124 @@
-﻿import { NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { getDatabase, TenantError } from '@/lib/mongodb';
-import { readBody, identifier, record, nonnegative } from '@/lib/apiValidation';
-import { mongoTransaction } from '@/lib/mongoTransaction';
+import { Machine } from '@/types/cmms';
 
 export const dynamic = 'force-dynamic';
-function failure(error: unknown) {
-  return NextResponse.json({ error: error instanceof TenantError ? error.message : 'Asset request failed.' }, { status: error instanceof TenantError ? error.statusCode : 500 });
-}
-function validate(value: unknown) {
-  const input = record(value);
-  const result: Record<string, unknown> = {};
-  for (const [key, value] of Object.entries(input)) {
-    if (['_id', 'id', 'company', 'companySlug', 'totalDowntimeMinutes', 'repairRevision', 'assetRevision'].includes(key)) continue;
-    if (key.startsWith('$') || key.includes('.')) throw new TenantError('Invalid asset field.', 400);
-    result[key] = value;
-  }
-  if (result.cost !== undefined) nonnegative(result.cost, 'Asset cost');
-  if (result.status !== undefined && !['ACTIVE', 'BREAKDOWN', 'UNDER_MAINTENANCE', 'BUFFER', 'SCRAP', 'IDLE'].includes(String(result.status))) throw new TenantError('Invalid asset status.', 400);
-  return result;
-}
+export const revalidate = 0;
+
 export async function GET(req: Request) {
   try {
     const db = await getDatabase(req);
-    const id = new URL(req.url).searchParams.get('id');
-    if (id !== null) {
-      const asset = await db.collection('machines').findOne({ id: identifier(id) }, { collation: { locale: 'en', strength: 2 } });
-      if (!asset) throw new TenantError('Machine not found.', 404);
-      const { _id, ...data } = asset;
-      return NextResponse.json({ success: true, data });
+    const url = new URL(req.url);
+    const specificId = url.searchParams.get('id');
+
+    if (specificId) {
+      const single = await db.collection<Machine>('machines').findOne({
+        id: { $regex: new RegExp(`^${specificId}$`, 'i') },
+      });
+      if (single) {
+        const { _id, ...clean } = single as any;
+        return NextResponse.json({ success: true, data: clean });
+      }
+      return NextResponse.json({ success: false, error: 'Machine not found' }, { status: 404 });
     }
-    const assets = await db.collection('machines').find({}).toArray();
-    return NextResponse.json({ success: true, data: assets.map(({ _id, ...asset }) => ({ ...asset, company: db.companyName, companySlug: db.tenant })), count: assets.length });
-  } catch (error) { return failure(error); }
+
+    const machines = await db.collection<Machine>('machines').find({}).toArray();
+    const cleanMachines = (machines || []).map(({ _id, ...m }: any) => ({
+      ...m,
+      company: m.company || db.companyName,
+      companySlug: db.tenant,
+    }));
+
+    return NextResponse.json({ success: true, data: cleanMachines, count: cleanMachines.length });
+  } catch (err: unknown) {
+    if (err instanceof TenantError) {
+      return NextResponse.json({ error: err.message, code: err.code }, { status: err.statusCode });
+    }
+    console.error('API /machines GET error:', err);
+    return NextResponse.json({ error: (err as any)?.message || 'Failed to fetch machines' }, { status: 500 });
+  }
 }
+
 export async function POST(req: Request) {
   try {
+    const machine: Machine = await req.json();
+    if (!machine.id) {
+      return NextResponse.json({ error: 'Machine ID is required' }, { status: 400 });
+    }
+
     const db = await getDatabase(req);
-    const body = (await readBody(req));
-    const id = identifier(body.id);
-    const asset = validate(body);
-    await mongoTransaction(async session => {
-      const values = { ...asset };
-      if (values.status === 'ACTIVE' && await db.collection('repair_tickets').findOne({ machineId: id, status: { $nin: ['COMPLETED', 'REJECTED'] } }, { session })) values.status = 'BREAKDOWN';
-      await db.collection('machines').updateOne({ id }, { $set: { ...values, id, company: db.companyName, companySlug: db.tenant }, $inc: { assetRevision: 1 } }, { upsert: true, session });
+    machine.company = db.companyName;
+    (machine as any).companySlug = db.tenant;
+
+    await db.collection('machines').updateOne(
+      { id: machine.id },
+      { $set: machine },
+      { upsert: true }
+    );
+
+    return NextResponse.json({
+      success: true,
+      message: `Machine ${machine.id} saved in ${db.companyName}`,
+      company: db.companyName,
     });
-    return NextResponse.json({ success: true });
-  } catch (error) { return failure(error); }
+  } catch (err: unknown) {
+    if (err instanceof TenantError) {
+      return NextResponse.json({ error: err.message, code: err.code }, { status: err.statusCode });
+    }
+    console.error('API /machines POST error:', err);
+    return NextResponse.json({ error: (err as any)?.message || 'Failed to save machine' }, { status: 500 });
+  }
 }
+
 export async function PATCH(req: Request) {
   try {
+    const { id, updates } = await req.json();
+    if (!id || !updates) {
+      return NextResponse.json({ error: 'Machine ID and updates are required' }, { status: 400 });
+    }
+
+    const { _id, ...safeUpdates } = updates;
     const db = await getDatabase(req);
-    const body = record(await req.json());
-    const id = identifier(body.id);
-    const updates = validate(body.updates);
-    const result = await mongoTransaction(async session => {
-      const values = { ...updates };
-      if (values.status === 'ACTIVE') {
-        const open = await db.collection('repair_tickets').findOne({ machineId: id, status: { $nin: ['COMPLETED', 'REJECTED'] } }, { session });
-        if (open) values.status = 'BREAKDOWN';
-      }
-      return db.collection('machines').updateOne({ id }, { $set: { ...values, company: db.companyName, companySlug: db.tenant }, $inc: { assetRevision: 1 } }, { session });
+
+    const result = await db.collection('machines').updateOne(
+      { id },
+      { $set: { ...safeUpdates, company: db.companyName, companySlug: db.tenant } }
+    );
+
+    return NextResponse.json({
+      success: true,
+      message: `Machine ${id} updated in ${db.companyName}`,
+      matchedCount: result.matchedCount,
     });
-    if (!result.matchedCount) throw new TenantError('Asset not found.', 404);
-    return NextResponse.json({ success: true, matchedCount: result.matchedCount });
-  } catch (error) { return failure(error); }
+  } catch (err: unknown) {
+    if (err instanceof TenantError) {
+      return NextResponse.json({ error: err.message, code: err.code }, { status: err.statusCode });
+    }
+    console.error('API /machines PATCH error:', err);
+    return NextResponse.json({ error: (err as any)?.message || 'Failed to update machine' }, { status: 500 });
+  }
 }
+
 export async function DELETE(req: Request) {
   try {
+    const { id } = await req.json();
+    if (!id) {
+      return NextResponse.json({ error: 'Machine ID is required' }, { status: 400 });
+    }
+
     const db = await getDatabase(req);
-    const id = identifier(record(await req.json()).id);
-    if (await db.collection('repair_tickets').findOne({ machineId: id })) throw new TenantError('Assets with repair history must be retired instead of deleted.', 409);
     const result = await db.collection('machines').deleteOne({ id });
-    if (!result.deletedCount) throw new TenantError('Asset not found.', 404);
-    return NextResponse.json({ success: true, deletedCount: result.deletedCount });
-  } catch (error) { return failure(error); }
+
+    return NextResponse.json({
+      success: true,
+      message: `Machine ${id} deleted from ${db.companyName}`,
+      deletedCount: result.deletedCount,
+    });
+  } catch (err: unknown) {
+    if (err instanceof TenantError) {
+      return NextResponse.json({ error: err.message, code: err.code }, { status: err.statusCode });
+    }
+    console.error('API /machines DELETE error:', err);
+    return NextResponse.json({ error: (err as any)?.message || 'Failed to delete machine' }, { status: 500 });
+  }
 }

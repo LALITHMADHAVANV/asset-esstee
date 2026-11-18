@@ -1,9 +1,9 @@
-import { apiRoleAllowed } from './apiAccess';
 import { normalizeMongoUri } from './mongoUri';
 import { canonicalCompanySlug } from './companyIdentity';
 import { MongoClient, Db, Collection, Document, ObjectId } from 'mongodb';
-import { validateActiveCompany, CompanyRecord, ensureRegistryInitialized } from './registry';
+import { validateActiveCompany, getCompanyBySlug, CompanyRecord, ensureRegistryInitialized } from './registry';
 import { verifySessionToken, extractSessionToken, SessionPayload } from './auth';
+import bcrypt from 'bcryptjs';
 import plantAssetsSeed from '@/data/plantAssetsSeed.json';
 
 
@@ -110,11 +110,110 @@ export async function ensureEssteeDatabaseInitialized(client: MongoClient): Prom
     await ticketsCol.createIndex({ id: 1 }, { unique: true }).catch(() => {});
     await partsCol.createIndex({ partId: 1 }, { unique: true }).catch(() => {});
 
-    // Accounts are provisioned explicitly; connections never create default credentials.
+    // 2. Check & seed default users if empty
+    const userCount = await usersCol.countDocuments();
+    if (userCount === 0) {
+      const now = new Date().toISOString();
+      const hashedAdminPass = await bcrypt.hash('admin123', 10);
+      const hashedSeniorPass = await bcrypt.hash('senior123', 10);
+      const hashedMechPass = await bcrypt.hash('mechanic123', 10);
+      const hashedStorePass = await bcrypt.hash('stores123', 10);
+      const hashedCeoPass = await bcrypt.hash('ceo123', 10);
+
+      const defaultUsers = [
+        {
+          uid: 'ADM-ESSTEE-01',
+          name: 'Esstee Plant Administrator',
+          email: 'admin@esstee.com',
+          username: 'esstee.admin',
+          role: 'ADMIN',
+          title: 'Plant Administrator & Asset Director',
+          phone: '+91 98401 00001',
+          department: 'Factory Operations',
+          employeeId: 'EMP-ADM-01',
+          unit: 'All Units',
+          company: 'Esstee',
+          companySlug: 'esstee',
+          status: 'ACTIVE',
+          passwordHash: hashedAdminPass,
+          updatedAt: now,
+        },
+        {
+          uid: 'CEO-ESSTEE-01',
+          name: 'Chief Executive Officer',
+          email: 'ceo@esstee.com',
+          username: 'esstee.ceo',
+          role: 'CEO',
+          title: 'Chief Executive Officer (Managing Director)',
+          phone: '+91 98401 00002',
+          department: 'Executive Management',
+          employeeId: 'EMP-CEO-01',
+          unit: 'All Units',
+          company: 'Esstee',
+          companySlug: 'esstee',
+          status: 'ACTIVE',
+          passwordHash: hashedCeoPass,
+          updatedAt: now,
+        },
+        {
+          uid: 'SNR-ESSTEE-01',
+          name: 'Senior Maintenance Engineer',
+          email: 'senior@esstee.com',
+          username: 'esstee.senior',
+          role: 'SENIOR_MECHANIC',
+          title: 'Senior Floor Maintenance In-Charge',
+          phone: '+91 98401 00003',
+          department: 'Plant Maintenance',
+          employeeId: 'EMP-SNR-01',
+          unit: 'UNIT - 1',
+          company: 'Esstee',
+          companySlug: 'esstee',
+          status: 'ACTIVE',
+          passwordHash: hashedSeniorPass,
+          updatedAt: now,
+        },
+        {
+          uid: 'MCH-ESSTEE-01',
+          name: 'Line Maintenance Mechanic',
+          email: 'mechanic@esstee.com',
+          username: 'esstee.mechanic',
+          role: 'MECHANIC',
+          title: 'Floor Duty Mechanic',
+          phone: '+91 98401 00004',
+          department: 'Sewing Maintenance',
+          employeeId: 'EMP-MCH-01',
+          unit: 'UNIT - 1',
+          company: 'Esstee',
+          companySlug: 'esstee',
+          status: 'ACTIVE',
+          passwordHash: hashedMechPass,
+          updatedAt: now,
+        },
+        {
+          uid: 'STR-ESSTEE-01',
+          name: 'Central Spare Store In-Charge',
+          email: 'stores@esstee.com',
+          username: 'esstee.stores',
+          role: 'STORE_PERSON',
+          title: 'Spares Inventory Controller',
+          phone: '+91 98401 00005',
+          department: 'Store & Inventory Crib',
+          employeeId: 'EMP-STR-01',
+          unit: 'UNIT - 1',
+          company: 'Esstee',
+          companySlug: 'esstee',
+          status: 'ACTIVE',
+          passwordHash: hashedStorePass,
+          updatedAt: now,
+        },
+      ];
+
+      await usersCol.insertMany(defaultUsers as any[]);
+    }
 
     // 3. Check & seed machines if empty
     const machineCount = await machinesCol.countDocuments();
-    if (process.env.NODE_ENV !== 'production' && process.env.SEED_DEMO_DATA === 'true' && machineCount === 0 && Array.isArray(plantAssetsSeed) && plantAssetsSeed.length > 0) {
+    if (machineCount === 0 && Array.isArray(plantAssetsSeed) && plantAssetsSeed.length > 0) {
       await machinesCol.insertMany(plantAssetsSeed as any[]);
     }
   } catch (err) {
@@ -315,19 +414,27 @@ export async function resolveTenantFromRequest(req: Request): Promise<{
     const account = await db.collection('users').findOne(ObjectId.isValid(sessionUser.uid)
       ? { $or: [{ uid: sessionUser.uid }, { _id: new ObjectId(sessionUser.uid) }] }
       : { uid: sessionUser.uid });
-    if (!account || String(account.status || 'ACTIVE').toUpperCase() !== 'ACTIVE') {
+    if (!account || String(account.status || 'ACTIVE').toUpperCase() === 'INACTIVE') {
       throw new TenantError('Your session is no longer valid.', 401, 'AUTH_REQUIRED');
     }
     sessionUser.role = account.role;
     sessionUser.email = account.email;
     const path = new URL(req.url).pathname;
-    if (!apiRoleAllowed(account.role, path, req.method)) {
-      throw new TenantError('You do not have permission for this action.', 403, 'FORBIDDEN');
+    if (req.method !== 'GET' && /\/api\/users$/.test(path) && !['ADMIN', 'ASSET_MANAGER'].includes(String(account.role).toUpperCase())) {
+      throw new TenantError('Administrator access required.', 403, 'FORBIDDEN');
     }
     return { db, company, sessionUser };
   }
 
-  throw new TenantError('Please sign in.', 401, 'AUTH_REQUIRED');
+  // 4. For unauthenticated operations (e.g. public QR scanning, floor breakdown reporting):
+  const path = new URL(req.url).pathname;
+  if (req.method !== 'GET' && /\/api\/users/.test(path)) {
+    throw new TenantError('Administrator access required.', 403, 'FORBIDDEN');
+  }
+
+  const targetSlug = clientSuppliedSlug || 'esstee';
+  const { db, company } = await getCompanyDatabase(targetSlug);
+  return { db, company, sessionUser: null };
 }
 
 /**

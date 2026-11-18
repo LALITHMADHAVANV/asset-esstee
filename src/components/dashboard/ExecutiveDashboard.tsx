@@ -1,6 +1,5 @@
 'use client';
 
-import { repairSpareCost } from '@/lib/repairCost';
 import { textValue } from '@/lib/textValue';
 
 import React, { useState, useMemo } from 'react';
@@ -156,9 +155,16 @@ export function ExecutiveDashboard({
 
   const totalActivitiesCompleted = completedRepairs + completedPpm;
 
-  // Repair expenses contain only recorded spare usage.
+  // Real Repair Cost Calculation (parts cost + technician labor)
   const totalRepairCost = useMemo(() => {
-    return repairs.reduce((acc, r) => acc + repairSpareCost(r, parts), 0);
+    return repairs.reduce((acc, r) => {
+      const partsCost = (r.partsUsed || []).reduce((pAcc, pu) => {
+        const part = parts.find((sp) => sp.partId === pu.partId || sp.sku === pu.sku);
+        return pAcc + (part ? part.unitCost * pu.quantity : pu.quantity * 250);
+      }, 0);
+      const laborCost = Math.round(((r.downtimeMinutes || 0) / 60) * 300);
+      return acc + partsCost + laborCost;
+    }, 0);
   }, [repairs, parts]);
 
   // Real Maintenance Cost (PPM routines + approved requisitions)
@@ -166,7 +172,8 @@ export function ExecutiveDashboard({
     const reqCost = requisitions
       .filter((req) => req.status === 'APPROVED_BY_CEO' || req.status === 'FULFILLED' || req.status === 'ORDERED')
       .reduce((acc, req) => acc + (req.estimatedCost || 0), 0);
-    return reqCost;
+    const ppmCost = ppmSchedules.filter((p) => p.status === 'COMPLETED').length * 450;
+    return reqCost + ppmCost;
   }, [requisitions, ppmSchedules]);
 
   // Real Major Problems Count (critical urgency or high downtime)
@@ -241,9 +248,16 @@ export function ExecutiveDashboard({
         return !isNaN(d.getTime()) && d.getMonth() === idx;
       });
 
-      const repairCost = monthRepairs.reduce((acc, r) => acc + repairSpareCost(r, parts), 0);
+      const repairCost = monthRepairs.reduce((acc, r) => {
+        const partsCost = (r.partsUsed || []).reduce((pAcc, pu) => {
+          const part = parts.find((sp) => sp.partId === pu.partId || sp.sku === pu.sku);
+          return pAcc + (part ? part.unitCost * pu.quantity : 150);
+        }, 0);
+        const laborCost = Math.round(((r.downtimeMinutes || 0) / 60) * 300);
+        return acc + partsCost + laborCost;
+      }, 0);
 
-      const maintCost = 0;
+      const maintCost = monthPpms.length * 450 + monthRepairs.length * 150;
 
       return {
         month: m,
@@ -340,7 +354,20 @@ export function ExecutiveDashboard({
   // ─── 6. REAL COST BREAKDOWN ───────────────────────────────────────────
   const costBreakdown = useMemo(() => {
     // 1. Spare parts cost from repair usage
-    const partsFromRepairs = repairs.reduce((acc, r) => acc + repairSpareCost(r, parts), 0);
+    const partsFromRepairs = repairs.reduce((acc, r) => {
+      return (
+        acc +
+        (r.partsUsed || []).reduce((pAcc, pu) => {
+          const part = parts.find((sp) => sp.partId === pu.partId || sp.sku === pu.sku);
+          return pAcc + (part ? part.unitCost * pu.quantity : pu.quantity * 250);
+        }, 0)
+      );
+    }, 0);
+
+    // 2. Technician labor cost (approx ₹300/hr)
+    const totalLabor = repairs.reduce((acc, r) => {
+      return acc + Math.round(((r.downtimeMinutes || 0) / 60) * 300);
+    }, 0);
 
     // 3. Requisitions / External contract procurement
     const externalSpares = requisitions
@@ -352,17 +379,19 @@ export function ExecutiveDashboard({
       .filter((m) => m.status === 'SCRAP')
       .reduce((acc, m) => acc + (m.cost || 40000), 0);
 
-    const totalCost = partsFromRepairs + externalSpares + replacementCapex;
+    const totalCost = partsFromRepairs + totalLabor + externalSpares + replacementCapex;
 
     const partsPct = totalCost > 0 ? Math.round(((partsFromRepairs + externalSpares) / totalCost) * 100) : 0;
+    const laborPct = totalCost > 0 ? Math.round((totalLabor / totalCost) * 100) : 0;
     const replacePct = totalCost > 0 ? Math.round((replacementCapex / totalCost) * 100) : 0;
-    const otherPct = totalCost > 0 ? Math.max(0, 100 - partsPct - replacePct) : 0;
+    const otherPct = totalCost > 0 ? Math.max(0, 100 - partsPct - laborPct - replacePct) : 0;
 
     return {
       total: totalCost,
       spareParts: { amount: partsFromRepairs + externalSpares, pct: partsPct },
+      labor: { amount: totalLabor, pct: laborPct },
       replacement: { amount: replacementCapex, pct: replacePct },
-      routineOther: { amount: Math.max(0, totalCost - (partsFromRepairs + externalSpares + replacementCapex)), pct: otherPct },
+      routineOther: { amount: Math.max(0, totalCost - (partsFromRepairs + externalSpares + totalLabor + replacementCapex)), pct: otherPct },
     };
   }, [repairs, parts, requisitions, machines]);
 
@@ -406,7 +435,12 @@ export function ExecutiveDashboard({
           ? `${Math.round((r.downtimeMinutes / 60) * 10) / 10} hrs`
           : '0 min';
 
-        const totalCost = repairSpareCost(r, parts);
+        const partsCost = (r.partsUsed || []).reduce((acc, pu) => {
+          const part = parts.find((sp) => sp.partId === pu.partId || sp.sku === pu.sku);
+          return acc + (part ? part.unitCost * pu.quantity : 0);
+        }, 0);
+        const laborCost = Math.round(((r.downtimeMinutes || 0) / 60) * 300);
+        const totalCost = partsCost + laborCost;
 
         let statusClass = 'bg-slate-100 text-slate-800';
         if (r.status === 'COMPLETED') statusClass = 'bg-emerald-100 text-emerald-800';
@@ -1096,7 +1130,7 @@ export function ExecutiveDashboard({
               <h3 className="text-sm font-bold text-slate-900">
                 Cost Breakdown
               </h3>
-              <p className="text-[11px] text-slate-400">Distribution across spares &amp; capex</p>
+              <p className="text-[11px] text-slate-400">Distribution across spares, labor &amp; capex</p>
             </div>
 
             <div className="flex items-center justify-between gap-4 mt-4">
@@ -1117,6 +1151,17 @@ export function ExecutiveDashboard({
                         strokeDashoffset="0"
                         fill="none"
                       />
+                      {/* Labor */}
+                      <circle
+                        cx="50"
+                        cy="50"
+                        r="38"
+                        stroke="#3b82f6"
+                        strokeWidth="16"
+                        strokeDasharray={`${(costBreakdown.labor.pct / 100) * 238.7} 238.7`}
+                        strokeDashoffset={`-${(costBreakdown.spareParts.pct / 100) * 238.7}`}
+                        fill="none"
+                      />
                       {/* Replacement Capex */}
                       <circle
                         cx="50"
@@ -1125,7 +1170,7 @@ export function ExecutiveDashboard({
                         stroke="#8b5cf6"
                         strokeWidth="16"
                         strokeDasharray={`${(costBreakdown.replacement.pct / 100) * 238.7} 238.7`}
-                        strokeDashoffset={`-${((costBreakdown.spareParts.pct) / 100) * 238.7}`}
+                        strokeDashoffset={`-${((costBreakdown.spareParts.pct + costBreakdown.labor.pct) / 100) * 238.7}`}
                         fill="none"
                       />
                     </>
@@ -1149,6 +1194,15 @@ export function ExecutiveDashboard({
                   </span>
                   <span className="font-bold text-slate-900 font-mono">
                     {costBreakdown.spareParts.pct}% ({formatMoney(costBreakdown.spareParts.amount)})
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="flex items-center gap-1.5 text-slate-600">
+                    <span className="w-2.5 h-2.5 rounded-full bg-blue-600" />
+                    Labour Hours
+                  </span>
+                  <span className="font-bold text-slate-900 font-mono">
+                    {costBreakdown.labor.pct}% ({formatMoney(costBreakdown.labor.amount)})
                   </span>
                 </div>
                 <div className="flex items-center justify-between">

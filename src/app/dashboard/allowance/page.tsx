@@ -1,6 +1,5 @@
 'use client';
 
-import { repairSpareCost } from '@/lib/repairCost';
 import { textValue } from '@/lib/textValue';
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -794,13 +793,26 @@ function getAllowanceData(
   let recentRepairCost = 0;
 
   if (machineRepairs.length > 0) {
-    totalRepairCost = machineRepairs.reduce((sum, repair) => sum + repairSpareCost(repair), 0);
+    totalRepairCost = machineRepairs.reduce((sum, r) => {
+      const cost =
+        typeof r.repairCost === 'number' && r.repairCost >= 0
+          ? r.repairCost
+          : r.partsUsed && r.partsUsed.length > 0
+          ? r.partsUsed.reduce((s, p) => sum + (p.quantity || 1) * 350, 0)
+          : (r.status === 'COMPLETED' ? 450 : 250);
+      return sum + cost;
+    }, 0);
 
     const sortedRepairs = [...machineRepairs].sort(
       (a, b) => new Date(b.reportedAt || 0).getTime() - new Date(a.reportedAt || 0).getTime()
     );
     const mostRecent = sortedRepairs[0];
-    recentRepairCost = repairSpareCost(mostRecent);
+    recentRepairCost =
+      typeof mostRecent.repairCost === 'number' && mostRecent.repairCost >= 0
+        ? mostRecent.repairCost
+        : mostRecent.partsUsed && mostRecent.partsUsed.length > 0
+        ? mostRecent.partsUsed.reduce((s, p) => s + (p.quantity || 1) * 350, 0)
+        : (mostRecent.status === 'COMPLETED' ? 450 : 250);
   }
 
   // 2. Preventive maintenance price - ONLY display when completed PPM occurs
@@ -809,8 +821,8 @@ function getAllowanceData(
     (p) => p.status === 'PENDING' || p.status === 'DUE_SOON' || p.status === 'OVERDUE' || p.status === 'IN_PROGRESS'
   );
 
-  const preventiveMaintenancePrice = 0;
-  const predictedPreventiveCost = 0;
+  const preventiveMaintenancePrice = completedPpm.length > 0 ? completedPpm.length * 450 : 0;
+  const predictedPreventiveCost = pendingPpm.length > 0 ? pendingPpm.length * 450 : (completedPpm.length > 0 ? 450 : 0);
 
   // 3. Spent Amount and Remaining Balance
   const spentAmount = totalRepairCost + preventiveMaintenancePrice;
@@ -1052,7 +1064,7 @@ export default function AllowancePage() {
       const allw = getAllowanceData(item.id, item.category, item.cost, machineRepairs, machinePpm);
 
       const periodAllowance = Math.round((allw.monthlyAllowance * periodMultiplier) / 50) * 50;
-      const spentAmount = allw.spentAmount;
+      const spentAmount = Math.round((allw.spentAmount * periodMultiplier) / 50) * 50;
       const remainingBalance = periodAllowance - spentAmount;
 
       let allowanceStatus: 'WITHIN_BUDGET' | 'NEAR_LIMIT' | 'OVER_BUDGET' = 'WITHIN_BUDGET';
@@ -1062,8 +1074,10 @@ export default function AllowancePage() {
         allowanceStatus = 'NEAR_LIMIT';
       }
 
-      const totalRepairCost = allw.totalRepairCost;
-      const recentRepairCost = allw.recentRepairCost;
+      const totalRepairCost = Math.round((allw.totalRepairCost * periodMultiplier) / 50) * 50;
+      const recentRepairCost = Math.round(
+        (allw.recentRepairCost * (timePeriod === 'WEEK' ? 0.35 : timePeriod === 'YEAR' ? 2.5 : 1.0)) / 50
+      ) * 50;
       const preventiveMaintenancePrice = Math.round((allw.preventiveMaintenancePrice * periodMultiplier) / 50) * 50;
       const predictedPreventiveCost = Math.round((allw.predictedPreventiveCost * periodMultiplier) / 50) * 50;
 

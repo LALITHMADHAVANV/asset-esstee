@@ -1,6 +1,5 @@
 'use client';
 
-import { ImportWorkbookButton } from '@/components/import/ImportWorkbookButton';
 import { textValue } from '@/lib/textValue';
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
@@ -85,7 +84,7 @@ export default function InventoryPage() {
 
   // Strict authorization matrix: only authorized executives/admin can approve critical needs
   const isAuthorizedToApproveCritical = currentRole === 'CEO' || currentRole === 'ADMIN' || currentRole === 'ASSET_MANAGER';
-  const isAuthorizedToApproveGeneral = ['STORE_PERSON', 'ADMIN', 'ASSET_MANAGER', 'SENIOR_MECHANIC', 'SENIOR_ELECTRICIAN'].includes(currentRole);
+  const isAuthorizedToApproveGeneral = currentRole === 'STORE_PERSON' || currentRole === 'ADMIN' || currentRole === 'ASSET_MANAGER' || currentRole === 'CEO';
 
   const [parts, setParts] = useState<SparePart[]>([]);
   const [requisitions, setRequisitions] = useState<PartRequisition[]>([]);
@@ -428,8 +427,7 @@ export default function InventoryPage() {
       showToast('Stock cannot fall below zero.', 'warning');
       return;
     }
-    try { await adjustPartStock(part.partId, delta); }
-    catch (error) { showToast(error instanceof Error ? error.message : 'Stock could not be saved.', 'error'); return; }
+    await adjustPartStock(part.partId, delta);
     showToast(`${part.sku} updated (${part.stock + delta} ${part.unit})`, 'info');
   };
 
@@ -576,8 +574,7 @@ export default function InventoryPage() {
     if (!target) return;
 
     const poRef = grnChallanNo || restockPO || `GRN-${Date.now().toString().slice(-6)}`;
-    try { await restockPart(restockPartId, restockQty, poRef); }
-    catch (error) { showToast(error instanceof Error ? error.message : 'Stock could not be saved.', 'error'); return; }
+    await restockPart(restockPartId, restockQty, poRef);
 
     sendAppNotification({
       type: 'RESTOCK_ALERT',
@@ -1106,7 +1103,6 @@ export default function InventoryPage() {
             </div>
           )}
 
-          {isStorePersonOrAdmin && <ImportWorkbookButton kind="spares" />}
           {/* Store Person & Admin Action: Restock Intake */}
           {isStorePersonOrAdmin && (
             <button
@@ -1714,7 +1710,7 @@ export default function InventoryPage() {
                               <button
                                 type="button"
                                 onClick={() => handleOpenIssueModal(part)}
-                                disabled={!isStorePersonOrAdmin || part.stock <= 0}
+                                disabled={part.stock <= 0}
                                 className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 disabled:hover:bg-indigo-600 text-white rounded-lg text-xs font-bold transition flex items-center gap-1 shadow-2xs cursor-pointer"
                                 title="Floor Handover & Gate Pass"
                               >
@@ -1724,7 +1720,6 @@ export default function InventoryPage() {
                               <button
                                 type="button"
                                 onClick={() => handleOpenGrnModal(part)}
-                                disabled={!isStorePersonOrAdmin}
                                 className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition flex items-center gap-1 shadow-2xs cursor-pointer"
                                 title="Inward Goods GRN Intake"
                               >
@@ -1735,7 +1730,7 @@ export default function InventoryPage() {
                                 <button
                                   type="button"
                                   onClick={() => handleAdjust(part, -1)}
-                                  disabled={!isStorePersonOrAdmin || part.stock <= 0}
+                                  disabled={part.stock <= 0}
                                   className="w-6 h-6 hover:bg-slate-100 disabled:opacity-40 text-slate-600 flex items-center justify-center cursor-pointer"
                                   title="Reduce stock by 1"
                                 >
@@ -1744,7 +1739,6 @@ export default function InventoryPage() {
                                 <button
                                   type="button"
                                   onClick={() => handleAdjust(part, 1)}
-                                  disabled={!isStorePersonOrAdmin}
                                   className="w-6 h-6 hover:bg-slate-100 text-slate-600 flex items-center justify-center border-l border-slate-200 cursor-pointer"
                                   title="Increase stock by 1"
                                 >
@@ -3288,7 +3282,6 @@ export default function InventoryPage() {
             </div>
 
             <form onSubmit={handleRestockSubmit} className="p-6 space-y-4">
-              <div className="flex justify-end"><ImportWorkbookButton kind="spares" /></div>
               <div>
                 <label className="block text-xs font-semibold text-slate-600 mb-1">
                   Select Spare Part *

@@ -44,8 +44,3 @@ next-env.d.ts
 
 # IDE
 .vscode/
-
-# Local dependency cache and analysis output
-/.npm-cache/
-/tmp/
-/lint-review.json
