@@ -29,6 +29,9 @@ and output settings. Add these server-only environment variables to Production
 (and to Preview only if previews should access that database):
 
 - `MONGODB_URI`: the complete Atlas connection string.
+  Atlas application names must use `appName=Asset-esstee`, not a bare
+  `&Asset-esstee` query option. The app recognizes that legacy pasted label,
+  while leaving credentials, TLS and authentication options unchanged.
 - `REGISTRY_DB_NAME`: `compliance_master` (or the migrated registry name).
 - `JWT_SECRET`: a private random secret of at least 32 characters. Generate one
   locally with `node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"`.

@@ -195,7 +195,7 @@ async function complete(id, partsUsed = [{ partId: 'P1', quantity: 2 }]) {
     const origin = 'http://127.0.0.1:' + httpPort;
     app = spawn(process.execPath, ['node_modules/next/dist/bin/next', 'start', '--hostname', '127.0.0.1', '--port', String(httpPort)], {
       windowsHide: true, stdio: 'ignore', env: { ...process.env, NODE_ENV: 'production',
-        MONGODB_URI: 'mongodb://127.0.0.1:' + port + '/?replicaSet=repair-test', REGISTRY_DB_NAME: registryName,
+        MONGODB_URI: 'mongodb://127.0.0.1:' + port + '/?replicaSet=repair-test&Asset-esstee', REGISTRY_DB_NAME: registryName,
         JWT_SECRET: randomBytes(48).toString('hex'), SEED_DEMO_DATA: 'false', ESSTEE_TELEGRAM_BOT_TOKEN: '' },
     });
     await retry(async () => { const response = await fetch(origin + '/login'); if (!response.ok) throw Error('App not ready'); });
