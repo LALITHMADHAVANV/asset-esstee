@@ -1,3 +1,4 @@
+import { tenantPreferences } from '@/lib/tenantPreferences';
 import { textValue } from '@/lib/textValue';
 import { Machine, MachineStatus, AssetLogEntry, FloorLine } from '@/types/cmms';
 import { updateMachineStatus, apiFetch } from './cmmsService';
@@ -38,7 +39,7 @@ const logListeners = new Set<Listener<AssetLogEntry[]>>();
 function getLocal<T>(key: string, defaultVal: T): T {
   if (typeof window === 'undefined') return defaultVal;
   try {
-    const raw = localStorage.getItem(key);
+    const raw = tenantPreferences.getItem(key);
     return raw ? JSON.parse(raw) : defaultVal;
   } catch {
     return defaultVal;
@@ -48,7 +49,7 @@ function getLocal<T>(key: string, defaultVal: T): T {
 function setLocal<T>(key: string, val: T): void {
   if (typeof window === 'undefined') return;
   try {
-    localStorage.setItem(key, JSON.stringify(val));
+    tenantPreferences.setItem(key, JSON.stringify(val));
   } catch (e) {
     console.warn('LocalStorage write error:', e);
   }

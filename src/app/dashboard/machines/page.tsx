@@ -30,6 +30,7 @@ import {
   Search,
   X,
 } from 'lucide-react';
+import { ImportWorkbookButton } from '@/components/import/ImportWorkbookButton';
 import { EditAssetModal } from '@/components/asset/EditAssetModal';
 import { QRCodeSVG } from 'qrcode.react';
 import { Machine, MachineType, MotorType, FloorLine, MachineStatus, AssetCategory } from '@/types/cmms';
@@ -651,6 +652,7 @@ export default function MachinesPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2 shrink-0">
+          <ImportWorkbookButton kind="assets" />
           <button
             type="button"
             onClick={() => setIsAssetPickerOpen(true)}

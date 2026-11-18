@@ -1,5 +1,6 @@
 'use client';
 
+import { repairSpareCost } from '@/lib/repairCost';
 import { textValue } from '@/lib/textValue';
 
 import { assetScanUrl } from '@/lib/scanUrl';
@@ -354,7 +355,7 @@ export default function HistoryPage() {
 
         // Derive real service logs from repair tickets
         const serviceLogs: ServiceLogEntry[] = machineRepairs.map((r) => {
-          const partsCost = r.partsUsed?.reduce((sum, p) => sum + (p.quantity || 1) * 350, 0) || 0;
+          const partsCost = repairSpareCost(r);
           return {
             ticketId: r.id,
             date: r.reportedAt ? r.reportedAt.slice(0, 10) : (m.purchaseDate || '2026-10-10'),
@@ -403,9 +404,9 @@ export default function HistoryPage() {
               },
             ];
 
-        const totalDowntime = machineRepairs.reduce((sum, r) => sum + (r.downtimeMinutes || 0), m.totalDowntimeMinutes || 0);
+        const totalDowntime = Math.max(m.totalDowntimeMinutes || 0, machineRepairs.reduce((sum, r) => sum + (r.downtimeMinutes || 0), 0));
         const totalRepairCost = serviceLogs.reduce((sum, l) => sum + (l.costIncurred || 0), 0);
-        const totalPpmCost = machinePpm.filter((p) => p.status === 'COMPLETED').length * 450;
+        const totalPpmCost = 0;
         const totalMaintenanceCost = totalRepairCost + totalPpmCost;
 
         const hasCritical = machineRepairs.some((r) => r.urgency === 'CRITICAL' && r.status !== 'COMPLETED');

@@ -1,5 +1,6 @@
 'use client';
 
+import { repairSpareCost } from '@/lib/repairCost';
 import { textValue } from '@/lib/textValue';
 
 import React, { useState, useMemo, useEffect } from 'react';
@@ -513,7 +514,7 @@ export function WidgetDrilldownDrawer({
       const totalCompletedCount = completedRepairs.length + completedPpms.length;
 
       const totalDowntimeSaved = completedRepairs.reduce((sum, r) => sum + (r.downtimeMinutes || 0), 0);
-      const totalRepairSpend = completedRepairs.reduce((sum, r) => sum + (r.repairCost || 0), 0);
+      const totalRepairSpend = completedRepairs.reduce((sum, r) => sum + repairSpareCost(r), 0);
 
       type UnifiedTask = {
         id: string;
@@ -538,7 +539,7 @@ export function WidgetDrilldownDrawer({
           taskTitle: r.faultCategory,
           technician: r.attendedBy || 'Technician',
           durationMinutes: r.downtimeMinutes || 0,
-          cost: r.repairCost || 0,
+          cost: repairSpareCost(r),
           completedAt: r.resolvedAt || r.completedAt || r.reportedAt,
           actionTaken: r.actionTaken || 'Repair completed and tested',
           hasProof: !!r.completionProofImage,

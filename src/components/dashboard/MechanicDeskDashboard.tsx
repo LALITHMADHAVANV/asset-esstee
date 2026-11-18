@@ -1,5 +1,6 @@
 'use client';
 
+import { repairSpareCost } from '@/lib/repairCost';
 import { textValue } from '@/lib/textValue';
 
 import React, { useState, useMemo, useEffect } from 'react';
@@ -179,9 +180,8 @@ export function MechanicDeskDashboard({
   const [downtimeMinutes, setDowntimeMinutes] = useState(30);
   const [actionTaken, setActionTaken] = useState('');
   const [issuesIdentified, setIssuesIdentified] = useState('');
-  const [repairCost, setRepairCost] = useState<number>(450);
-  const [laborCost, setLaborCost] = useState<number>(250);
-  const [partsCost, setPartsCost] = useState<number>(200);
+  const [repairCost, setRepairCost] = useState<number>(0);
+  const [partsCost, setPartsCost] = useState<number>(0);
   const [repairProofImage, setRepairProofImage] = useState<string | null>(null);
   const [selectedPartId, setSelectedPartId] = useState<string>('');
   const [selectedPartQty, setSelectedPartQty] = useState<number>(1);
@@ -316,18 +316,13 @@ export function MechanicDeskDashboard({
     setActionTaken(ticket.actionTaken || '');
     setIssuesIdentified(ticket.issuesIdentified || ticket.faultDetails || '');
     setRepairProofImage(ticket.completionProofImage || null);
-    const initialLabor = Math.round((elapsed / 60) * 350);
-    setLaborCost(initialLabor);
 
     // Calculate parts cost from spares already chosen in Step 1 (Spare -> Start -> Complete)
     const existingParts = ticket.partsUsed || [];
-    const initialPartsCost = existingParts.reduce((sum, pu) => {
-      const part = parts.find((p) => p.partId === pu.partId);
-      return sum + (part ? (part.unitCost || 0) * pu.quantity : pu.quantity * 250);
-    }, 0);
+    const initialPartsCost = repairSpareCost({ partsUsed: existingParts }, parts);
 
     setPartsCost(initialPartsCost);
-    setRepairCost(initialLabor + initialPartsCost);
+    setRepairCost(initialPartsCost);
     setSelectedPartId('');
     setSelectedPartQty(1);
     setIsResolveModalOpen(true);
@@ -338,7 +333,7 @@ export function MechanicDeskDashboard({
     const part = parts.find((p) => p.partId === partId);
     const pCost = part ? (part.unitCost || 0) * selectedPartQty : 0;
     setPartsCost(pCost);
-    setRepairCost(laborCost + pCost);
+    setRepairCost(pCost);
   };
 
   const handlePartQtyChange = (qty: number) => {
@@ -347,17 +342,7 @@ export function MechanicDeskDashboard({
     const part = parts.find((p) => p.partId === selectedPartId);
     const pCost = part ? (part.unitCost || 0) * validQty : 0;
     setPartsCost(pCost);
-    setRepairCost(laborCost + pCost);
-  };
-
-  const handleLaborCostChange = (amount: number) => {
-    setLaborCost(amount);
-    setRepairCost(amount + partsCost);
-  };
-
-  const handlePartsCostChange = (amount: number) => {
-    setPartsCost(amount);
-    setRepairCost(laborCost + amount);
+    setRepairCost(pCost);
   };
 
   const handleRepairProofFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -407,14 +392,13 @@ export function MechanicDeskDashboard({
         partsInput,
         {
           repairCost: Number(repairCost) || 0,
-          laborCost: Number(laborCost) || 0,
           partsCost: Number(partsCost) || 0,
           issuesIdentified: issuesIdentified.trim(),
           proofImage: repairProofImage || undefined,
           completedAt: new Date().toISOString(),
         }
       );
-      showToast(`Work Order ${selectedTicketToResolve.id} marked COMPLETED with repair cost ₹${repairCost}!`, 'success');
+      showToast(`Work Order ${selectedTicketToResolve.id} marked COMPLETED with spare cost ₹${repairCost}!`, 'success');
       setIsResolveModalOpen(false);
       setSelectedTicketToResolve(null);
       setRepairProofImage(null);
@@ -1298,32 +1282,21 @@ export function MechanicDeskDashboard({
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5 font-bold text-emerald-950">
                     <IndianRupee className="w-4 h-4 text-emerald-600" />
-                    <span>Repair &amp; Maintenance Cost Breakdown (₹)</span>
+                    <span>Spare Parts Cost (₹)</span>
                   </div>
                   <span className="px-2.5 py-1 rounded-xl text-xs font-black font-mono bg-emerald-600 text-white shadow-2xs">
                     Total: ₹{repairCost}
                   </span>
                 </div>
 
-                <div className="grid grid-cols-3 gap-2 text-center">
-                  <div className="bg-white p-2 rounded-xl border border-emerald-100">
-                    <span className="text-[10px] text-slate-500 font-medium block">Labor Cost (₹)</span>
-                    <input
-                      type="number"
-                      min="0"
-                      value={laborCost}
-                      onChange={(e) => handleLaborCostChange(Number(e.target.value) || 0)}
-                      className="w-full text-center mt-1 text-xs font-mono font-bold text-slate-900 border-b border-emerald-200 focus:outline-none"
-                    />
-                  </div>
-
+                <div className="grid grid-cols-2 gap-2 text-center">
                   <div className="bg-white p-2 rounded-xl border border-emerald-100">
                     <span className="text-[10px] text-slate-500 font-medium block">Parts Cost (₹)</span>
                     <input
                       type="number"
                       min="0"
                       value={partsCost}
-                      onChange={(e) => handlePartsCostChange(Number(e.target.value) || 0)}
+                      readOnly
                       className="w-full text-center mt-1 text-xs font-mono font-bold text-slate-900 border-b border-emerald-200 focus:outline-none"
                     />
                   </div>

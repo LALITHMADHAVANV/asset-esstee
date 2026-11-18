@@ -209,6 +209,7 @@ export type RepairUrgency = 'CRITICAL' | 'WARNING';
 export type RepairStatus = 'PENDING' | 'ASSIGNED' | 'IN_PROGRESS' | 'COMPLETED' | 'REJECTED';
 
 export interface RepairPartUsage {
+  unitCost?: number;
   usedByName?: string;
   usedById?: string;
   usedAt?: string;
@@ -241,7 +242,7 @@ export interface RepairTicket {
   // Extended repair details & cost tracking
   issuesIdentified?: string;
   repairCost?: number; // Total actual spent amount in ₹ INR
-  laborCost?: number;
+  laborCost?: number; // Legacy only; ignored by spare-only costing.
   partsCost?: number;
   completionProofImage?: string | null;
   linkedTicketId?: string;

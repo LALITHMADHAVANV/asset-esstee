@@ -60,7 +60,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Unable to sign in. Use your unique work email or username and check your password. Contact your administrator if needed.' }, { status: 401 });
     }
     const { company, user: dbUser } = match;
-    if (String(dbUser.status || 'ACTIVE').toUpperCase() === 'INACTIVE') {
+    if (String(dbUser.status || 'ACTIVE').toUpperCase() !== 'ACTIVE') {
       return NextResponse.json({ error: 'Unable to sign in. Contact your administrator.' }, { status: 401 });
     }
     const { db } = await getCompanyDatabase(company.slug);

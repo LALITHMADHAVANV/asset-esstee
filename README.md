@@ -34,13 +34,13 @@ A modern, production-grade Computerized Maintenance Management System (CMMS) des
 
 ### 6. Mobile Floor Scanner Terminal (`/scan/[id]`)
 - **Direct QR Scan Target**: Mobile-first responsive view accessed by scanning machine QR codes on the shop floor.
-- **Instant Actions**: Report immediate breakdown with fault category and urgency, or execute floor machine relocation.
+- **Ticket-only Phone Flow**: Book a pending breakdown without signing in. Successful booking shows a confirmation popup, then closes the tab when permitted or shows a simple booked screen. Asset edits, relocation, staff lists and history are not available from the public QR page.
 
 ---
 
 ## Tech Stack
 
-- **Framework:** Next.js 16.3.5 (Turbopack, App Router)
+- **Framework:** Next.js 16.4.6 (Turbopack, App Router)
 - **Frontend:** React 19, TypeScript, Tailwind CSS v4, Lucide React
 - **Backend / Database:** Local MongoDB (`mongodb` official driver)
 - **QR Code Tooling:** `qrcode.react` (generation) & `html5-qrcode` (camera scanning)
@@ -76,6 +76,12 @@ Copy `.env.example` to `.env.local`. Set `MONGODB_URI` to your local MongoDB or 
 The app uses the registry's `companies` collection to select each company's dedicated database. Existing local data must be migrated when moving to Atlas.
 
 For Vercel settings, Atlas access, and migration requirements, see [DEPLOYMENT.md](DEPLOYMENT.md).
+### Excel and CSV imports
+
+Use **Import Assets** on Asset Registration, or **Import Spare Inward** on Inventory / Inward Goods. Download a template, replace its example row, select an `.xlsx` or `.csv` file, then preview and import. Invalid rows prevent the whole batch from saving. Inward quantities add to existing stock; retries do not add them twice. Up to 500 rows and 5 MB are supported.
+
+Repair expenses contain spare costs only. Safe repair saves and imports require MongoDB Atlas or a replica set; see [DEPLOYMENT.md](DEPLOYMENT.md) for the local Windows setup.
+
 ### 3. Run Development Server
 ```bash
 npm run dev
