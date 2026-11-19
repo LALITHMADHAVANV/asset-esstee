@@ -68,10 +68,11 @@ export async function readAssetImport(file: File) {
       headers.forEach((header, index) => { if (header) values[header] = text(sheet.getRow(row).getCell(index + 1).value, row); });
       if (!Object.values(values).some(Boolean)) { total--; continue; }
       if (Object.values(values).some(value => value.length > 2000)) throw new AssetImportError('A cell exceeds 2000 characters.');
-      const id = required(values.id, 'Asset ID'), brand = required(values.brand, 'Brand'), serialNo = required(values.serialNo, 'Serial number');
+      const id = required(values.id, 'Asset ID'), brand = required(values.brand, 'Brand'), serialNo = values.serialNo === '-' ? '' : (values.serialNo || '');
+      if (serialNo.length > 200) throw new AssetImportError('Serial number exceeds 200 characters.');
       if (ids.has(id.toLowerCase())) throw new AssetImportError('Duplicate asset ID in this file.');
-      if (serials.has(serialNo.toLowerCase())) throw new AssetImportError('Duplicate serial number in this file.');
-      ids.add(id.toLowerCase()); serials.add(serialNo.toLowerCase());
+      if (serialNo && serials.has(serialNo.toLowerCase())) throw new AssetImportError('Duplicate serial number in this file.');
+      ids.add(id.toLowerCase()); if (serialNo) serials.add(serialNo.toLowerCase());
       const category = (values.category || 'MACHINE').toUpperCase();
       if (!['MACHINE', 'FURNITURE', 'TABLE', 'CHAIR', 'UTILITY', 'VEHICLE', 'LIGHT', 'FAN'].includes(category)) throw new AssetImportError('Invalid asset category.');
       const status = (values.status || 'ACTIVE').toUpperCase();
@@ -79,9 +80,9 @@ export async function readAssetImport(file: File) {
       const cost = values.cost ? Number(values.cost.replace(/[,?\s]/g, '')) : 0;
       if (!Number.isFinite(cost) || cost < 0) throw new AssetImportError('Cost must be a non-negative number.');
       const type = required(values.type, 'Asset type');
-      rows.push({ row, asset: { id, name: values.name || [brand, values.model || type].join(' '), category, brand, model: values.model || '',
+      rows.push({ row, asset: { id, name: values.name || [brand, values.model || type].join(' '), category, brand, model: values.model === '-' ? '' : (values.model || ''),
         serialNo, serialNumber: serialNo, type, typeName: type, purchaseDate: purchaseDate(values.purchaseDate || ''), cost,
-        unit: required(values.unit, 'Unit'), zone: values.zone || '', area: values.zone || '', currentLine: values.currentLine || 'Line 01',
+        unit: values.unit || '', zone: values.zone || '', area: values.zone || '', currentLine: values.currentLine || 'Line 01',
         stationNo: values.stationNo || serialNo, status, totalDowntimeMinutes: 0 } as Machine });
     } catch (error) {
       if (!(error instanceof AssetImportError)) throw error;
@@ -103,7 +104,7 @@ export async function reviewAssetImport(collection: Collection<Document>, parsed
   const rows: Array<AssetImportRow & { exists: boolean }> = [];
   for (const item of parsed.rows) {
     const exists = ids.has(item.asset.id.toLowerCase());
-    if (!exists && serials.has(String(item.asset.serialNo).toLowerCase())) errors.push({ row: item.row, message: 'This serial number already belongs to an existing asset.' });
+    if (!exists && item.asset.serialNo && serials.has(String(item.asset.serialNo).toLowerCase())) errors.push({ row: item.row, message: 'This serial number already belongs to an existing asset.' });
     else rows.push({ ...item, exists });
   }
   return { ...parsed, errors, rows };
