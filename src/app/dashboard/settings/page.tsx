@@ -514,6 +514,7 @@ function SettingsContent() {
   const [newRole, setNewRole] = useState<UserRole>(() => departments[0]?.name || '');
   const [newName, setNewName] = useState('');
   const [newEmail, setNewEmail] = useState('');
+  const [newUsername, setNewUsername] = useState('');
   const [newTitle, setNewTitle] = useState(() => (departments[0] ? `${departments[0].name} Specialist` : 'Staff'));
   const [newDepartment, setNewDepartment] = useState(() => departments[0]?.name || '');
   const [newPhone, setNewPhone] = useState('');
@@ -984,7 +985,7 @@ function SettingsContent() {
       showToast('Cannot create CEO accounts via admin provisioning.', 'error');
       return;
     }
-    if (!newName.trim() || !newEmail.trim() || !newPassword.trim()) {
+    if (!newName.trim() || !newEmail.trim() || !newUsername.trim() || !newPassword.trim()) {
       showToast('Please fill in all mandatory fields', 'error');
       return;
     }
@@ -1013,6 +1014,7 @@ function SettingsContent() {
         body: JSON.stringify({
           name: newName.trim(),
           email: newEmail.trim().toLowerCase(),
+          username: newUsername.trim().toLowerCase(),
           role: newRole,
           title: newTitle.trim(),
           department: newDepartment.trim(),
@@ -1029,10 +1031,11 @@ function SettingsContent() {
         throw new Error(data.error || 'Failed to create user account');
       }
 
-      showToast(`User ${data.user.name} (${data.user.role}) provisioned successfully!`, 'success');
+      showToast(`User ${data.user?.name || newName} (${data.user?.role || newRole}) provisioned successfully!`, 'success');
       setIsAddUserModalOpen(false);
       setNewName('');
       setNewEmail('');
+      setNewUsername('');
       setNewPassword('');
       setNewPhone('');
       setNewZones([]);
@@ -3414,6 +3417,8 @@ function SettingsContent() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
+                  <label htmlFor="new-user-username" className="block font-bold text-slate-700 mb-1">Username *</label>
+                  <input id="new-user-username" type="text" required maxLength={64} pattern="[a-zA-Z0-9._-]+" title="Use letters, numbers, dots, underscores, or hyphens." autoComplete="off" autoCapitalize="none" spellCheck={false} value={newUsername} onChange={(e) => setNewUsername(e.target.value)} placeholder="e.g. sri.admin" className="w-full px-3 py-2 mb-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-[#059669] outline-none" />
                   <label className="block font-bold text-slate-700 mb-1">Role / Department *</label>
                   <select
                     value={newRole}

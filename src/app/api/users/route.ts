@@ -43,6 +43,7 @@ export async function GET(req: Request) {
         uid: data.uid || String(_id),
         name: data.name || 'Factory Staff',
         email: data.email || '',
+        username: data.username || '',
         role: rawRole,
         title: data.title || getDefaultTitle(rawRole, db.companyName),
         phone: data.phone || '',
@@ -73,7 +74,7 @@ export async function POST(req: Request) {
   try {
     const db = await getDatabase(req);
     const body = await req.json();
-    const { name, email, role, title, password, phone, department, employeeId, unit, zones } = body;
+    const { name, email, username, role, title, password, phone, department, employeeId, unit, zones } = body;
 
     if (!name || !email || !role) {
       return NextResponse.json(
@@ -82,6 +83,10 @@ export async function POST(req: Request) {
       );
     }
 
+    if (username !== undefined && (typeof username !== 'string' || !/^[a-zA-Z0-9._-]{1,64}$/.test(username.trim()))) {
+      return NextResponse.json({ error: 'Username must be 1-64 characters using letters, numbers, dots, underscores, or hyphens.' }, { status: 400 });
+    }
+    const cleanUsername = typeof username === 'string' ? username.trim().toLowerCase() : undefined;
     const cleanEmail = email.trim().toLowerCase();
     const cleanRole = role.toString().trim().toUpperCase() as UserRole;
     if (typeof password !== 'string' || password.length < 8 || password.length > 1024) return NextResponse.json({ error: 'A password of at least 8 characters is required.' }, { status: 400 });
@@ -98,13 +103,14 @@ export async function POST(req: Request) {
 
     // Check if email already exists in this company
     const existing = await collection.findOne({ email: cleanEmail });
-    await reserveLoginIdentifiers(db.tenant, existing ? existing.uid || String(existing._id) : uid, [cleanEmail, finalEmpId, ...(existing ? [] : [uid])]);
+    await reserveLoginIdentifiers(db.tenant, existing ? existing.uid || String(existing._id) : uid, [cleanEmail, cleanUsername || '', finalEmpId, ...(existing ? [] : [uid])]);
     if (existing) {
       await collection.updateOne(
         { email: cleanEmail },
         {
           $set: {
             name: name.trim(),
+            ...(cleanUsername ? { username: cleanUsername } : {}),
             role: cleanRole,
             title: finalTitle,
             passwordHash: hashedPassword,
@@ -131,6 +137,7 @@ export async function POST(req: Request) {
       uid,
       name: name.trim(),
       email: cleanEmail,
+      ...(cleanUsername ? { username: cleanUsername } : {}),
       role: cleanRole,
       title: finalTitle,
       passwordHash: hashedPassword,
@@ -155,6 +162,7 @@ export async function POST(req: Request) {
         uid,
         name: newUserDoc.name,
         email: newUserDoc.email,
+        username: newUserDoc.username,
         role: newUserDoc.role,
         title: newUserDoc.title,
         employeeId: newUserDoc.employeeId,

@@ -293,6 +293,7 @@ export type UserRole =
   | (string & {});
 
 export interface UserProfile {
+  username?: string;
   uid: string;
   name: string;
   email: string;
