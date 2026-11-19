@@ -7,6 +7,9 @@ const lookup = async (c, q) => records[c.slug].filter(row => q.$or.some(term => 
 (async () => {
     assert.equal((await find('admin@partner.com', companies, lookup)).company.slug, 'partner');
     assert.equal((await find('ESSTEE.ADMIN', companies, lookup)).company.slug, 'esstee');
+    records.esstee[0].username = 'updated.admin';
+    assert.equal(await find('esstee.admin', companies, lookup), null);
+    assert.equal((await find('UPDATED.ADMIN', companies, lookup)).company.slug, 'esstee');
     assert.equal(await find('EMP-01', companies, lookup), null);
     assert.equal(await find('admin@wrong.com', companies, lookup), null);
     assert.equal(await find('.*', companies, lookup), null);

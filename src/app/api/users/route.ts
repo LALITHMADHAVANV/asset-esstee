@@ -184,7 +184,7 @@ export async function PUT(req: Request) {
   try {
     const db = await getDatabase(req);
     const body = await req.json();
-    const { uid, email, name, role, title, department, phone, employeeId, unit, zones, status, password } = body;
+    const { uid, email, username, name, role, title, department, phone, employeeId, unit, zones, status, password } = body;
 
     if (!uid && !email) {
       return NextResponse.json({ error: 'User UID or email is required to update' }, { status: 400 });
@@ -201,13 +201,18 @@ export async function PUT(req: Request) {
       return NextResponse.json({ error: 'User not found in company workspace' }, { status: 404 });
     }
 
-    await reserveLoginIdentifiers(db.tenant, existing.uid || String(existing._id), [existing.email || '', employeeId ?? existing.employeeId ?? '']);
+    if (username !== undefined && (typeof username !== 'string' || !/^[a-zA-Z0-9._-]{1,64}$/.test(username.trim()))) {
+      return NextResponse.json({ error: 'Username must be 1-64 characters using letters, numbers, dots, underscores, or hyphens.' }, { status: 400 });
+    }
+    const cleanUsername = typeof username === 'string' ? username.trim().toLowerCase() : existing.username;
+    await reserveLoginIdentifiers(db.tenant, existing.uid || String(existing._id), [existing.email || '', cleanUsername || '', employeeId ?? existing.employeeId ?? '']);
     const updateDoc: Record<string, any> = {
       updatedAt: new Date().toISOString(),
       company: db.companyName,
       companySlug: db.tenant,
     };
 
+    if (username !== undefined) updateDoc.username = cleanUsername;
     if (name !== undefined) updateDoc.name = name.trim();
     if (role !== undefined) updateDoc.role = (role as string).toUpperCase();
     if (title !== undefined) updateDoc.title = title.trim();

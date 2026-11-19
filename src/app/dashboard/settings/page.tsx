@@ -528,6 +528,7 @@ function SettingsContent() {
   // Edit User Modal State
   const [editingUser, setEditingUser] = useState<UserProfile | null>(null);
   const [editName, setEditName] = useState('');
+  const [editUsername, setEditUsername] = useState('');
   const [editEmail, setEditEmail] = useState('');
   const [editRole, setEditRole] = useState<UserRole>('MECHANIC');
   const [editTitle, setEditTitle] = useState('');
@@ -1052,6 +1053,7 @@ function SettingsContent() {
   const handleOpenEditUser = (u: UserProfile) => {
     setEditingUser(u);
     setEditName(u.name);
+    setEditUsername(u.username || '');
     setEditEmail(u.email);
     setEditRole(u.role);
     setEditTitle(u.title || '');
@@ -1085,6 +1087,7 @@ function SettingsContent() {
     try {
       const updatePayload: any = {
         name: editName.trim(),
+        username: editUsername.trim().toLowerCase(),
         role: editRole,
         title: editTitle.trim(),
         department: editDepartment.trim(),
@@ -1192,6 +1195,7 @@ function SettingsContent() {
       const matchesSearch =
         textValue(u.name)?.toLowerCase().includes(userSearchQuery.toLowerCase()) ||
         textValue(u.email)?.toLowerCase().includes(userSearchQuery.toLowerCase()) ||
+        textValue(u.username).toLowerCase().includes(userSearchQuery.toLowerCase()) ||
         textValue(u.employeeId)?.toLowerCase().includes(userSearchQuery.toLowerCase()) ||
         textValue(u.department)?.toLowerCase().includes(userSearchQuery.toLowerCase());
 
@@ -2258,6 +2262,7 @@ function SettingsContent() {
                               <div>
                                 <span className="font-bold text-slate-900 block">{u.name}</span>
                                 <span className="text-[11px] text-slate-400">{u.email}</span>
+                                <span className="text-[11px] text-slate-500">Username: {u.username || 'Not assigned'}</span>
                               </div>
                             </div>
                           </td>
@@ -3709,6 +3714,11 @@ function SettingsContent() {
             </div>
 
             <form onSubmit={handleSaveEditUser} className="space-y-3.5 text-xs">
+              <div>
+                <label htmlFor="edit-user-username" className="block font-bold text-slate-700 mb-1">Username *</label>
+                <input id="edit-user-username" type="text" required maxLength={64} pattern="[a-zA-Z0-9._-]+" title="Use letters, numbers, dots, underscores, or hyphens." autoComplete="off" autoCapitalize="none" spellCheck={false} value={editUsername} onChange={(e) => setEditUsername(e.target.value)} placeholder="e.g. sri.admin" className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-[#059669] outline-none" />
+                <p className="mt-1 text-slate-500">Use the updated username to log in after saving.</p>
+              </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block font-bold text-slate-700 mb-1">Full Name</label>
