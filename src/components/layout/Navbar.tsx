@@ -1,8 +1,6 @@
 'use client';
 
 import { textValue } from '@/lib/textValue';
-import { useDepartmentNavigation } from '@/context/DepartmentNavigationContext';
-import { departmentMenu } from '@/lib/departmentNavigation';
 
 import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
@@ -62,7 +60,6 @@ export interface NavTab {
 export function Navbar() {
   const pathname = usePathname();
   const { user, role, logout } = useAuth();
-  const { selection, ready: navigationReady } = useDepartmentNavigation();
   const { isNavHidden, toggleNav, openMobileNav } = useNav();
 
   const [lowStockCount, setLowStockCount] = useState<number>(0);
@@ -405,8 +402,7 @@ export function Navbar() {
       ];
     };
 
-    const defaultTabs = departmentMenu(buildTabs(), selection, user?.role || role,
-      item => ({ href: item.href, label: item.label, icon: Layers }), navigationReady);
+    const defaultTabs = buildTabs();
     const companySlug = user?.companySlug || 'esstee';
     return defaultTabs.map((tab) => ({
       ...tab,
@@ -422,10 +418,6 @@ export function Navbar() {
     lowStockCount,
     unattendedBreachCount,
     user?.companySlug,
-    selection,
-    navigationReady,
-    user?.role,
-    role,
   ]);
 
   if (!user) return null;

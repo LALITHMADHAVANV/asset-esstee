@@ -19,7 +19,6 @@ import { Building, ShieldCheck, Layers } from 'lucide-react';
 import {
   subscribeMachines,
   subscribeRepairs,
-  fetchRepairsOnce,
   subscribePPMSchedules,
   subscribeParts,
   subscribeRequisitions,
@@ -116,19 +115,6 @@ export default function DashboardPage() {
 
   // Determine active dashboard view based on user's normalized role
   const activeRole: UserRole = normalizeRole(user?.role || role);
-
-  useEffect(() => {
-    if (!user || activeRole !== 'STORE_PERSON') return;
-    const refresh = () => {
-      if (document.visibilityState === 'visible') void fetchRepairsOnce();
-    };
-    const timer = window.setInterval(refresh, 15000);
-    document.addEventListener('visibilitychange', refresh);
-    return () => {
-      window.clearInterval(timer);
-      document.removeEventListener('visibilitychange', refresh);
-    };
-  }, [user, activeRole]);
 
   // Multi-unit authority: ONLY Admin & CEO can access/switch all units
   const isMultiUnitAuthority = isUserAdmin(activeRole);

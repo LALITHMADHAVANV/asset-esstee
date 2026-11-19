@@ -12,7 +12,6 @@ const company = { slug: 'esstee', name: 'Esstee', databaseName: 'compliance_esst
 let session = null, account = { uid: 'u1', role: 'MECHANIC', status: 'ACTIVE' }, connections = 0;
 const client = { connect: async () => { connections++; }, db: () => ({ collection: () => ({ findOne: async () => account }) }) };
 const mongodb = load('src/lib/mongodb.ts', {
-  './mongoUri': load('src/lib/mongoUri.ts', {}),
   './companyIdentity': { canonicalCompanySlug: s => String(s || '').toLowerCase() },
   mongodb: { MongoClient: class { constructor() { return client; } }, ObjectId: { isValid: () => false } },
   './registry': { ensureRegistryInitialized: async () => {}, validateActiveCompany: async () => ({ valid: true, company }) },

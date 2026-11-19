@@ -209,9 +209,6 @@ export type RepairUrgency = 'CRITICAL' | 'WARNING';
 export type RepairStatus = 'PENDING' | 'ASSIGNED' | 'IN_PROGRESS' | 'COMPLETED' | 'REJECTED';
 
 export interface RepairPartUsage {
-  usedByName?: string;
-  usedById?: string;
-  usedAt?: string;
   partId: string;
   sku: string;
   name: string;
@@ -296,6 +293,7 @@ export type UserRole =
   | (string & {});
 
 export interface UserProfile {
+  username?: string;
   uid: string;
   name: string;
   email: string;

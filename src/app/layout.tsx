@@ -4,7 +4,6 @@ import './globals.css';
 import { AuthProvider } from '@/context/AuthContext';
 import { ToastProvider } from '@/context/ToastContext';
 import { NavProvider } from '@/context/NavContext';
-import { DepartmentNavigationProvider } from '@/context/DepartmentNavigationContext';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -33,11 +32,9 @@ export default function RootLayout({
     >
       <body className="plant-command min-h-full flex flex-col bg-slate-100 text-slate-800">
         <AuthProvider>
-          <DepartmentNavigationProvider>
           <NavProvider>
             <ToastProvider>{children}</ToastProvider>
           </NavProvider>
-          </DepartmentNavigationProvider>
         </AuthProvider>
       </body>
     </html>

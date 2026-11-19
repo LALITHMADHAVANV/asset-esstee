@@ -41,7 +41,6 @@ import { useToast } from '@/context/ToastContext';
 import { useAuth } from '@/context/AuthContext';
 
 interface StoreIssueRecord {
-  repairUsage?: boolean;
   id: string; // e.g. SLIP-1082
   date: string; // ISO string or formatted
   mechanicId: string;
@@ -111,20 +110,62 @@ export function StoreDashboard({
     if (typeof window === 'undefined') return;
     try {
       const raw = localStorage.getItem(STORAGE_STORE_ISSUES);
-      const stored: StoreIssueRecord[] = raw ? JSON.parse(raw) : [];
-      if (!Array.isArray(stored)) return;
-      const retiredSamples = [
-        { id: 'SLIP-1082', mechanicId: 'MEC-01', partId: 'PRT-02', targetMachineId: 'MC-OVK-101' },
-        { id: 'SLIP-1081', mechanicId: 'MEC-02', partId: 'PRT-01', targetMachineId: 'MC-SNLS-102' },
-        { id: 'SLIP-1079', mechanicId: 'ELE-02', partId: 'PRT-07', targetMachineId: 'MC-BTN-103' },
-      ];
-      const records = stored.filter((record) => !retiredSamples.some((sample) =>
-        record.id === sample.id && record.mechanicId === sample.mechanicId &&
-        record.partId === sample.partId && record.targetMachineId === sample.targetMachineId
-      ));
-      setIssueRecords(records);
-      if (records.length !== stored.length) {
-        localStorage.setItem(STORAGE_STORE_ISSUES, JSON.stringify(records));
+      if (raw) {
+        setIssueRecords(JSON.parse(raw));
+      } else {
+        // Initial empty or sample records if needed
+        const initial: StoreIssueRecord[] = [
+          {
+            id: 'SLIP-1082',
+            date: new Date(Date.now() - 45 * 60000).toISOString(),
+            mechanicId: 'MEC-01',
+            mechanicName: 'Ramesh Kumar',
+            targetLine: 'Line 01',
+            targetMachineId: 'MC-OVK-101',
+            partId: 'PRT-02',
+            partName: 'Rotary Hook Hirose Koban HSH-7.94BTR',
+            sku: 'HK-KOB-794',
+            quantity: 1,
+            unit: 'units',
+            oldPartReturned: true,
+            remarks: 'Replaced sheared gear hook. Old unit received into scrap bin.',
+            storekeeper: user?.name || 'Store In-Charge',
+          },
+          {
+            id: 'SLIP-1081',
+            date: new Date(Date.now() - 140 * 60000).toISOString(),
+            mechanicId: 'MEC-02',
+            mechanicName: 'Murugan S.',
+            targetLine: 'Line 02',
+            targetMachineId: 'MC-SNLS-102',
+            partId: 'PRT-01',
+            partName: 'Organ Needles DBx1 (#14/90) Knit & Woven',
+            sku: 'NDL-DBX1-14',
+            quantity: 20,
+            unit: 'pcs',
+            oldPartReturned: true,
+            remarks: 'Daily line needle packet replacement.',
+            storekeeper: user?.name || 'Store In-Charge',
+          },
+          {
+            id: 'SLIP-1079',
+            date: new Date(Date.now() - 24 * 3600000).toISOString(),
+            mechanicId: 'ELE-02',
+            mechanicName: 'Karthik N.',
+            targetLine: 'Line 03',
+            targetMachineId: 'MC-BTN-103',
+            partId: 'PRT-07',
+            partName: 'Direct-Drive Servo Motor Cogged Belt M-42',
+            sku: 'MOT-SRV-BLT',
+            quantity: 1,
+            unit: 'pcs',
+            oldPartReturned: false,
+            remarks: 'Snaped belt on floor. Scrap pending return to tool crib.',
+            storekeeper: user?.name || 'Store In-Charge',
+          },
+        ];
+        setIssueRecords(initial);
+        localStorage.setItem(STORAGE_STORE_ISSUES, JSON.stringify(initial));
       }
     } catch {
       // Ignore
@@ -571,38 +612,12 @@ export function StoreDashboard({
   };
 
   // ─── FILTERED DATASETS ───────────────────────────────────────────
-  const allIssues = useMemo(() => {
-    const usage = repairs.flatMap((ticket) => (ticket.partsUsed || []).map((part, index): StoreIssueRecord => {
-      const mechanicName = part.usedByName || ticket.attendedBy || 'Unknown mechanic';
-      return {
-        id: ticket.id + '/' + part.partId + '/' + (index + 1),
-        date: part.usedAt || ticket.startedAt || ticket.reportedAt,
-        mechanicId: part.usedById || mechanicName,
-        mechanicName,
-        targetLine: ticket.line,
-        targetMachineId: ticket.machineId,
-        partId: part.partId,
-        partName: part.name,
-        sku: part.sku,
-        quantity: part.quantity,
-        unit: 'pcs',
-        oldPartReturned: false,
-        storekeeper: '',
-        remarks: 'Recorded on repair ' + ticket.id,
-        repairUsage: true,
-      };
-    }));
-    return [...usage, ...issueRecords].sort((a, b) => Date.parse(b.date) - Date.parse(a.date));
-  }, [repairs, issueRecords]);
-
-  const mechanicNames = Array.from(new Set(allIssues.map((row) => row.mechanicName))).sort();
-
   // Filtered Issue Log (Report 1)
   const filteredIssues = useMemo(() => {
-    return allIssues.filter((r) => {
-      if (selectedMechanicFilter !== 'ALL' && r.mechanicName !== selectedMechanicFilter) return false;
+    return issueRecords.filter((r) => {
+      if (selectedMechanicFilter !== 'ALL' && r.mechanicId !== selectedMechanicFilter) return false;
       if (scrapReturnFilter === 'RETURNED' && !r.oldPartReturned) return false;
-      if (scrapReturnFilter === 'PENDING' && (r.repairUsage || r.oldPartReturned)) return false;
+      if (scrapReturnFilter === 'PENDING' && r.oldPartReturned) return false;
 
       if (issueSearch.trim()) {
         const q = issueSearch.toLowerCase();
@@ -615,7 +630,7 @@ export function StoreDashboard({
       }
       return true;
     });
-  }, [allIssues, selectedMechanicFilter, scrapReturnFilter, issueSearch]);
+  }, [issueRecords, selectedMechanicFilter, scrapReturnFilter, issueSearch]);
 
   // Filtered Stock Balance (Report 2)
   const filteredStock = useMemo(() => {
@@ -816,7 +831,7 @@ export function StoreDashboard({
             <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Parts Issued</span>
             <Wrench className="w-4 h-4 text-emerald-600" />
           </div>
-          <div className="text-2xl font-black text-slate-900">{allIssues.length}</div>
+          <div className="text-2xl font-black text-slate-900">{issueRecords.length}</div>
           <div className="text-[11px] text-slate-500 mt-0.5">Total recorded chits</div>
         </div>
 
@@ -908,9 +923,11 @@ export function StoreDashboard({
               onChange={(e) => setSelectedMechanicFilter(e.target.value)}
               className="text-xs bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-slate-700 font-medium cursor-pointer"
             >
-              <option value="ALL">All Mechanics ({allIssues.length})</option>
-              {mechanicNames.map((name) => (
-                <option key={name} value={name}>{name}</option>
+              <option value="ALL">All Mechanics ({issueRecords.length})</option>
+              {activeStaffRoster.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.name} ({m.id})
+                </option>
               ))}
             </select>
 
@@ -995,7 +1012,7 @@ export function StoreDashboard({
                         {r.quantity} {r.unit}
                       </td>
                       <td className="py-2 px-3 border-r border-slate-200 text-center whitespace-nowrap">
-                        {r.repairUsage ? '—' : r.oldPartReturned ? (
+                        {r.oldPartReturned ? (
                           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
                             <CheckCircle2 className="w-3 h-3 text-emerald-600" />
                             <span>Returned</span>
@@ -1011,13 +1028,13 @@ export function StoreDashboard({
                         {r.remarks || 'Standard maintenance issuance.'}
                       </td>
                       <td className="py-2 px-3 text-center whitespace-nowrap">
-                        {r.repairUsage ? 'Repair usage' : <button
+                        <button
                           onClick={() => handleToggleScrapReturn(r.id)}
                           className="text-[10px] font-bold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-2 py-1 rounded transition cursor-pointer"
                           title="Toggle Old Scrap Returned Status"
                         >
                           {r.oldPartReturned ? 'Mark Pending' : 'Mark Returned'}
-                        </button>}
+                        </button>
                       </td>
                     </tr>
                   );

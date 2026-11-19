@@ -2,10 +2,6 @@
 
 import { textValue } from '@/lib/textValue';
 
-import { DepartmentNavigationPicker } from '@/components/settings/DepartmentNavigationPicker';
-import { useDepartmentNavigation } from '@/context/DepartmentNavigationContext';
-import type { NavigationHref } from '@/lib/departmentNavigation';
-
 import { tenantPreferences } from '@/lib/tenantPreferences';
 
 import React, { useState, useEffect, useMemo, useRef, Suspense } from 'react';
@@ -126,7 +122,6 @@ const INITIAL_FACTORY_UNITS: FactoryUnitItem[] = [
 
 // ─── DEPARTMENT DATA MODEL ───
 export interface DepartmentItem {
-  navigation?: NavigationHref[];
   id: string;
   name: string;
   badge?: string;
@@ -389,32 +384,37 @@ function SettingsContent() {
     }
   };
 
-  const departmentSettings = useDepartmentNavigation();
+  // Departments State (All preset/dummy items cleared)
   const [departments, setDepartments] = useState<DepartmentItem[]>(() => {
-    try {
-      const saved = tenantPreferences.getItem('cmms_settings_departments');
-      return saved ? JSON.parse(saved) : INITIAL_DEPARTMENTS;
-    } catch { return INITIAL_DEPARTMENTS; }
+    if (typeof window !== 'undefined') {
+      try {
+        const hasCleared = tenantPreferences.getItem('cmms_settings_dept_wiped_v2');
+        if (!hasCleared) {
+          tenantPreferences.removeItem('cmms_settings_departments');
+          tenantPreferences.setItem('cmms_settings_dept_wiped_v2', 'true');
+          return [];
+        }
+        const saved = tenantPreferences.getItem('cmms_settings_departments');
+        if (saved) return JSON.parse(saved);
+      } catch {
+        // ignore
+      }
+    }
+    return INITIAL_DEPARTMENTS;
   });
-  useEffect(() => {
-    if (departmentSettings.departments !== null) setDepartments(departmentSettings.departments);
-  }, [departmentSettings.departments]);
-  const saveDepartments = async (items: DepartmentItem[]) => {
+
+  const saveDepartments = (items: DepartmentItem[]) => {
+    setDepartments(items);
     try {
-      await departmentSettings.save(items);
-      setDepartments(items);
-      try { tenantPreferences.setItem('cmms_settings_departments', JSON.stringify(items)); } catch { /* Browser storage is optional. */ }
-      return true;
-    } catch (error) {
-      showToast(error instanceof Error ? error.message : 'Could not save departments.', 'error');
-      return false;
+      tenantPreferences.setItem('cmms_settings_departments', JSON.stringify(items));
+    } catch {
+      // ignore
     }
   };
 
   // Add Department Modal
   const [isAddDeptModalOpen, setIsAddDeptModalOpen] = useState(false);
   const [newDeptName, setNewDeptName] = useState('');
-  const [newDeptNavigation, setNewDeptNavigation] = useState<NavigationHref[]>(['/dashboard', '/dashboard/messages']);
   const [newDeptDesc, setNewDeptDesc] = useState('');
   const [newDeptUsers, setNewDeptUsers] = useState<number>(0);
   const [newDeptKpi1Weight, setNewDeptKpi1Weight] = useState(40);
@@ -514,6 +514,7 @@ function SettingsContent() {
   const [newRole, setNewRole] = useState<UserRole>(() => departments[0]?.name || '');
   const [newName, setNewName] = useState('');
   const [newEmail, setNewEmail] = useState('');
+  const [newUsername, setNewUsername] = useState('');
   const [newTitle, setNewTitle] = useState(() => (departments[0] ? `${departments[0].name} Specialist` : 'Staff'));
   const [newDepartment, setNewDepartment] = useState(() => departments[0]?.name || '');
   const [newPhone, setNewPhone] = useState('');
@@ -674,7 +675,7 @@ function SettingsContent() {
   };
 
   // ─── Department Handlers ───
-  const handleCreateDepartment = async (e: React.FormEvent) => {
+  const handleCreateDepartment = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newDeptName.trim()) {
       showToast('Department name is required', 'error');
@@ -683,7 +684,6 @@ function SettingsContent() {
     const created: DepartmentItem = {
       id: `dept-${Date.now()}`,
       name: newDeptName.trim(),
-      navigation: newDeptNavigation,
       description: newDeptDesc.trim(),
       userCount: Number(newDeptUsers) || 0,
       kpi1Name: 'Stage on time',
@@ -697,16 +697,15 @@ function SettingsContent() {
       kpi3Weight: Number(newDeptKpi3Weight) || 30,
     };
     const updated = [created, ...departments];
-    if (!(await saveDepartments(updated))) return;
+    saveDepartments(updated);
     showToast(`Department "${created.name}" created successfully!`, 'success');
     setIsAddDeptModalOpen(false);
     setNewDeptName('');
-    setNewDeptNavigation(['/dashboard', '/dashboard/messages']);
     setNewDeptDesc('');
     setNewDeptUsers(0);
   };
 
-  const handleSaveEditDept = async (e: React.FormEvent) => {
+  const handleSaveEditDept = (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingDept) return;
     if (!textValue(editingDept.name).trim()) {
@@ -714,17 +713,17 @@ function SettingsContent() {
       return;
     }
     const updated = departments.map((d) => (d.id === editingDept.id ? editingDept : d));
-    if (!(await saveDepartments(updated))) return;
+    saveDepartments(updated);
     showToast(`Department "${editingDept.name}" updated!`, 'success');
     setEditingDept(null);
   };
 
-  const handleDeleteDept = async (id: string) => {
+  const handleDeleteDept = (id: string) => {
     const target = departments.find((d) => d.id === id);
     if (!target) return;
     if (window.confirm(`Are you sure you want to remove department "${target.name}"?`)) {
       const updated = departments.filter((d) => d.id !== id);
-      if (!(await saveDepartments(updated))) return;
+      saveDepartments(updated);
       showToast(`Department "${target.name}" removed`, 'success');
     }
   };
@@ -986,7 +985,7 @@ function SettingsContent() {
       showToast('Cannot create CEO accounts via admin provisioning.', 'error');
       return;
     }
-    if (!newName.trim() || !newEmail.trim() || !newPassword.trim()) {
+    if (!newName.trim() || !newEmail.trim() || !newUsername.trim() || !newPassword.trim()) {
       showToast('Please fill in all mandatory fields', 'error');
       return;
     }
@@ -1015,6 +1014,7 @@ function SettingsContent() {
         body: JSON.stringify({
           name: newName.trim(),
           email: newEmail.trim().toLowerCase(),
+          username: newUsername.trim().toLowerCase(),
           role: newRole,
           title: newTitle.trim(),
           department: newDepartment.trim(),
@@ -1031,10 +1031,11 @@ function SettingsContent() {
         throw new Error(data.error || 'Failed to create user account');
       }
 
-      showToast(`User ${data.user.name} (${data.user.role}) provisioned successfully!`, 'success');
+      showToast(`User ${data.user?.name || newName} (${data.user?.role || newRole}) provisioned successfully!`, 'success');
       setIsAddUserModalOpen(false);
       setNewName('');
       setNewEmail('');
+      setNewUsername('');
       setNewPassword('');
       setNewPhone('');
       setNewZones([]);
@@ -1356,7 +1357,7 @@ function SettingsContent() {
   }, [workerKpiList, kpiSearchQuery, kpiTradeFilter, kpiSortBy]);
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
       {/* ─────────────────────────────────────────────────────────────────────────
           HEADER SECTION & TABS
       ────────────────────────────────────────────────────────────────────────── */}
@@ -1560,7 +1561,7 @@ function SettingsContent() {
                     <div className="flex items-center gap-2 shrink-0">
                       <button
                         type="button"
-                        onClick={() => setEditingDept({ ...dept, navigation: dept.navigation ?? [] })}
+                        onClick={() => setEditingDept(dept)}
                         className="text-slate-400 hover:text-slate-700 transition cursor-pointer"
                         title={`Edit ${dept.name}`}
                       >
@@ -1579,9 +1580,6 @@ function SettingsContent() {
 
                   <p className="text-xs text-slate-400 font-normal">
                     {dept.description || 'No description'}
-                  </p>
-                  <p className="text-xs text-emerald-700">
-                    {dept.navigation === undefined ? 'Navigation: standard role menu' : `Navigation: ${dept.navigation.length} menu items selected`}
                   </p>
 
                   <div>
@@ -2511,8 +2509,8 @@ function SettingsContent() {
                   type="button"
                   onClick={() => setTestTargetChannel('UNIT1')}
                   className={`p-3.5 rounded-xl border text-left transition cursor-pointer ${testTargetChannel === 'UNIT1'
-                    ? 'bg-sky-50 border-sky-300 ring-2 ring-sky-500/20 shadow-2xs'
-                    : 'bg-slate-50 border-slate-200 hover:bg-slate-100/70'
+                      ? 'bg-sky-50 border-sky-300 ring-2 ring-sky-500/20 shadow-2xs'
+                      : 'bg-slate-50 border-slate-200 hover:bg-slate-100/70'
                     }`}
                 >
                   <div className="flex items-center justify-between mb-1">
@@ -2526,8 +2524,8 @@ function SettingsContent() {
                   type="button"
                   onClick={() => setTestTargetChannel('UNIT2')}
                   className={`p-3.5 rounded-xl border text-left transition cursor-pointer ${testTargetChannel === 'UNIT2'
-                    ? 'bg-sky-50 border-sky-300 ring-2 ring-sky-500/20 shadow-2xs'
-                    : 'bg-slate-50 border-slate-200 hover:bg-slate-100/70'
+                      ? 'bg-sky-50 border-sky-300 ring-2 ring-sky-500/20 shadow-2xs'
+                      : 'bg-slate-50 border-slate-200 hover:bg-slate-100/70'
                     }`}
                 >
                   <div className="flex items-center justify-between mb-1">
@@ -2541,8 +2539,8 @@ function SettingsContent() {
                   type="button"
                   onClick={() => setTestTargetChannel('ADMIN')}
                   className={`p-3.5 rounded-xl border text-left transition cursor-pointer ${testTargetChannel === 'ADMIN'
-                    ? 'bg-sky-50 border-sky-300 ring-2 ring-sky-500/20 shadow-2xs'
-                    : 'bg-slate-50 border-slate-200 hover:bg-slate-100/70'
+                      ? 'bg-sky-50 border-sky-300 ring-2 ring-sky-500/20 shadow-2xs'
+                      : 'bg-slate-50 border-slate-200 hover:bg-slate-100/70'
                     }`}
                 >
                   <div className="flex items-center justify-between mb-1">
@@ -2731,7 +2729,7 @@ function SettingsContent() {
       ────────────────────────────────────────────────────────────────────────── */}
       {isAddDeptModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl max-w-xl w-full max-h-[90dvh] overflow-y-auto p-6 shadow-2xl border border-slate-200 space-y-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="font-bold text-base text-slate-900 flex items-center gap-2">
                 <span className="w-3.5 h-3.5 rounded-xs bg-[#059669]" />
@@ -2747,7 +2745,6 @@ function SettingsContent() {
             </div>
 
             <form onSubmit={handleCreateDepartment} className="space-y-3.5 text-xs">
-              {departmentSettings.error && <p role="alert" className="text-rose-700">{departmentSettings.error}</p>}
               <div>
                 <label className="block font-bold text-slate-700 mb-1">Department Name *</label>
                 <input
@@ -2783,7 +2780,6 @@ function SettingsContent() {
                 />
               </div>
 
-              <DepartmentNavigationPicker value={newDeptNavigation} onChange={setNewDeptNavigation} />
               <div className="grid grid-cols-3 gap-2 pt-2 border-t border-slate-100">
                 <div>
                   <label className="block text-[10px] font-bold text-slate-600 mb-0.5">KPI 1 Weight (%)</label>
@@ -2824,10 +2820,9 @@ function SettingsContent() {
                 </button>
                 <button
                   type="submit"
-                  disabled={departmentSettings.saving || !departmentSettings.ready}
                   className="px-4 py-2 font-bold text-white bg-[#059669] hover:bg-[#047857] rounded-xl shadow-xs transition cursor-pointer"
                 >
-                  {departmentSettings.saving ? 'Saving...' : 'Save Department'}
+                  Save Department
                 </button>
               </div>
             </form>
@@ -2840,7 +2835,7 @@ function SettingsContent() {
       ────────────────────────────────────────────────────────────────────────── */}
       {editingDept && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl max-w-xl w-full max-h-[90dvh] overflow-y-auto p-6 shadow-2xl border border-slate-200 space-y-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="font-bold text-base text-slate-900 flex items-center gap-2">
                 <span className="w-3.5 h-3.5 rounded-xs bg-[#059669]" />
@@ -2888,8 +2883,6 @@ function SettingsContent() {
                 />
               </div>
 
-              {departmentSettings.error && <p role="alert" className="text-rose-700">{departmentSettings.error}</p>}
-              <DepartmentNavigationPicker value={editingDept.navigation} onChange={navigation => setEditingDept({ ...editingDept, navigation })} />
               <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
                 <button
                   type="button"
@@ -2900,10 +2893,9 @@ function SettingsContent() {
                 </button>
                 <button
                   type="submit"
-                  disabled={departmentSettings.saving || !departmentSettings.ready}
                   className="px-4 py-2 font-bold text-white bg-[#059669] hover:bg-[#047857] rounded-xl shadow-xs transition cursor-pointer"
                 >
-                  {departmentSettings.saving ? 'Saving...' : 'Save Changes'}
+                  Save Changes
                 </button>
               </div>
             </form>
@@ -3207,7 +3199,7 @@ function SettingsContent() {
       ────────────────────────────────────────────────────────────────────────── */}
       {zoneModalUnit && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl max-w-xl w-full max-h-[90dvh] overflow-y-auto p-6 shadow-2xl border border-slate-200 space-y-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="font-bold text-base text-slate-900 flex items-center gap-2">
                 <Layers className="w-5 h-5 text-[#059669]" />
@@ -3294,7 +3286,7 @@ function SettingsContent() {
       ────────────────────────────────────────────────────────────────────────── */}
       {editingZone && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl max-w-xl w-full max-h-[90dvh] overflow-y-auto p-6 shadow-2xl border border-slate-200 space-y-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="font-bold text-base text-slate-900 flex items-center gap-2">
                 <Pencil className="w-5 h-5 text-[#059669]" />
@@ -3425,6 +3417,8 @@ function SettingsContent() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
+                  <label htmlFor="new-user-username" className="block font-bold text-slate-700 mb-1">Username *</label>
+                  <input id="new-user-username" type="text" required maxLength={64} pattern="[a-zA-Z0-9._-]+" title="Use letters, numbers, dots, underscores, or hyphens." autoComplete="off" autoCapitalize="none" spellCheck={false} value={newUsername} onChange={(e) => setNewUsername(e.target.value)} placeholder="e.g. sri.admin" className="w-full px-3 py-2 mb-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-[#059669] outline-none" />
                   <label className="block font-bold text-slate-700 mb-1">Role / Department *</label>
                   <select
                     value={newRole}
@@ -3494,8 +3488,8 @@ function SettingsContent() {
                       disabled={!newUnit || newUnit === 'All Units'}
                       onClick={() => setIsNewZoneDropdownOpen((prev) => !prev)}
                       className={`w-full px-3 py-2 text-left bg-white border rounded-xl flex items-center justify-between transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${isNewZoneDropdownOpen
-                        ? 'border-[#059669] ring-2 ring-[#059669]/20'
-                        : 'border-slate-300 hover:border-slate-400'
+                          ? 'border-[#059669] ring-2 ring-[#059669]/20'
+                          : 'border-slate-300 hover:border-slate-400'
                         }`}
                     >
                       <div className="flex items-center gap-2 truncate">
@@ -3565,8 +3559,8 @@ function SettingsContent() {
                                     );
                                   }}
                                   className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition select-none text-xs ${isChecked
-                                    ? 'bg-emerald-50 text-emerald-900 font-semibold'
-                                    : 'hover:bg-slate-50 text-slate-700'
+                                      ? 'bg-emerald-50 text-emerald-900 font-semibold'
+                                      : 'hover:bg-slate-50 text-slate-700'
                                     }`}
                                 >
                                   <div className="flex items-center gap-2.5">
@@ -3826,8 +3820,8 @@ function SettingsContent() {
                       disabled={!editUnit || editUnit === 'All Units'}
                       onClick={() => setIsEditZoneDropdownOpen((prev) => !prev)}
                       className={`w-full px-3 py-2 text-left bg-white border rounded-xl flex items-center justify-between transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${isEditZoneDropdownOpen
-                        ? 'border-[#059669] ring-2 ring-[#059669]/20'
-                        : 'border-slate-300 hover:border-slate-400'
+                          ? 'border-[#059669] ring-2 ring-[#059669]/20'
+                          : 'border-slate-300 hover:border-slate-400'
                         }`}
                     >
                       <div className="flex items-center gap-2 truncate">
@@ -3897,8 +3891,8 @@ function SettingsContent() {
                                     );
                                   }}
                                   className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition select-none text-xs ${isChecked
-                                    ? 'bg-emerald-50 text-emerald-900 font-semibold'
-                                    : 'hover:bg-slate-50 text-slate-700'
+                                      ? 'bg-emerald-50 text-emerald-900 font-semibold'
+                                      : 'hover:bg-slate-50 text-slate-700'
                                     }`}
                                 >
                                   <div className="flex items-center gap-2.5">

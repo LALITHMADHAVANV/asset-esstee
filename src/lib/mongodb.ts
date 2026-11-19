@@ -1,4 +1,3 @@
-import { normalizeMongoUri } from './mongoUri';
 import { canonicalCompanySlug } from './companyIdentity';
 import { MongoClient, Db, Collection, Document, ObjectId } from 'mongodb';
 import { validateActiveCompany, getCompanyBySlug, CompanyRecord, ensureRegistryInitialized } from './registry';
@@ -71,7 +70,7 @@ function isValidMongoUri(uri?: string | null): boolean {
 }
 
 async function connectClient(): Promise<MongoClient> {
-  const uri = normalizeMongoUri(process.env.MONGODB_URI || (process.env.NODE_ENV !== 'production' ? 'mongodb://localhost:27017/' : ''));
+  const uri = (process.env.MONGODB_URI || (process.env.NODE_ENV !== 'production' ? 'mongodb://localhost:27017/' : '')).trim();
   if (!isValidMongoUri(uri)) throw new Error('MONGODB_URI must be configured.');
   const client = new MongoClient(uri, {
     serverSelectionTimeoutMS: 9000,
