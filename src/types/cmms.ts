@@ -108,6 +108,7 @@ export type FloorLine =
   | (string & {});
 
 export interface Machine {
+  location?: string; // Optional named location for non-machine assets
   id: string; // e.g., "MC-SNLS-101", "TBL-CUT-101", "CHR-ERG-101", "LGT-HBY-101", "FAN-CEIL-101"
   name?: string; // Display name, e.g. "Line 01 Fabric Spreading Table"
   company?: string; // Company / Facility Name

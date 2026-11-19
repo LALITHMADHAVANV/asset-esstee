@@ -30,6 +30,7 @@ import {
   Search,
   X,
 } from 'lucide-react';
+import { AssetLocationSelect } from '@/components/asset/AssetLocationSelect';
 import { AssetImportButton } from '@/components/asset/AssetImportButton';
 import { EditAssetModal } from '@/components/asset/EditAssetModal';
 import { QRCodeSVG } from 'qrcode.react';
@@ -94,6 +95,7 @@ export default function MachinesPage() {
     }
   }, [userCompany]);
 
+  const [mLocation, setMLocation] = useState('');
   const [mId, setMId] = useState('');
   const [mBrand, setMBrand] = useState('');
   const [mType, setMType] = useState<MachineType | ''>('');
@@ -279,6 +281,7 @@ export default function MachinesPage() {
   // Handler for category switch
   const handleCategorySelect = (cat: AssetCategory) => {
     setSelectedCategory(cat);
+    setMLocation('');
     setIsCustomType(false);
     setIsCustomBrand(false);
     setMType('');
@@ -299,6 +302,7 @@ export default function MachinesPage() {
 
   // Clear / Reset all inputs
   const handleResetForm = () => {
+    setMLocation('');
     setMCompany(userCompany);
     setMId('');
     setMBrand('');
@@ -435,6 +439,7 @@ export default function MachinesPage() {
       purchaseDate: mDate,
       cost: typeof mCost === 'number' ? mCost : Number(mCost) || 0,
       status: 'ACTIVE',
+      location: selectedCategory === 'MACHINE' ? undefined : mLocation,
       unit: finalUnit,
       area: finalUnit,
       zone: '',
@@ -494,6 +499,7 @@ export default function MachinesPage() {
       typeName: typeName,
       cost: typeof mCost === 'number' ? mCost : Number(mCost) || 0,
       motorType: mMotor,
+      location: selectedCategory === 'MACHINE' ? undefined : mLocation,
       unit: mUnit.trim() || 'Unassigned Unit',
       area: mUnit.trim() || 'Unassigned Area',
       currentLine: (existing?.currentLine || '') as FloorLine,
@@ -517,6 +523,7 @@ export default function MachinesPage() {
     };
   }, [
     mId,
+    mLocation,
     mCompany,
     mBrand,
     mModel,
@@ -1005,6 +1012,7 @@ export default function MachinesPage() {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {selectedCategory !== 'MACHINE' && <AssetLocationSelect key={user?.companySlug || userCompany} value={mLocation} onChange={setMLocation} />}
                 {/* 1. Plant Unit Dropdown */}
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1">
