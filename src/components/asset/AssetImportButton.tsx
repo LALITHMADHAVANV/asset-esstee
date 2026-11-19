@@ -60,7 +60,7 @@ export function AssetImportButton() {
           <div className="rounded-xl bg-slate-50 border border-slate-200 p-4 space-y-3">
             <p className="text-sm text-slate-700">Download a template and replace the example row with your assets. Existing asset IDs will be skipped.</p>
             <div className="flex flex-wrap gap-2">{['xlsx', 'csv'].map(format => <button key={format} type="button" disabled={busy} onClick={() => template(format)} className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-700 bg-white border border-slate-200 px-3 py-2 rounded-lg disabled:opacity-50"><Download className="w-3.5 h-3.5" />{format === 'xlsx' ? 'Excel template' : 'CSV template'}</button>)}</div>
-            <p className="text-xs text-slate-500">Required: id, brand, serialNo, type, purchaseDate and unit. Keep IDs as text and replace formulas with values.</p>
+            <p className="text-xs text-slate-500">Required values: id, brand, type and purchaseDate. Keep serialNo and unit columns; unknown values may be blank. Keep IDs as text and replace formulas with values.</p>
           </div>
           <div><label htmlFor={id + '-file'} className="block mb-2 text-sm font-semibold text-slate-700">Choose a file</label>
             <input id={id + '-file'} type="file" accept=".xlsx,.csv" disabled={busy} className="block w-full rounded-xl border border-slate-200 p-3 text-sm file:mr-3 file:border-0 file:bg-indigo-50 file:text-indigo-700 file:rounded-lg file:px-3 file:py-1.5" onChange={event => {

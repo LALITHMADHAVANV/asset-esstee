@@ -49,9 +49,18 @@ function uploadFile(text) { return new File([text], 'assets.csv'); }
   sheet.addRow(['FORMULA', { formula: '1+1', result: 2 }, 'F-SERIAL', 'SNLS', '2026-11-18', 'UNIT - 1']);
   const formulas = await readAssetImport(new File([await formulaBook.xlsx.writeBuffer()], 'formula.xlsx'));
   assert.equal(formulas.total, 1); assert.equal(formulas.errors.length, 1);
+  const blanks = await readAssetImport(uploadFile('id,brand,serialNo,type,purchaseDate,unit,model\r\nBLANK-1,UZU,,Inspection,2007-05-18,,\r\nBLANK-2,UZU,-,Inspection,2007-08-21,,-\r\n'));
+  assert.equal(blanks.errors.length, 0);
+  assert.equal(blanks.rows.length, 2);
+  assert.equal(blanks.rows[1].asset.serialNo, '');
+  assert.equal(blanks.rows[1].asset.model, '');
+  assert.equal(blanks.rows[1].asset.unit, '');
   await ready();
   const collection = client.db('asset_import_test').collection('machines');
   await collection.insertOne({ id: 'EXISTING', name: 'Preserve me', serialNo: 'OLD-SERIAL' });
+  await collection.insertOne({ id: 'UNKNOWN-SERIAL', serialNo: '' });
+  assert.equal((await reviewAssetImport(collection, blanks)).errors.length, 0);
+  assert.equal((await saveAssetImport(collection, blanks.rows, 'Esstee Test', 'test')).imported, 2);
   const existingRow = { row: 3, asset: { ...parsed.rows[0].asset, id: 'existing', name: 'Overwrite attempt', serialNo: 'OTHER-SERIAL', serialNumber: 'OTHER-SERIAL' } };
   const reviewed = await reviewAssetImport(collection, { ...parsed, total: 2, rows: [...parsed.rows, existingRow] });
   assert.equal(reviewed.rows[1].exists, true, 'Existing IDs match case-insensitively');
@@ -95,6 +104,29 @@ function uploadFile(text) { return new File([text], 'assets.csv'); }
   assert.equal(saved.status, 200); assert.equal((await saved.json()).imported, 1);
   const repeated = await request('import', file);
   assert.equal((await repeated.json()).skipped, 1);
+  const { machines, importMachines } = require('./import-image-machines.cjs');
+  assert.equal(machines.length, 14);
+  assert.equal(machines.find(row => row.id === 'A-S90').serialNo, '0099403');
+  await client.db('asset_import_registry_test').collection('companies').insertOne({ slug: 'image-test', name: 'Image Test', active: true, databaseName: 'asset_import_image_test' });
+  const priorRegistry = process.env.REGISTRY_DB_NAME;
+  process.env.REGISTRY_DB_NAME = 'asset_import_registry_test';
+  try {
+    const preview = await importMachines(client, 'image-test', true);
+    assert.equal(preview.wouldImport, 14);
+    const imageCollection = client.db('asset_import_image_test').collection('machines');
+    assert.equal(await imageCollection.countDocuments(), 0);
+    assert.equal((await importMachines(client, 'image-test')).imported, 14);
+    assert.equal((await importMachines(client, 'image-test')).skipped, 14);
+    const blank = await imageCollection.findOne({ id: 'A-S91' });
+    assert.equal(blank.serialNo, '');
+    assert.equal(blank.unit, '');
+    assert.equal(blank.purchaseDate.slice(0, 4), '2007');
+    assert.equal(blank.purchaseDateEstimated, true);
+    await assert.rejects(importMachines(client, 'missing-company'), /Active company not found/);
+  } finally {
+    if (priorRegistry === undefined) delete process.env.REGISTRY_DB_NAME;
+    else process.env.REGISTRY_DB_NAME = priorRegistry;
+  }
   console.log('PASS: Excel/CSV templates, parsing, required fields, dates, formulas, duplicates, serial conflicts, standalone MongoDB, retries, partial failures, tenant metadata and endpoint permissions.');
 })().catch(error => { console.error(error); process.exitCode = 1; }).finally(async () => {
   await client.close();

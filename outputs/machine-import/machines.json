@@ -1,0 +1,132 @@
+{
+  "source": "User-provided image",
+  "notes": "Dates randomly assigned within supplied years as requested. Missing values blank. Confirm ambiguous 0/O/I characters in M/C numbers against original source before import.",
+  "machines": [
+    {
+      "id": "A-323",
+      "type": "SINGER",
+      "brand": "SUPREME",
+      "model": "SP-H5-M",
+      "serialNo": "DML250725",
+      "unit": "",
+      "purchaseDate": "2026-05-05"
+    },
+    {
+      "id": "A-324",
+      "type": "SINGER",
+      "brand": "SUPREME",
+      "model": "SP-H7SE-M",
+      "serialNo": "D0I270009",
+      "unit": "",
+      "purchaseDate": "2026-06-21"
+    },
+    {
+      "id": "A-325",
+      "type": "SINGER",
+      "brand": "SUPREME",
+      "model": "SP-H7SE-M",
+      "serialNo": "D0I270027",
+      "unit": "",
+      "purchaseDate": "2026-03-04"
+    },
+    {
+      "id": "A-326",
+      "type": "SINGER",
+      "brand": "SUPREME",
+      "model": "SP-H7SE-M",
+      "serialNo": "D0I270041",
+      "unit": "",
+      "purchaseDate": "2026-08-10"
+    },
+    {
+      "id": "A-327",
+      "type": "SINGER",
+      "brand": "SUPREME",
+      "model": "SP-H7SE-M",
+      "serialNo": "D0I270042",
+      "unit": "",
+      "purchaseDate": "2026-03-02"
+    },
+    {
+      "id": "A-328",
+      "type": "SINGER",
+      "brand": "SUPREME",
+      "model": "SP-H7SE-M",
+      "serialNo": "D0I270044",
+      "unit": "",
+      "purchaseDate": "2026-09-27"
+    },
+    {
+      "id": "A-329",
+      "type": "SINGER",
+      "brand": "SUPREME",
+      "model": "SP-H7SE-M",
+      "serialNo": "D0E140316",
+      "unit": "",
+      "purchaseDate": "2026-09-25"
+    },
+    {
+      "id": "A-330",
+      "type": "SINGER",
+      "brand": "SUPREME",
+      "model": "SP-H7SE-M",
+      "serialNo": "D0E140321",
+      "unit": "",
+      "purchaseDate": "2026-02-02"
+    },
+    {
+      "id": "A-S86",
+      "type": "CONE WINDING M/C",
+      "brand": "ANGALAMMA MACHINERY",
+      "model": "",
+      "serialNo": "",
+      "unit": "",
+      "purchaseDate": "2026-01-10"
+    },
+    {
+      "id": "A-S87",
+      "type": "FABRIC RELAXING MACHINE",
+      "brand": "OSHIMA",
+      "model": "UW-2",
+      "serialNo": "2184",
+      "unit": "",
+      "purchaseDate": "2026-08-07"
+    },
+    {
+      "id": "A-S88",
+      "type": "FABRIC INSPECTION MACHINE",
+      "brand": "SSKV",
+      "model": "",
+      "serialNo": "",
+      "unit": "",
+      "purchaseDate": "2025-08-22"
+    },
+    {
+      "id": "A-S89",
+      "type": "FABRIC INSPECTION MACHINE",
+      "brand": "UZU",
+      "model": "UZ-F9",
+      "serialNo": "101150",
+      "unit": "",
+      "purchaseDate": "2010-04-24"
+    },
+    {
+      "id": "A-S90",
+      "type": "FABRIC INSPECTION MACHINE",
+      "brand": "UZU",
+      "model": "UZ-F3",
+      "serialNo": "0099403",
+      "unit": "",
+      "purchaseDate": "2007-10-01"
+    },
+    {
+      "id": "A-S91",
+      "type": "FABRIC INSPECTION MACHINE",
+      "brand": "UZU",
+      "model": "",
+      "serialNo": "",
+      "unit": "",
+      "purchaseDate": "2007-03-19"
+    }
+  ]
+}
