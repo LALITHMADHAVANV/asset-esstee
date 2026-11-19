@@ -136,7 +136,8 @@ const machines = [
 async function importMachines(client, companySlug, dryRun = false) {
   const company = await client.db(process.env.REGISTRY_DB_NAME || 'compliance_master')
     .collection('companies').findOne({ slug: companySlug, active: true });
-  if (!company?.databaseName || !company.name) throw new Error('Active company not found in the registry: ' + companySlug);
+  if (!company?.databaseName) throw new Error('Active company not found in the registry: ' + companySlug);
+  company.name = company.name || (company.slug === 'esstee' ? 'Esstee' : company.slug);
   const collection = client.db(company.databaseName).collection('machines');
   let imported = 0, skipped = 0;
   const pending = [];
