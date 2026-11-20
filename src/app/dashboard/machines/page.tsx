@@ -1,6 +1,7 @@
 'use client';
 
 import { textValue } from '@/lib/textValue';
+import { tenantPreferences } from '@/lib/tenantPreferences';
 
 import { assetScanUrl } from '@/lib/scanUrl';
 
@@ -126,6 +127,57 @@ export default function MachinesPage() {
   });
   const effectiveUnit = getUserScopedUnit(user, role, mUnit || null);
   const activeUnitValue = !isAdmin ? effectiveUnit : mUnit;
+  const [mLocation, setMLocation] = useState('');
+  const [customLocations, setCustomLocations] = useState<Record<string, string[]>>({});
+  const [isAddingLocation, setIsAddingLocation] = useState(false);
+  const [newLocation, setNewLocation] = useState('');
+
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(tenantPreferences.getItem('cmms_asset_locations') || '{}');
+      if (saved && typeof saved === 'object' && !Array.isArray(saved)) {
+        setCustomLocations(saved);
+      }
+    } catch (error) {
+      console.error('Failed to load asset locations', error);
+    }
+  }, []);
+
+  useEffect(() => {
+    setMLocation('');
+    setIsAddingLocation(false);
+    setNewLocation('');
+  }, [activeUnitValue, selectedCategory]);
+
+  const locationOptions = useMemo(() => {
+    const locations = Array.isArray(customLocations[activeUnitValue]) ? customLocations[activeUnitValue] : [];
+    return Array.from(new Set(locations.filter((location) =>
+      typeof location === 'string' && location.trim() && location !== activeUnitValue
+    )));
+  }, [activeUnitValue, customLocations]);
+
+  const handleAddLocation = () => {
+    const name = newLocation.trim();
+    if (!name) {
+      showToast('Please enter a location name', 'warning');
+      return;
+    }
+    const existing = locationOptions.find((location) => location.toLowerCase() === name.toLowerCase());
+    if (!existing) {
+      const next = { ...customLocations, [activeUnitValue]: [...(customLocations[activeUnitValue] || []), name] };
+      try {
+        tenantPreferences.setItem('cmms_asset_locations', JSON.stringify(next));
+      } catch (error) {
+        console.error('Failed to save asset location', error);
+        showToast('Unable to save the location. Please try again.', 'error');
+        return;
+      }
+      setCustomLocations(next);
+    }
+    setMLocation(existing || name);
+    setIsAddingLocation(false);
+    setNewLocation('');
+  };
 
   // Available zones categorized by the currently selected unit
   const availableZonesForUnit = useMemo(() => {
@@ -312,6 +364,9 @@ export default function MachinesPage() {
     setCustomZoneInput('');
     setMLine('Line 01');
     setMSerial('');
+    setMLocation('');
+    setIsAddingLocation(false);
+    setNewLocation('');
     setIsCustomBrand(false);
     setCustomBrandInput('');
     setIsCustomType(false);
@@ -347,6 +402,10 @@ export default function MachinesPage() {
     }
 
     const cleanSerial = mSerial.trim();
+    if (selectedCategory !== 'MACHINE' && (!mLocation || isAddingLocation)) {
+      showToast('Please select or add a location', 'warning');
+      return;
+    }
     if (!cleanSerial) {
       showToast('Please enter a Serial Number', 'warning');
       return;
@@ -436,8 +495,8 @@ export default function MachinesPage() {
       cost: typeof mCost === 'number' ? mCost : Number(mCost) || 0,
       status: 'ACTIVE',
       unit: finalUnit,
-      area: finalUnit,
-      zone: '',
+      area: selectedCategory !== 'MACHINE' ? mLocation : finalUnit,
+      zone: selectedCategory !== 'MACHINE' ? mLocation : '',
       currentLine: '',
       department: userDept,
       serialNo: cleanSerial,
@@ -495,7 +554,8 @@ export default function MachinesPage() {
       cost: typeof mCost === 'number' ? mCost : Number(mCost) || 0,
       motorType: mMotor,
       unit: mUnit.trim() || 'Unassigned Unit',
-      area: mUnit.trim() || 'Unassigned Area',
+      area: selectedCategory !== 'MACHINE' ? mLocation : (mUnit.trim() || 'Unassigned Area'),
+      zone: selectedCategory !== 'MACHINE' ? mLocation : '',
       currentLine: (existing?.currentLine || '') as FloorLine,
       serialNo: mSerial.trim() || 'SN-PENDING',
       serialNumber: mSerial.trim() || 'SN-PENDING',
@@ -525,6 +585,7 @@ export default function MachinesPage() {
     mMotor,
     mUnit,
     mArea,
+    mLocation,
     mSerial,
     mDate,
     machines,
@@ -652,7 +713,7 @@ export default function MachinesPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2 shrink-0">
-          {["ADMIN", "ASSET_MANAGER"].includes(String(user?.role || role).toUpperCase()) && <AssetImportButton />}
+          {["ADMIN", "ASSET_MANAGER"].includes(String(user?.role || role).toUpperCase()) && <AssetImportButton category={selectedCategory} />}
           <button
             type="button"
             onClick={() => setIsAssetPickerOpen(true)}
@@ -1025,6 +1086,55 @@ export default function MachinesPage() {
                       </option>
                     ))}
                   </select>
+                  {selectedCategory !== 'MACHINE' && (
+                    <div className="mt-3.5 space-y-2">
+                      <label htmlFor="asset-location" className="block text-xs font-semibold text-slate-700">
+                        Location *
+                      </label>
+                      <select
+                        id="asset-location"
+                        required
+                        value={isAddingLocation ? '__NEW_LOCATION__' : mLocation}
+                        onChange={(e) => {
+                          const adding = e.target.value === '__NEW_LOCATION__';
+                          setIsAddingLocation(adding);
+                          if (!adding) setMLocation(e.target.value);
+                          setNewLocation('');
+                        }}
+                        className="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-slate-800"
+                      >
+                        <option value="">Select the location</option>
+                        {locationOptions.map((location) => (
+                          <option key={location} value={location}>{location}</option>
+                        ))}
+                        <option value="__NEW_LOCATION__">+ New location</option>
+                      </select>
+                      {isAddingLocation && (
+                        <div className="space-y-2">
+                          <label htmlFor="new-asset-location" className="block text-xs font-semibold text-slate-700">New location name</label>
+                          <input
+                            id="new-asset-location"
+                            type="text"
+                            value={newLocation}
+                            onChange={(e) => setNewLocation(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                handleAddLocation();
+                              }
+                            }}
+                            placeholder="Enter location name"
+                            autoFocus
+                            className="w-full px-3 py-2 text-sm bg-white border border-indigo-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
+                          />
+                          <div className="flex gap-2">
+                            <button type="button" onClick={handleAddLocation} className="px-3 py-2 text-xs font-semibold bg-indigo-600 text-white rounded-lg cursor-pointer">Add location</button>
+                            <button type="button" onClick={() => { setIsAddingLocation(false); setNewLocation(''); }} className="px-3 py-2 text-xs font-semibold text-slate-600 rounded-lg cursor-pointer">Cancel</button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* 2. Serial Number (Required) */}

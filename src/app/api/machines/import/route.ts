@@ -20,7 +20,8 @@ function failure(error: unknown) {
 export async function GET(req: Request) {
   try {
     await authorizedDatabase(req);
-    const template = await assetImportTemplate(new URL(req.url).searchParams.get('format') || 'xlsx');
+    const params = new URL(req.url).searchParams;
+    const template = await assetImportTemplate(params.get('format') || 'xlsx', params.get('category') || 'MACHINE');
     return new NextResponse(template.content, { headers: { 'Content-Type': template.type, 'Content-Disposition': 'attachment; filename="asset-import-template.' + template.extension + '"', 'Cache-Control': 'no-store' } });
   } catch (error) { return failure(error); }
 }

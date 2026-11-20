@@ -4,13 +4,14 @@ import type { Collection, Document } from 'mongodb';
 import type { Machine } from '@/types/cmms';
 
 export const ASSET_IMPORT_COLUMNS = ['id', 'name', 'category', 'brand', 'model', 'serialNo', 'type', 'purchaseDate', 'cost', 'unit', 'zone', 'currentLine', 'stationNo', 'status'];
-const sample = ['MC-EXAMPLE-001', 'Single needle sewing machine', 'MACHINE', 'Juki', 'DDL-8700', 'SN-EXAMPLE-001', 'SNLS', '2026-11-18', '45000', 'UNIT - 1', 'Zone 1', 'Line 01', 'Station 01', 'ACTIVE'];
+export const ASSET_IMPORT_HEADERS = ['Category', 'Asset Variety', 'Brand', 'Asset ID', 'Model', 'Installation Date', 'Cost', 'Unit', 'Location', 'Serial No.'];
+const IMPORT_CATEGORIES = ['MACHINE', 'FURNITURE', 'TABLE', 'CHAIR', 'UTILITY', 'VEHICLE', 'LIGHT', 'FAN'];
 export type AssetImportRow = { row: number; asset: Machine };
 export type AssetImportIssue = { row: number; message: string };
 export class AssetImportError extends Error {}
 
 const headerKey = (value: string) => value.toLowerCase().replace(/[^a-z0-9]/g, '');
-const aliases: Record<string, string> = { assetid: 'id', machineid: 'id', assetname: 'name', make: 'brand', serialnumber: 'serialNo', serial: 'serialNo', assettype: 'type', machinetype: 'type', installationdate: 'purchaseDate', price: 'cost', line: 'currentLine', station: 'stationNo' };
+const aliases: Record<string, string> = { assetvariety: 'type', location: 'zone', assetid: 'id', machineid: 'id', assetname: 'name', make: 'brand', serialnumber: 'serialNo', serial: 'serialNo', assettype: 'type', machinetype: 'type', installationdate: 'purchaseDate', price: 'cost', line: 'currentLine', station: 'stationNo' };
 function text(value: ExcelJS.CellValue, row: number): string {
   if (value == null) return '';
   if (value instanceof Date) return value.toISOString().slice(0, 10);
@@ -68,21 +69,27 @@ export async function readAssetImport(file: File) {
       headers.forEach((header, index) => { if (header) values[header] = text(sheet.getRow(row).getCell(index + 1).value, row); });
       if (!Object.values(values).some(Boolean)) { total--; continue; }
       if (Object.values(values).some(value => value.length > 2000)) throw new AssetImportError('A cell exceeds 2000 characters.');
+      const category = (values.category || 'MACHINE').toUpperCase();
+      if (!IMPORT_CATEGORIES.includes(category)) throw new AssetImportError('Invalid asset category.');
+      const isMachine = category === 'MACHINE';
+      if (!isMachine) {
+        for (const key of ['brand', 'model', 'type', 'purchaseDate', 'unit', 'zone']) {
+          values[key] = values[key] || '-';
+        }
+      }
       const id = required(values.id, 'Asset ID'), brand = required(values.brand, 'Brand'), serialNo = values.serialNo === '-' ? '' : (values.serialNo || '');
       if (serialNo.length > 200) throw new AssetImportError('Serial number exceeds 200 characters.');
       if (ids.has(id.toLowerCase())) throw new AssetImportError('Duplicate asset ID in this file.');
       if (serialNo && serials.has(serialNo.toLowerCase())) throw new AssetImportError('Duplicate serial number in this file.');
       ids.add(id.toLowerCase()); if (serialNo) serials.add(serialNo.toLowerCase());
-      const category = (values.category || 'MACHINE').toUpperCase();
-      if (!['MACHINE', 'FURNITURE', 'TABLE', 'CHAIR', 'UTILITY', 'VEHICLE', 'LIGHT', 'FAN'].includes(category)) throw new AssetImportError('Invalid asset category.');
       const status = (values.status || 'ACTIVE').toUpperCase();
       if (!['ACTIVE', 'IDLE', 'BUFFER', 'SCRAP'].includes(status)) throw new AssetImportError('New assets must be ACTIVE, IDLE, BUFFER or SCRAP.');
-      const cost = values.cost ? Number(values.cost.replace(/[,?\s]/g, '')) : 0;
+      const cost = values.cost && values.cost !== '-' ? Number(values.cost.replace(/[,?\s]/g, '')) : 0;
       if (!Number.isFinite(cost) || cost < 0) throw new AssetImportError('Cost must be a non-negative number.');
       const type = required(values.type, 'Asset type');
-      rows.push({ row, asset: { id, name: values.name || [brand, values.model || type].join(' '), category, brand, model: values.model === '-' ? '' : (values.model || ''),
-        serialNo, serialNumber: serialNo, type, typeName: type, purchaseDate: purchaseDate(values.purchaseDate || ''), cost,
-        unit: values.unit || '', zone: values.zone || '', area: values.zone || '', currentLine: values.currentLine || 'Line 01',
+      rows.push({ row, asset: { id, name: values.name || [brand, values.model || type].join(' '), category, brand, model: isMachine && values.model === '-' ? '' : (values.model || ''),
+        serialNo, serialNumber: serialNo, type, typeName: type, purchaseDate: !isMachine && values.purchaseDate === '-' ? '-' : purchaseDate(values.purchaseDate || ''), cost,
+        unit: values.unit || '', zone: values.zone || '', area: values.zone || values.unit || '', currentLine: values.currentLine || (isMachine ? 'Line 01' : ''),
         stationNo: values.stationNo || serialNo, status, totalDowntimeMinutes: 0 } as Machine });
     } catch (error) {
       if (!(error instanceof AssetImportError)) throw error;
@@ -134,13 +141,27 @@ export async function saveAssetImport(collection: Collection<Document>, rows: As
   }
   return { imported, skipped, errors };
 }
-export async function assetImportTemplate(format: string) {
-  if (format === 'csv') return { content: '\uFEFF' + [ASSET_IMPORT_COLUMNS, sample].map(row => row.map(value => '"' + value.replaceAll('"', '""') + '"').join(',')).join('\r\n'), type: 'text/csv; charset=utf-8', extension: 'csv' };
+export async function assetImportTemplate(format: string, category = 'MACHINE') {
+  if (!IMPORT_CATEGORIES.includes(category)) throw new AssetImportError('Invalid asset category.');
+  const isMachine = category === 'MACHINE';
+  const headers = ASSET_IMPORT_HEADERS.filter(header => !isMachine || header !== 'Location');
+  const sample = isMachine
+    ? ['MACHINE', 'SNLS', 'Juki', 'MC-EXAMPLE-001', 'DDL-8700', '2026-11-18', '45000', 'UNIT - 1', 'SN-EXAMPLE-001']
+    : [category, '-', '-', 'ASSET-EXAMPLE-001', '-', '-', '-', '-', '-', '-'];
+  if (format === 'csv') return { content: '\uFEFF' + [headers, sample].map(row => row.map(value => '"' + value.replaceAll('"', '""') + '"').join(',')).join('\r\n'), type: 'text/csv; charset=utf-8', extension: 'csv' };
   if (format !== 'xlsx') throw new AssetImportError('Choose an Excel or CSV template.');
   const workbook = new ExcelJS.Workbook(), sheet = workbook.addWorksheet('Asset Registration');
-  sheet.addRow(ASSET_IMPORT_COLUMNS); sheet.addRow(sample);
+  sheet.addRow(headers); sheet.addRow(sample);
   sheet.views = [{ state: 'frozen', ySplit: 1 }];
-  sheet.columns.forEach(column => { column.width = 22; });
-  sheet.getRow(1).eachCell(cell => { cell.font = { bold: true, color: { argb: 'FFFFFFFF' } }; cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4F46E5' } }; });
+  sheet.columns.forEach(column => { column.width = 22; column.numFmt = '@'; });
+  sheet.getColumn(1).width = 32;
+  sheet.getColumn(2).width = 30;
+  sheet.getRow(1).height = 28;
+  sheet.getRow(1).eachCell(cell => {
+    cell.font = { bold: true, color: { argb: 'FF000000' } };
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFBFBFBF' } };
+    cell.alignment = { horizontal: 'center', vertical: 'middle' };
+    cell.border = { top: { style: 'thin' }, bottom: { style: 'dotted' }, left: { style: 'dotted' }, right: { style: 'dotted' } };
+  });
   return { content: new Uint8Array(await workbook.xlsx.writeBuffer()), type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', extension: 'xlsx' };
 }
