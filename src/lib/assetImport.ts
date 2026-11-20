@@ -47,9 +47,20 @@ export async function readAssetImport(file: File) {
   }
   const sheet = workbook.worksheets[0];
   if (!sheet || sheet.actualRowCount < 2) throw new AssetImportError('Include a header row and at least one asset.');
-  if (sheet.rowCount > 501 || sheet.columnCount > 40) throw new AssetImportError('Import at most 500 rows and 40 columns.');
+  const populatedRows: number[] = [];
+  let lastColumn = 0;
+  sheet.eachRow((row, rowNumber) => {
+    let populated = false;
+    row.eachCell((cell, column) => {
+      if (cell.value == null || (typeof cell.value === 'string' && !cell.value.trim())) return;
+      populated = true;
+      lastColumn = Math.max(lastColumn, column);
+    });
+    if (populated && rowNumber > 1) populatedRows.push(rowNumber);
+  });
+  if (populatedRows.length > 500 || lastColumn > 40) throw new AssetImportError('Import at most 500 rows and 40 columns.');
   const headers: Array<string | null> = [], seenHeaders = new Set<string>();
-  for (let column = 1; column <= sheet.columnCount; column++) {
+  for (let column = 1; column <= lastColumn; column++) {
     const original = text(sheet.getRow(1).getCell(column).value, 1).replace(/^\uFEFF/, '');
     if (!original) { headers.push(null); continue; }
     const key = ASSET_IMPORT_COLUMNS.find(name => headerKey(name) === headerKey(original)) || aliases[headerKey(original)];
@@ -61,8 +72,7 @@ export async function readAssetImport(file: File) {
   const rows: AssetImportRow[] = [], errors: AssetImportIssue[] = [];
   const ids = new Set<string>(), serials = new Set<string>();
   let total = 0;
-  for (let row = 2; row <= sheet.rowCount; row++) {
-    if (!sheet.getRow(row).hasValues) continue;
+  for (const row of populatedRows) {
     total++;
     try {
       const values: Record<string, string> = {};
