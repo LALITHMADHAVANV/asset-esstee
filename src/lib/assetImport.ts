@@ -2,6 +2,7 @@ import ExcelJS from 'exceljs';
 import { Readable } from 'node:stream';
 import type { Collection, Document } from 'mongodb';
 import type { Machine } from '@/types/cmms';
+import { ASSET_CATEGORIES } from '@/lib/machineCatalog';
 
 export const ASSET_IMPORT_COLUMNS = ['id', 'name', 'category', 'brand', 'model', 'serialNo', 'type', 'purchaseDate', 'cost', 'unit', 'zone', 'currentLine', 'stationNo', 'status'];
 export const ASSET_IMPORT_HEADERS = ['Category', 'Asset Variety', 'Brand', 'Asset ID', 'Model', 'Installation Date', 'Cost', 'Unit', 'Location', 'Serial No.'];
@@ -11,6 +12,13 @@ export type AssetImportIssue = { row: number; message: string };
 export class AssetImportError extends Error {}
 
 const headerKey = (value: string) => value.toLowerCase().replace(/[^a-z0-9]/g, '');
+function importCategory(value: string | undefined) {
+  const label = (value || 'MACHINE').trim();
+  const normalized = headerKey(label.replace(/\s*\([^)]*\)\s*$/, ''));
+  return ASSET_CATEGORIES.find(category =>
+    headerKey(category.id) === normalized || headerKey(category.name) === normalized
+  )?.id || label.toUpperCase();
+}
 const aliases: Record<string, string> = { assetvariety: 'type', location: 'zone', assetid: 'id', machineid: 'id', assetname: 'name', make: 'brand', serialnumber: 'serialNo', serial: 'serialNo', assettype: 'type', machinetype: 'type', installationdate: 'purchaseDate', price: 'cost', line: 'currentLine', station: 'stationNo' };
 function text(value: ExcelJS.CellValue, row: number): string {
   if (value == null) return '';
@@ -79,7 +87,7 @@ export async function readAssetImport(file: File) {
       headers.forEach((header, index) => { if (header) values[header] = text(sheet.getRow(row).getCell(index + 1).value, row); });
       if (!Object.values(values).some(Boolean)) { total--; continue; }
       if (Object.values(values).some(value => value.length > 2000)) throw new AssetImportError('A cell exceeds 2000 characters.');
-      const category = (values.category || 'MACHINE').toUpperCase();
+      const category = importCategory(values.category);
       if (!IMPORT_CATEGORIES.includes(category)) throw new AssetImportError('Invalid asset category.');
       const isMachine = category === 'MACHINE';
       if (!isMachine) {
