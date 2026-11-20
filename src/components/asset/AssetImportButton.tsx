@@ -5,11 +5,13 @@ import { createPortal } from 'react-dom';
 import { Download, Loader2, Upload, X } from 'lucide-react';
 import { apiFetch, fetchMachinesOnce } from '@/lib/services/cmmsService';
 import { useToast } from '@/context/ToastContext';
+import { ASSET_CATEGORIES } from '@/lib/machineCatalog';
+import type { AssetCategory } from '@/types/cmms';
 
 type Preview = { total: number; errors: Array<{ row: number; message: string }>; rows: Array<{ row: number; exists: boolean; asset: { id: string; name?: string; brand: string; unit?: string; cost: number } }> };
 type ImportResult = { imported: number; skipped: number; errors: Array<{ row: number; message: string }> };
 
-export function AssetImportButton() {
+export function AssetImportButton({ category = 'MACHINE' }: { category?: AssetCategory }) {
   const id = useId(), { showToast } = useToast();
   const [open, setOpen] = useState(false);
   const [file, setFile] = useState<File | null>(null);
@@ -17,12 +19,13 @@ export function AssetImportButton() {
   const [result, setResult] = useState<ImportResult | null>(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [templateCategory, setTemplateCategory] = useState<AssetCategory>(category);
   const newCount = preview?.rows.filter(row => !row.exists).length || 0;
-  function start() { setFile(null); setPreview(null); setResult(null); setError(''); setOpen(true); }
+  function start() { setTemplateCategory(category); setFile(null); setPreview(null); setResult(null); setError(''); setOpen(true); }
   async function template(format: string) {
     setBusy(true); setError('');
     try {
-      const response = await apiFetch('/api/machines/import?format=' + format);
+      const response = await apiFetch('/api/machines/import?format=' + format + '&category=' + templateCategory);
       if (!response.ok) { const data = await response.json().catch(() => ({})); throw new Error(data.error || 'Template could not be downloaded.'); }
       const url = URL.createObjectURL(await response.blob()), link = document.createElement('a');
       link.href = url; link.download = 'asset-import-template.' + format;
@@ -59,8 +62,13 @@ export function AssetImportButton() {
         <div className="p-5 overflow-y-auto space-y-4">
           <div className="rounded-xl bg-slate-50 border border-slate-200 p-4 space-y-3">
             <p className="text-sm text-slate-700">Download a template and replace the example row with your assets. Existing asset IDs will be skipped.</p>
+            <label className="block text-xs font-semibold text-slate-700">Template category
+              <select value={templateCategory} disabled={busy} onChange={event => setTemplateCategory(event.target.value as AssetCategory)} className="mt-1 block w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm">
+                {ASSET_CATEGORIES.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
+              </select>
+            </label>
             <div className="flex flex-wrap gap-2">{['xlsx', 'csv'].map(format => <button key={format} type="button" disabled={busy} onClick={() => template(format)} className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-700 bg-white border border-slate-200 px-3 py-2 rounded-lg disabled:opacity-50"><Download className="w-3.5 h-3.5" />{format === 'xlsx' ? 'Excel template' : 'CSV template'}</button>)}</div>
-            <p className="text-xs text-slate-500">Required values: id, brand, type and purchaseDate. Keep serialNo and unit columns; unknown values may be blank. Keep IDs as text and replace formulas with values.</p>
+            <p className="text-xs text-slate-500">{templateCategory === 'MACHINE' ? 'Machines: Asset ID, Brand, Asset Variety and Installation Date are required. The machine template excludes Location.' : 'Other assets: enter a unique Asset ID. Use "-" for unknown values; blank reference fields are treated as "-". Unknown cost is saved as 0.'} Keep IDs as text and replace formulas with values. Dates: YYYY-MM-DD or DD/MM/YYYY.</p>
           </div>
           <div><label htmlFor={id + '-file'} className="block mb-2 text-sm font-semibold text-slate-700">Choose a file</label>
             <input id={id + '-file'} type="file" accept=".xlsx,.csv" disabled={busy} className="block w-full rounded-xl border border-slate-200 p-3 text-sm file:mr-3 file:border-0 file:bg-indigo-50 file:text-indigo-700 file:rounded-lg file:px-3 file:py-1.5" onChange={event => {
