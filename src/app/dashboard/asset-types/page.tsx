@@ -35,8 +35,8 @@ import plantAssetsSeed from '@/data/plantAssetsSeed.json';
 import AllowancePage from '@/app/dashboard/allowance/page';
 import HistoryPage from '@/app/dashboard/history/page';
 
-// Preserved 4 Categories
-type MainCategory = 'MACHINE' | 'FURNITURE' | 'UTILITY' | 'VEHICLE';
+// Main asset categories
+type MainCategory = 'MACHINE' | 'FURNITURE' | 'UTILITY' | 'VEHICLE' | 'APPLIANCES';
 
 // Actual Machine Types (Varieties) directly from both Plant Sheets (PDF 1 & PDF 2)
 // "O/L" is categorized as "OVERLOCK" and "F/L" variants are categorized as "FLATLOCK"
@@ -88,6 +88,7 @@ function mapToMainCategory(cat?: string): MainCategory {
   if (!cat) return 'MACHINE';
   if (cat === 'MACHINE') return 'MACHINE';
   if (cat === 'FURNITURE' || cat === 'TABLE' || cat === 'CHAIR') return 'FURNITURE';
+  if (cat === 'APPLIANCES') return 'APPLIANCES';
   if (cat === 'VEHICLE') return 'VEHICLE';
   return 'UTILITY';
 }
@@ -115,6 +116,7 @@ function AssetsPageContent() {
   }, [user]);
 
   const [selectedCategory, setSelectedCategory] = useState<MainCategory | 'ALL'>('ALL');
+  const isMachineTable = selectedCategory === 'MACHINE';
   const [selectedPlant, setSelectedPlant] = useState<string>(() => {
     if (isUserAdmin(role)) return unitParam || 'ALL';
     return getUserScopedUnit(user, role);
@@ -218,7 +220,7 @@ function AssetsPageContent() {
             ? 'Furniture'
             : cat === 'UTILITY'
               ? 'Electrical Utilities'
-              : 'Vehicles';
+              : cat === 'APPLIANCES' ? 'Appliances' : 'Vehicles';
 
       const sNo = (m as any).sNo || idx + 1;
       const mcNo = (m as any).mcNo || m.id;
@@ -270,6 +272,7 @@ function AssetsPageContent() {
       MACHINE: unitScopedItems.filter((i) => i.category === 'MACHINE').length,
       FURNITURE: unitScopedItems.filter((i) => i.category === 'FURNITURE').length,
       UTILITY: unitScopedItems.filter((i) => i.category === 'UTILITY').length,
+      APPLIANCES: unitScopedItems.filter((i) => i.category === 'APPLIANCES').length,
       VEHICLE: unitScopedItems.filter((i) => i.category === 'VEHICLE').length,
     };
   }, [unitScopedItems]);
@@ -422,8 +425,16 @@ function AssetsPageContent() {
     selectedStatus !== 'ALL' ||
     searchQuery.trim() !== '';
 
-  // The 4 Primary Categories
+  // Primary asset categories
   const categoriesConfig = [
+    {
+      id: 'APPLIANCES' as MainCategory, title: 'Appliances',
+      subtitle: 'Laptops, TVs, Printers & Other Appliances', icon: Boxes,
+      count: categoryCounts.APPLIANCES,
+      colorBadge: 'bg-violet-50 text-violet-700 border-violet-200',
+      activeRing: 'border-violet-600 bg-violet-50/50 ring-2 ring-violet-500/20 shadow-md',
+      tagColor: 'text-violet-600',
+    },
     {
       id: 'MACHINE' as MainCategory,
       title: 'Sewing Machinery',
@@ -609,8 +620,8 @@ function AssetsPageContent() {
             )}
           </div>
 
-          {/* 1. Category Selector Cards (Preserving the 4 Core Categories) */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          {/* 1. Category Selector Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-2">
             {categoriesConfig.map((cat) => {
               const isSelected = selectedCategory === cat.id;
               const Icon = cat.icon;
@@ -626,15 +637,15 @@ function AssetsPageContent() {
                     }
                     setSelectedType('ALL');
                   }}
-                  className={`p-4 rounded-2xl border transition-all duration-200 cursor-pointer flex flex-col justify-between ${isSelected
+                  className={`p-3 rounded-xl border transition-all duration-200 cursor-pointer flex flex-col justify-between ${isSelected
                       ? cat.activeRing
                       : 'bg-white border-slate-200/90 hover:border-slate-300 hover:shadow-2xs'
                     }`}
                 >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center border shrink-0 ${cat.colorBadge}`}>
-                        <Icon className="w-4.5 h-4.5" />
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center border shrink-0 ${cat.colorBadge}`}>
+                        <Icon className="w-4 h-4" />
                       </div>
                       <div className="min-w-0">
                         <h3 className="text-xs font-bold text-slate-900 truncate">
@@ -647,9 +658,9 @@ function AssetsPageContent() {
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-slate-100">
+                  <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-100">
                     <div className="flex items-baseline gap-1">
-                      <span className="text-xl font-black font-mono tracking-tight text-slate-900">
+                      <span className="text-lg font-black font-mono tracking-tight text-slate-900">
                         {cat.count}
                       </span>
                       <span className="text-[10px] text-slate-400 font-medium">assets</span>
@@ -898,7 +909,7 @@ function AssetsPageContent() {
                       type="text"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Search M/C NO, make, model..."
+                      placeholder={isMachineTable ? 'Search M/C NO, make, model...' : 'Search Asset ID, brand, model...'}
                       className="pl-8 pr-3 py-1.5 text-xs bg-white border border-slate-200 rounded-xl text-slate-800 placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 outline-none w-48 sm:w-56 font-medium"
                     />
                     {searchQuery && (
@@ -920,6 +931,7 @@ function AssetsPageContent() {
                   <thead className="bg-slate-100/90 text-slate-700 font-bold uppercase tracking-wider text-[11px] border-b border-slate-300">
                     <tr>
                       <th className="py-2.5 px-3 text-center border-r border-slate-300 w-14">S.No</th>
+                      {isMachineTable ? <>
                       <th className="py-2.5 px-3 border-r border-slate-300">M/C No (Asset ID)</th>
                       <th className="py-2.5 px-3 border-r border-slate-300 min-w-[130px]">Machine Type</th>
                       <th className="py-2.5 px-3 border-r border-slate-300 min-w-[180px]">Sub Machine Type</th>
@@ -928,6 +940,9 @@ function AssetsPageContent() {
                       <th className="py-2.5 px-3 text-center border-r border-slate-300 w-16">Year</th>
                       <th className="py-2.5 px-3 border-r border-slate-300">Location</th>
                       <th className="py-2.5 px-3 border-r border-slate-300 text-center">Zone</th>
+                      </> : ['Category', 'Asset Variety', 'Brand', 'Asset ID', 'Model', 'Installation Date', 'Cost', 'Unit', 'Location', 'Serial No.'].map(label => (
+                        <th key={label} className="py-2.5 px-3 border-r border-slate-300 whitespace-nowrap">{label}</th>
+                      ))}
                       <th className="py-2.5 px-3 text-center border-r border-slate-300 w-24">Status</th>
                       <th className="py-2.5 px-3 text-center w-28">Action</th>
                     </tr>
@@ -935,7 +950,7 @@ function AssetsPageContent() {
                   <tbody className="divide-y divide-slate-200">
                     {filteredItems.length === 0 ? (
                       <tr>
-                        <td colSpan={11} className="py-14 text-center bg-white">
+                        <td colSpan={isMachineTable ? 11 : 13} className="py-14 text-center bg-white">
                           <div className="flex flex-col items-center justify-center max-w-sm mx-auto space-y-3">
                             <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
                               <Boxes className="w-6 h-6" />
@@ -945,7 +960,7 @@ function AssetsPageContent() {
                                 No assets found
                               </p>
                               <p className="text-xs text-slate-500 mt-1">
-                                No plant machinery matched your selected search and filter criteria.
+                                No assets matched your selected search and filter criteria.
                               </p>
                             </div>
                           </div>
@@ -963,6 +978,7 @@ function AssetsPageContent() {
                           </td>
 
                           {/* 2. M/C No */}
+                          {isMachineTable ? <>
                           <td className="py-2.5 px-3 border-r border-slate-200 font-mono">
                             <button
                               type="button"
@@ -1053,6 +1069,20 @@ function AssetsPageContent() {
                           </td>
 
                           {/* 10. Status */}
+                          </> : <>
+                            <td className="py-2.5 px-3 border-r border-slate-200">{item.categoryLabel}</td>
+                            <td className="py-2.5 px-3 border-r border-slate-200">{item.rawMachine.typeName || item.rawMachine.type || '-'}</td>
+                            <td className="py-2.5 px-3 border-r border-slate-200">{item.rawMachine.brand || '-'}</td>
+                            <td className="py-2.5 px-3 border-r border-slate-200 font-mono">
+                              <button type="button" onClick={() => { setAssetToEdit(item.rawMachine); setIsEditModalOpen(true); }} className="font-bold text-indigo-700 hover:underline cursor-pointer">{item.id}</button>
+                            </td>
+                            <td className="py-2.5 px-3 border-r border-slate-200">{item.rawMachine.model || '-'}</td>
+                            <td className="py-2.5 px-3 border-r border-slate-200 whitespace-nowrap">{item.rawMachine.purchaseDate || '-'}</td>
+                            <td className="py-2.5 px-3 border-r border-slate-200">{item.rawMachine.cost ? item.rawMachine.cost.toLocaleString('en-IN') : '-'}</td>
+                            <td className="py-2.5 px-3 border-r border-slate-200">{item.rawMachine.unit || '-'}</td>
+                            <td className="py-2.5 px-3 border-r border-slate-200">{item.rawMachine.zone || item.rawMachine.area || '-'}</td>
+                            <td className="py-2.5 px-3 border-r border-slate-200 font-mono">{item.rawMachine.serialNo || item.rawMachine.serialNumber || '-'}</td>
+                          </>}
                           <td className="py-2.5 px-3 border-r border-slate-200 text-center">
                             <span
                               className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${item.status === 'ACTIVE'

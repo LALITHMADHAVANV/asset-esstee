@@ -6,7 +6,7 @@ import { ASSET_CATEGORIES } from '@/lib/machineCatalog';
 
 export const ASSET_IMPORT_COLUMNS = ['id', 'name', 'category', 'brand', 'model', 'serialNo', 'type', 'purchaseDate', 'cost', 'unit', 'zone', 'currentLine', 'stationNo', 'status'];
 export const ASSET_IMPORT_HEADERS = ['Category', 'Asset Variety', 'Brand', 'Asset ID', 'Model', 'Installation Date', 'Cost', 'Unit', 'Location', 'Serial No.'];
-const IMPORT_CATEGORIES = ['MACHINE', 'FURNITURE', 'TABLE', 'CHAIR', 'UTILITY', 'VEHICLE', 'LIGHT', 'FAN'];
+const IMPORT_CATEGORIES = ['APPLIANCES', 'MACHINE', 'FURNITURE', 'TABLE', 'CHAIR', 'UTILITY', 'VEHICLE', 'LIGHT', 'FAN'];
 export type AssetImportRow = { row: number; asset: Machine };
 export type AssetImportIssue = { row: number; message: string };
 export class AssetImportError extends Error {}

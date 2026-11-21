@@ -53,7 +53,7 @@ import {
   QrCode,
 } from 'lucide-react';
 
-export type AssetCategory = 'MACHINE' | 'FURNITURE' | 'UTILITY' | 'VEHICLE';
+export type AssetCategory = 'MACHINE' | 'FURNITURE' | 'UTILITY' | 'VEHICLE' | 'APPLIANCES';
 
 export type StageStatus = 'COMPLETED' | 'IN_PROGRESS' | 'DELAYED' | 'NOT_ASSIGNED' | 'PARTIAL' | 'NA';
 
@@ -232,6 +232,16 @@ const CATEGORIES_META: {
       text: 'text-teal-800',
       accent: 'bg-teal-600',
       headerBg: 'bg-gradient-to-r from-teal-50/80 via-white to-slate-50',
+    },
+  },
+  {
+    id: 'APPLIANCES', title: 'Appliances History',
+    subtitle: 'Laptops, TVs, Printers & Other Appliances', icon: Zap,
+    theme: {
+      bg: 'bg-violet-50/50', border: 'border-violet-200',
+      badgeBg: 'bg-violet-50 text-violet-800 border-violet-200',
+      text: 'text-violet-800', accent: 'bg-violet-600',
+      headerBg: 'bg-gradient-to-r from-violet-50/80 via-white to-slate-50',
     },
   },
   {
@@ -427,7 +437,7 @@ export default function HistoryPage() {
           model: m.model || 'Standard',
           brand: m.brand || 'OEM',
           category: (m.category as any) || 'MACHINE',
-          categoryLabel: m.category === 'FURNITURE' ? 'Furniture' : m.category === 'UTILITY' ? 'Utility' : m.category === 'VEHICLE' ? 'Vehicle' : 'Machine',
+          categoryLabel: m.category === 'APPLIANCES' ? 'Appliances' : m.category === 'FURNITURE' ? 'Furniture' : m.category === 'UTILITY' ? 'Utility' : m.category === 'VEHICLE' ? 'Vehicle' : 'Machine',
           subCategory: subCat,
           location: locName,
           unit: formatRelocationLocation(m),
@@ -463,6 +473,7 @@ export default function HistoryPage() {
       name: item.name,
       brand: item.brand,
       model: item.model,
+      category: item.category,
       type: item.subCategory || item.category,
       typeName: item.categoryLabel,
       unit: item.unit,
@@ -2035,6 +2046,7 @@ export default function HistoryPage() {
               <option value="ALL">All Groups</option>
               <option value="MACHINE">Machine</option>
               <option value="FURNITURE">Furniture</option>
+              <option value="APPLIANCES">Appliances</option>
               <option value="UTILITY">Utilities</option>
               <option value="VEHICLE">Vehicle</option>
             </select>

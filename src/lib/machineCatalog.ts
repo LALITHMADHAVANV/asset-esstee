@@ -722,6 +722,12 @@ export const ASSET_CATEGORIES: AssetCategoryMeta[] = [
       },
     ],
   },
+  {
+    id: 'APPLIANCES', name: 'Appliances', singular: 'Appliance',
+    description: 'Laptops, TVs, printers and other appliances',
+    iconName: 'Zap', badgeColor: 'bg-violet-100 text-violet-800 border-violet-200',
+    idPrefix: 'APP-', subtypes: [],
+  },
 ];
 
 // Flat lookup map of all asset subtypes
