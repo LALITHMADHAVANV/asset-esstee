@@ -296,6 +296,7 @@ export function EditAssetModal({ isOpen, onClose, asset, onSave }: EditAssetModa
                 >
                   <option value="MACHINE">Sewing &amp; Industrial Machinery</option>
                   <option value="FURNITURE">Furniture &amp; Workstations</option>
+                  <option value="APPLIANCES">Appliances</option>
                   <option value="UTILITY">Electrical Utilities</option>
                   <option value="VEHICLE">Vehicles &amp; Transport</option>
                 </select>

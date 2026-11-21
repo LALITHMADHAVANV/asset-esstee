@@ -1,4 +1,5 @@
 export type AssetCategory =
+  | 'APPLIANCES' // Laptops, TVs, printers and other appliances
   | 'MACHINE' // Sewing & Industrial Machinery
   | 'FURNITURE' // Furniture: Work Tables, Cutting Tables, Operator & Supervisor Chairs, Workshop Stools
   | 'TABLE' // Work Tables (backward compatibility)

@@ -451,6 +451,7 @@ export default function FloorTrackerPage() {
 
   const categoryCounts = useMemo(() => {
     const counts: Record<AssetCategory, number> = {
+      APPLIANCES: 0,
       MACHINE: 0,
       FURNITURE: 0,
       TABLE: 0,
@@ -470,6 +471,7 @@ export default function FloorTrackerPage() {
 
   const categoryValuations = useMemo(() => {
     const vals: Record<AssetCategory, number> = {
+      APPLIANCES: 0,
       MACHINE: 0,
       FURNITURE: 0,
       TABLE: 0,
@@ -638,6 +640,7 @@ export default function FloorTrackerPage() {
     }
 
     const typeMapping: Record<AssetCategory, MachineType> = {
+      APPLIANCES: 'APPLIANCE_CUSTOM',
       MACHINE: 'OVERLOCK_4_THREAD',
       FURNITURE: 'TABLE_SEWING',
       TABLE: 'TABLE_SEWING',

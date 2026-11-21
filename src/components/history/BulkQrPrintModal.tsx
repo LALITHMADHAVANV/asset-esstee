@@ -1,5 +1,8 @@
 'use client';
 
+import { ASSET_CATEGORIES } from '@/lib/machineCatalog';
+import type { AssetCategory } from '@/types/cmms';
+
 import { textValue } from '@/lib/textValue';
 
 import { assetScanUrl } from '@/lib/scanUrl';
@@ -24,6 +27,7 @@ import {
 import { QRCodeSVG } from 'qrcode.react';
 
 export interface BulkQrAsset {
+  category?: AssetCategory;
   id: string;
   mcNo?: string;
   serialNo?: string;
@@ -94,6 +98,7 @@ export function BulkQrPrintModal({
   const [rangeEnd, setRangeEnd] = useState<number>(() => Math.min(assets.length, 34));
 
   // Filters
+  const [categoryFilter, setCategoryFilter] = useState<string>('ALL');
   const [lineFilter, setLineFilter] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
@@ -146,6 +151,9 @@ export function BulkQrPrintModal({
   // Filter pool based on line and search query
   const filteredPool = useMemo(() => {
     return assets.filter((a) => {
+      const category = a.category === 'TABLE' || a.category === 'CHAIR' ? 'FURNITURE'
+        : a.category === 'LIGHT' || a.category === 'FAN' ? 'UTILITY' : a.category || 'MACHINE';
+      if (categoryFilter !== 'ALL' && category !== categoryFilter) return false;
       if (lineFilter !== 'ALL') {
         const line = a.currentLine || a.location || a.unit || '';
         if (!line.toLowerCase().includes(lineFilter.toLowerCase())) return false;
@@ -164,7 +172,7 @@ export function BulkQrPrintModal({
 
       return true;
     });
-  }, [assets, lineFilter, searchQuery]);
+  }, [assets, categoryFilter, lineFilter, searchQuery]);
 
   // Sync limits when filtered pool changes
   useEffect(() => {
@@ -529,6 +537,17 @@ export function BulkQrPrintModal({
                   <span>Custom Selection</span>
                 </button>
               </div>
+
+              <label className="flex items-center gap-2 text-xs font-bold text-slate-700">
+                Asset Category
+                <select value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)}
+                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs">
+                  <option value="ALL">All Categories</option>
+                  {ASSET_CATEGORIES.map((category) => (
+                    <option key={category.id} value={category.id}>{category.name}</option>
+                  ))}
+                </select>
+              </label>
 
               {/* Number Selection Details */}
               {selectionMode === 'COUNT' && (
