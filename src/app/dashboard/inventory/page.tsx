@@ -16,6 +16,7 @@ import {
   Truck,
   X,
   FileSpreadsheet,
+  Upload,
   ShieldAlert,
   ShieldCheck,
   CheckCircle2,
@@ -81,12 +82,17 @@ export default function InventoryPage() {
 
   const isStorePersonOrAdmin = currentRole === 'STORE_PERSON' || currentRole === 'ADMIN' || currentRole === 'ASSET_MANAGER';
   const isMechanicOrAdmin = currentRole === 'MECHANIC' || currentRole === 'SENIOR_MECHANIC' || currentRole === 'ELECTRICIAN' || currentRole === 'SENIOR_ELECTRICIAN' || currentRole === 'ADMIN' || currentRole === 'ASSET_MANAGER';
+  const userDepartment = String(user?.department || '').toLowerCase();
+  const canImportSpares = userDepartment
+    ? userDepartment.includes('mechanic')
+    : currentRole === 'MECHANIC' || currentRole === 'SENIOR_MECHANIC';
 
   // Strict authorization matrix: only authorized executives/admin can approve critical needs
   const isAuthorizedToApproveCritical = currentRole === 'CEO' || currentRole === 'ADMIN' || currentRole === 'ASSET_MANAGER';
   const isAuthorizedToApproveGeneral = currentRole === 'STORE_PERSON' || currentRole === 'ADMIN' || currentRole === 'ASSET_MANAGER' || currentRole === 'CEO';
 
   const [parts, setParts] = useState<SparePart[]>([]);
+  const [spareImportBusy, setSpareImportBusy] = useState(false);
   const [requisitions, setRequisitions] = useState<PartRequisition[]>([]);
 
   // Mechanic Custody details state
@@ -122,6 +128,86 @@ export default function InventoryPage() {
   }, []);
 
   const activeStaffRoster = registeredStaff.length > 0 ? registeredStaff : FACTORY_MECHANICS_ROSTER;
+  const mechanicStaffRoster = activeStaffRoster.filter((member) => {
+    const roleText = member.role.toLowerCase();
+    const departmentText = member.assignedLines.toLowerCase();
+    return member.trade !== 'ELECTRICIAN' && (
+      roleText.includes('mechanic') || departmentText.includes('mechanic')
+    );
+  });
+
+  const handleSpareImport = async (file: File) => {
+    setSpareImportBusy(true);
+    try {
+      const text = await file.text();
+      const lines = text.split(/\r?\n/).filter(line => line.trim());
+      const parseCsvLine = (line: string) => {
+        const values: string[] = [];
+        let value = '', quoted = false;
+        for (let i = 0; i < line.length; i++) {
+          const char = line[i];
+          if (char === '"' && line[i + 1] === '"' && quoted) { value += '"'; i++; }
+          else if (char === '"') quoted = !quoted;
+          else if (char === ',' && !quoted) { values.push(value.trim()); value = ''; }
+          else value += char;
+        }
+        values.push(value.trim());
+        return values;
+      };
+      if (lines.length < 2) throw new Error('CSV needs a header and at least one spare row.');
+      const headers = parseCsvLine(lines[0]).map(header => header.toLowerCase().replace(/[^a-z]/g, ''));
+      const indexes = {
+        id: headers.findIndex(h => ['spareid', 'partid', 'id'].includes(h)),
+        name: headers.findIndex(h => ['sparename', 'name'].includes(h)),
+        machineType: headers.findIndex(h => ['machinetype', 'type'].includes(h)),
+        cost: headers.findIndex(h => ['cost', 'unitcost', 'price'].includes(h)),
+        quantity: headers.findIndex(h => ['quantity', 'qty', 'stock'].includes(h)),
+      };
+      if (Object.values(indexes).some(index => index < 0)) {
+        throw new Error('Required headers: Spare ID, Spare Name, Machine Type, Cost, Quantity.');
+      }
+      const imported = lines.slice(1).map((line, index) => {
+        const row = parseCsvLine(line);
+        const partId = row[indexes.id]?.trim();
+        const name = row[indexes.name]?.trim();
+        const machineType = row[indexes.machineType]?.trim() || 'GENERAL';
+        const unitCost = Number(row[indexes.cost]);
+        const stock = Number(row[indexes.quantity]);
+        if (!partId || !name || !Number.isFinite(unitCost) || unitCost < 0 || !Number.isInteger(stock) || stock < 0) {
+          throw new Error(`Invalid spare data on CSV row ${index + 2}. Check ID, name, cost, and quantity.`);
+        }
+        return { partId, name, machineType, unitCost, stock };
+      });
+      if (new Set(imported.map(part => part.partId.toLowerCase())).size !== imported.length) {
+        throw new Error('CSV contains duplicate Spare IDs.');
+      }
+      const latestParts = [...parts];
+      for (const row of imported) {
+        const existing = latestParts.find(part => part.partId.toLowerCase() === row.partId.toLowerCase());
+        if (existing) {
+          const updates = { name: row.name, machineType: row.machineType, unitCost: row.unitCost, stock: row.stock };
+          await fetch('/api/parts', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ partId: existing.partId, updates }) });
+          Object.assign(existing, updates);
+        } else {
+          const compatibleTypes = FACTORY_MACHINE_CATEGORIES.filter(type => type.toLowerCase() === row.machineType.toLowerCase());
+          const part: SparePart = {
+            partId: row.partId, sku: row.partId, name: row.name, category: 'General', machineType: row.machineType,
+            compat: row.machineType, stock: row.stock, minStock: 0, monthlyAllowance: 0, unitCost: row.unitCost,
+            unit: 'pcs', compatibleTypes,
+          };
+          const response = await fetch('/api/parts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(part) });
+          if (!response.ok) throw new Error(`Could not save spare ${row.partId}.`);
+          latestParts.push(part);
+        }
+      }
+      setParts([...latestParts]);
+      showToast(`Imported ${imported.length} spare parts.`, 'success');
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : 'Could not import spare parts.', 'error');
+    } finally {
+      setSpareImportBusy(false);
+    }
+  };
 
   // Fast Floor Issue Modal state
   const [isIssueModalOpen, setIsIssueModalOpen] = useState(false);
@@ -184,16 +270,8 @@ export default function InventoryPage() {
 
   // For Senior Electrician, ONLY show junior electricians
   const visibleMechanics = useMemo(() => {
-    if (currentRole === 'SENIOR_ELECTRICIAN') {
-      return activeStaffRoster.filter(
-        (m) => m.trade === 'ELECTRICIAN' && !textValue(m.role).toLowerCase().includes('senior')
-      );
-    }
-    if (currentRole === 'SENIOR_MECHANIC') {
-      return activeStaffRoster.filter((m) => m.trade === 'MECHANIC');
-    }
-    return activeStaffRoster;
-  }, [currentRole, activeStaffRoster]);
+    return mechanicStaffRoster;
+  }, [mechanicStaffRoster]);
 
   // Sync active selected mechanic
   useEffect(() => {
@@ -925,6 +1003,17 @@ export default function InventoryPage() {
 
         {/* Action Buttons: Stock Maintenance & Mechanic Indents */}
         <div className="flex items-center gap-2 flex-wrap">
+          {canImportSpares && (
+            <label className={`text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 cursor-pointer ${spareImportBusy ? 'opacity-50 pointer-events-none' : ''}`}>
+              <Upload className="w-4 h-4" />
+              <span>{spareImportBusy ? 'Importing…' : 'Import Spares CSV'}</span>
+              <input type="file" accept=".csv,text/csv" className="hidden" disabled={spareImportBusy} onChange={event => {
+                const file = event.currentTarget.files?.[0];
+                event.currentTarget.value = '';
+                if (file) void handleSpareImport(file);
+              }} />
+            </label>
+          )}
           <Link
             href="/dashboard/store-inbox"
             className="text-xs font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 shadow-xs cursor-pointer"
