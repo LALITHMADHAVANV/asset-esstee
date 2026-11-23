@@ -674,6 +674,17 @@ export function BulkQrPrintModal({
               
               {/* Left: Sticker Format Pill Buttons */}
               <div className="flex flex-wrap items-center gap-2">
+                <label className="relative flex items-center">
+                  <Search className="absolute left-2.5 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+                  <input
+                    type="search"
+                    value={searchQuery}
+                    onChange={(event) => setSearchQuery(event.target.value)}
+                    placeholder="Search assets…"
+                    aria-label="Search assets by ID, machine number, serial number, name, brand, or model"
+                    className="h-8 w-44 pl-8 pr-3 text-[11px] bg-white border border-slate-300 rounded-lg text-slate-800 placeholder:text-slate-400 shadow-2xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  />
+                </label>
                 <span className="text-[11px] font-bold text-slate-700">Print Format:</span>
                 
                 <div className="inline-flex items-center p-0.5 bg-slate-200 rounded-lg text-[11px] font-bold">
