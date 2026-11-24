@@ -74,6 +74,14 @@ interface SeniorMechanicDashboardProps {
   isLoading?: boolean;
 }
 
+function getActiveRepairMinutes(ticket: RepairTicket) {
+  if (ticket.status !== 'IN_PROGRESS') return 0;
+  const startMs = new Date(ticket.startedAt || ticket.reportedAt).getTime();
+  return Number.isFinite(startMs)
+    ? Math.max(0, Math.round((Date.now() - startMs) / 60000))
+    : 0;
+}
+
 export function SeniorMechanicDashboard({
   machines,
   repairs,
@@ -104,6 +112,12 @@ export function SeniorMechanicDashboard({
   const [isNewTicketModalOpen, setIsNewTicketModalOpen] = useState(false);
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [selectedTicketForAssign, setSelectedTicketForAssign] = useState<RepairTicket | null>(null);
+  const [selectedTicketToResolve, setSelectedTicketToResolve] = useState<RepairTicket | null>(null);
+  const [isResolveModalOpen, setIsResolveModalOpen] = useState(false);
+  const [isSubmittingResolve, setIsSubmittingResolve] = useState(false);
+  const [resolveDowntimeMinutes, setResolveDowntimeMinutes] = useState(1);
+  const [resolveIssuesIdentified, setResolveIssuesIdentified] = useState('');
+  const [resolveActionTaken, setResolveActionTaken] = useState('');
 
   // Form state for New Breakdown Ticket
   const [newMachineId, setNewMachineId] = useState('');
@@ -369,6 +383,50 @@ export function SeniorMechanicDashboard({
       showToast('Failed to assign ticket', 'error');
     } finally {
       setIsSubmittingAssign(false);
+    }
+  };
+
+  const handleOpenResolve = (ticket: RepairTicket) => {
+    setSelectedTicketToResolve(ticket);
+    setResolveDowntimeMinutes(
+      Math.max(1, (ticket.downtimeMinutes || 0) + getActiveRepairMinutes(ticket))
+    );
+    setResolveIssuesIdentified(ticket.issuesIdentified || ticket.faultDetails || '');
+    setResolveActionTaken(ticket.actionTaken || '');
+    setIsResolveModalOpen(true);
+  };
+
+  const handleResolveSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedTicketToResolve) return;
+    if (!resolveIssuesIdentified.trim() || !resolveActionTaken.trim()) {
+      showToast('Please record the root cause and corrective action taken', 'warning');
+      return;
+    }
+
+    setIsSubmittingResolve(true);
+    try {
+      await resolveRepairTicket(
+        selectedTicketToResolve.id,
+        resolveDowntimeMinutes,
+        resolveActionTaken.trim(),
+        user?.name || 'Senior Mechanic',
+        (selectedTicketToResolve.partsUsed || []).map(({ partId, quantity }) => ({ partId, quantity })),
+        {
+          issuesIdentified: resolveIssuesIdentified.trim(),
+          completedAt: new Date().toISOString(),
+        }
+      );
+      showToast(`Work order ${selectedTicketToResolve.id} resolved successfully.`, 'success');
+      setIsResolveModalOpen(false);
+      setSelectedTicketToResolve(null);
+      onRefresh();
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to resolve work order';
+      showToast(message, 'error');
+      console.error('Failed to resolve work order:', err);
+    } finally {
+      setIsSubmittingResolve(false);
     }
   };
 
@@ -855,6 +913,7 @@ export function SeniorMechanicDashboard({
                     {filteredTickets.map((t) => {
                       const isCritical = t.urgency === 'CRITICAL';
                       const isUnassigned = !t.attendedBy;
+                      const isClosed = t.status === 'COMPLETED' || t.status === 'REJECTED';
                       const isCompleted = t.status === 'COMPLETED';
 
                       return (
@@ -929,7 +988,7 @@ export function SeniorMechanicDashboard({
                           {/* Actions */}
                           <td className="py-2 px-3 text-right border-b border-slate-200">
                             <div className="flex items-center justify-end gap-1.5">
-                              {!isCompleted && (
+                              {!isClosed && (
                                 <>
                                   <button
                                     onClick={() => {
@@ -952,6 +1011,13 @@ export function SeniorMechanicDashboard({
                                     className="px-2 py-1 rounded text-[11px] font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 transition cursor-pointer"
                                   >
                                     {t.attendedBy ? 'Reassign' : 'Assign'}
+                                  </button>
+                                  <button
+                                    onClick={() => handleOpenResolve(t)}
+                                    className="px-2 py-1 rounded text-[11px] font-semibold bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 transition cursor-pointer flex items-center gap-1"
+                                  >
+                                    <CheckCircle2 className="w-3 h-3" />
+                                    <span>Resolve</span>
                                   </button>
                                 </>
                               )}
@@ -1584,6 +1650,90 @@ export function SeniorMechanicDashboard({
                   className="px-5 py-2.5 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white transition shadow-lg shadow-indigo-600/30 cursor-pointer disabled:opacity-50"
                 >
                   {isSubmittingAssign ? 'Assigning...' : 'Confirm Assignment'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {isResolveModalOpen && selectedTicketToResolve && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[92vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <span className="p-2 rounded-xl bg-emerald-100 text-emerald-700">
+                  <CheckCircle2 className="w-5 h-5" />
+                </span>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900">Resolve Work Order</h3>
+                  <p className="text-xs text-slate-500 font-mono">
+                    {selectedTicketToResolve.id} • {selectedTicketToResolve.machineId}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsResolveModalOpen(false);
+                  setSelectedTicketToResolve(null);
+                }}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer"
+                aria-label="Close resolve work order"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleResolveSubmit} className="space-y-4 text-xs">
+              <div className="flex items-center justify-between p-3 rounded-xl bg-emerald-50 border border-emerald-200">
+                <span className="font-semibold text-emerald-900">Recorded downtime</span>
+                <span className="font-mono font-bold text-emerald-800">
+                  {resolveDowntimeMinutes} {resolveDowntimeMinutes === 1 ? 'min' : 'mins'}
+                </span>
+              </div>
+              <div>
+                <label className="block font-bold text-slate-700 mb-1.5">
+                  Root cause / issue identified *
+                </label>
+                <textarea
+                  value={resolveIssuesIdentified}
+                  onChange={(e) => setResolveIssuesIdentified(e.target.value)}
+                  rows={3}
+                  required
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+              <div>
+                <label className="block font-bold text-slate-700 mb-1.5">
+                  Corrective action taken *
+                </label>
+                <textarea
+                  value={resolveActionTaken}
+                  onChange={(e) => setResolveActionTaken(e.target.value)}
+                  rows={3}
+                  required
+                  placeholder="Describe the repair and verification performed"
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsResolveModalOpen(false);
+                    setSelectedTicketToResolve(null);
+                  }}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingResolve}
+                  className="px-5 py-2.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white disabled:opacity-50"
+                >
+                  {isSubmittingResolve ? 'Resolving...' : 'Confirm Resolution'}
                 </button>
               </div>
             </form>
