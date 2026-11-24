@@ -246,13 +246,17 @@ export function PrintableAssetDocumentModal({
                   </div>
                 </div>
 
-                {/* Line 2: unique id */}
+                {/* Line 2: asset ID */}
                 <div className="pt-2 border-t border-slate-200 print:border-black print:pt-[2mm]">
-                  <div className="text-[9px] sm:text-[10px] print:text-[6.5pt] font-extrabold uppercase tracking-widest text-slate-400 mb-0.5">
-                    Unique ID
-                  </div>
                   <div className="text-xl sm:text-2xl print:text-[15pt] font-black text-slate-950 font-mono tracking-wide truncate leading-tight">
                     {asset.id}
+                  </div>
+                </div>
+
+                {/* Line 3: serial number */}
+                <div>
+                  <div className="text-xs sm:text-sm print:text-[8.5pt] font-bold text-slate-900 font-mono truncate">
+                    {asset.serialNo || asset.serialNumber || asset.stationNo || '—'}
                   </div>
                 </div>
               </div>
@@ -531,7 +535,7 @@ export function PrintableAssetDocumentModal({
                         />
                       </div>
 
-                      {/* Right metadata (Only first two lines) */}
+                      {/* Right metadata */}
                       <div className="flex flex-col justify-center text-left min-w-0 flex-1 space-y-2 print:space-y-[1.5mm]">
                         <div>
                           <div className="text-[8px] print:text-[5.5pt] font-extrabold uppercase tracking-widest text-slate-400">
@@ -547,11 +551,13 @@ export function PrintableAssetDocumentModal({
                         </div>
 
                         <div className="pt-1 border-t border-slate-200 print:border-black print:pt-[1mm]">
-                          <div className="text-[8px] print:text-[5.5pt] font-extrabold uppercase tracking-widest text-slate-400">
-                            Unique ID
-                          </div>
                           <div className="font-mono font-black text-slate-950 text-sm sm:text-base print:text-[11pt] tracking-tight truncate leading-tight">
                             {m.id}
+                          </div>
+                        </div>
+                        <div>
+                          <div className="font-mono font-bold text-slate-900 text-[10px] sm:text-xs print:text-[7.5pt] truncate">
+                            {m.serialNo || m.serialNumber || m.stationNo || '—'}
                           </div>
                         </div>
                       </div>

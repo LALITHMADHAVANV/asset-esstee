@@ -259,7 +259,7 @@ export function BulkQrPrintModal({
   // Render individual sticker based on selected format
   const renderSticker = (asset: BulkQrAsset, idx: number, isPrintPortal: boolean = false) => {
     const qrValue = `${assetScanUrl(origin, asset.id)}?brand=${encodeURIComponent(asset.brand || '')}&model=${encodeURIComponent(asset.model || '')}&unit=${encodeURIComponent(asset.unit || '')}&company=${encodeURIComponent(asset.company || effectiveCompanyName)}`;
-    const displayId = asset.mcNo && asset.mcNo !== '-' ? asset.mcNo : asset.id;
+    const displayId = asset.id;
     const serialLabel = asset.serialNo || asset.serialNumber || '';
     const lineLabel = asset.currentLine || asset.location || asset.unit || '';
 
@@ -339,7 +339,7 @@ export function BulkQrPrintModal({
             />
           </div>
 
-          {/* Machine Number / Serial Number */}
+          {/* Asset Identity */}
           <div className="mt-1.5 text-center w-full px-1">
             <div className="font-mono font-black text-xs sm:text-sm print:text-[9.5pt] text-slate-950 tracking-wider truncate">
               {displayId}
@@ -399,7 +399,7 @@ export function BulkQrPrintModal({
           </div>
           {serialLabel ? (
             <div className="text-[8.5px] print:text-[6pt] font-semibold text-indigo-700 print:text-black truncate font-mono">
-              SN: {serialLabel}
+              {serialLabel}
             </div>
           ) : lineLabel ? (
             <div className="text-[8.5px] print:text-[6pt] font-semibold text-indigo-700 print:text-black truncate">
@@ -697,7 +697,7 @@ export function BulkQrPrintModal({
                         : 'text-slate-700 hover:text-slate-900'
                     }`}
                   >
-                    QR Code + S/N
+                    QR + Asset + Serial
                   </button>
 
                   <button
@@ -805,7 +805,7 @@ export function BulkQrPrintModal({
                 Previewing <span className="text-indigo-600 font-extrabold">{itemsToPrint.length}</span> QR codes (Page details will be 100% hidden when printing)
               </span>
               <span className="text-slate-400">
-                Format: {stickerFormat === 'QR_ONLY' ? 'QR Code + S/N' : stickerFormat === 'PURE_QR' ? 'Pure QR Only' : 'QR + Details'}
+                Format: {stickerFormat === 'QR_ONLY' ? 'QR + Asset + Serial' : stickerFormat === 'PURE_QR' ? 'Pure QR Only' : 'QR + Details'}
               </span>
             </div>
 
