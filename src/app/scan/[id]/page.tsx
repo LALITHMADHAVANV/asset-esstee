@@ -570,8 +570,11 @@ function AuthenticatedScanContent() {
                       <option value="Pedal problem">
                         Pedal problem
                       </option>
-                      <option value="M/c Bord problem Iot problem">
-                        M/c Bord problem Iot problem
+                      <option value="M/c Bord problem">
+                        M/c Bord problem
+                      </option>
+                      <option value=" Iot problem">
+                        Iot problem
                       </option>
                     </>
                   )}
