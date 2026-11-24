@@ -3,6 +3,7 @@
 import { textValue } from '@/lib/textValue';
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import ExcelJS from 'exceljs';
 import Link from 'next/link';
 import {
   Boxes,
@@ -139,8 +140,23 @@ export default function InventoryPage() {
   const handleSpareImport = async (file: File) => {
     setSpareImportBusy(true);
     try {
-      const text = await file.text();
-      const lines = text.split(/\r?\n/).filter(line => line.trim());
+      if (!file.size || file.size > 5 * 1024 * 1024) throw new Error('Choose a non-empty Excel or CSV file up to 5 MB.');
+      const workbook = new ExcelJS.Workbook();
+      if (/\.xlsx$/i.test(file.name)) await workbook.xlsx.load(await file.arrayBuffer());
+      else if (/\.csv$/i.test(file.name)) await workbook.csv.read(file);
+      else throw new Error('Supported files: Excel (.xlsx) and CSV (.csv).');
+      const sheet = workbook.worksheets[0];
+      if (!sheet || sheet.actualRowCount < 2) throw new Error('Include a header row and at least one spare row.');
+      const cellText = (value: ExcelJS.CellValue): string => {
+        if (value == null) return '';
+        if (typeof value === 'object') {
+          if ('formula' in value || 'sharedFormula' in value) throw new Error('Replace formulas with values before importing.');
+          if ('richText' in value) return value.richText.map(part => part.text).join('').trim();
+          if ('text' in value) return String(value.text).trim();
+          return '';
+        }
+        return String(value).trim();
+      };
       const parseCsvLine = (line: string) => {
         const values: string[] = [];
         let value = '', quoted = false;
@@ -154,39 +170,50 @@ export default function InventoryPage() {
         values.push(value.trim());
         return values;
       };
-      if (lines.length < 2) throw new Error('CSV needs a header and at least one spare row.');
-      const headers = parseCsvLine(lines[0]).map(header => header.toLowerCase().replace(/[^a-z]/g, ''));
+      const headerRow = sheet.getRow(1);
+      const headers = Array.from({ length: headerRow.cellCount }, (_, index) => cellText(headerRow.getCell(index + 1).value).toLowerCase().replace(/[^a-z]/g, ''));
       const indexes = {
         id: headers.findIndex(h => ['spareid', 'partid', 'id'].includes(h)),
         name: headers.findIndex(h => ['sparename', 'name'].includes(h)),
         machineType: headers.findIndex(h => ['machinetype', 'type'].includes(h)),
         cost: headers.findIndex(h => ['cost', 'unitcost', 'price'].includes(h)),
         quantity: headers.findIndex(h => ['quantity', 'qty', 'stock'].includes(h)),
+        totalCost: headers.findIndex(h => ['totalcost', 'totalvalue', 'stockvalue'].includes(h)),
       };
-      if (Object.values(indexes).some(index => index < 0)) {
+      if ([indexes.id, indexes.name, indexes.machineType, indexes.cost, indexes.quantity].some(index => index < 0)) {
         throw new Error('Required headers: Spare ID, Spare Name, Machine Type, Cost, Quantity.');
       }
-      const imported = lines.slice(1).map((line, index) => {
-        const row = parseCsvLine(line);
+      const imported: Array<{ partId: string; name: string; machineType: string; unitCost: number; stock: number }> = [];
+      if (sheet.rowCount > 501) throw new Error('Import at most 500 spare rows at a time.');
+      for (let rowNumber = 2; rowNumber <= sheet.rowCount; rowNumber++) {
+        const excelRow = sheet.getRow(rowNumber);
+        if (!excelRow.hasValues) continue;
+        const row = Array.from({ length: headerRow.cellCount }, (_, index) => cellText(excelRow.getCell(index + 1).value));
         const partId = row[indexes.id]?.trim();
         const name = row[indexes.name]?.trim();
         const machineType = row[indexes.machineType]?.trim() || 'GENERAL';
         const unitCost = Number(row[indexes.cost]);
         const stock = Number(row[indexes.quantity]);
         if (!partId || !name || !Number.isFinite(unitCost) || unitCost < 0 || !Number.isInteger(stock) || stock < 0) {
-          throw new Error(`Invalid spare data on CSV row ${index + 2}. Check ID, name, cost, and quantity.`);
+          throw new Error(`Invalid spare data on row ${rowNumber}. Check ID, name, cost, and quantity.`);
         }
-        return { partId, name, machineType, unitCost, stock };
-      });
+        const totalCost = unitCost * stock;
+        if (indexes.totalCost >= 0 && row[indexes.totalCost] && Number(row[indexes.totalCost]) !== totalCost) {
+          throw new Error(`Total Cost does not match Cost × Quantity on row ${rowNumber}.`);
+        }
+        imported.push({ partId, name, machineType, unitCost, stock });
+      }
+      if (!imported.length) throw new Error('Include at least one spare stock row.');
       if (new Set(imported.map(part => part.partId.toLowerCase())).size !== imported.length) {
-        throw new Error('CSV contains duplicate Spare IDs.');
+        throw new Error('File contains duplicate Spare IDs.');
       }
       const latestParts = [...parts];
       for (const row of imported) {
         const existing = latestParts.find(part => part.partId.toLowerCase() === row.partId.toLowerCase());
         if (existing) {
           const updates = { name: row.name, machineType: row.machineType, unitCost: row.unitCost, stock: row.stock };
-          await fetch('/api/parts', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ partId: existing.partId, updates }) });
+          const response = await fetch('/api/parts', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ partId: existing.partId, updates }) });
+          if (!response.ok) throw new Error(`Could not update spare ${row.partId}.`);
           Object.assign(existing, updates);
         } else {
           const compatibleTypes = FACTORY_MACHINE_CATEGORIES.filter(type => type.toLowerCase() === row.machineType.toLowerCase());
@@ -201,12 +228,30 @@ export default function InventoryPage() {
         }
       }
       setParts([...latestParts]);
-      showToast(`Imported ${imported.length} spare parts.`, 'success');
+      showToast(`Imported ${imported.length} spare parts. Total cost is calculated from cost × quantity.`, 'success');
     } catch (error) {
       showToast(error instanceof Error ? error.message : 'Could not import spare parts.', 'error');
     } finally {
       setSpareImportBusy(false);
     }
+  };
+
+  const downloadSpareTemplate = async () => {
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet('Spare Stock');
+    sheet.addRow(['Spare ID', 'Spare Name', 'Machine Type', 'Cost', 'Quantity', 'Total Cost']);
+    sheet.addRow(['SP-EXAMPLE-001', 'Example spare', 'GENERAL', 250, 10, 2500]);
+    sheet.views = [{ state: 'frozen', ySplit: 1 }];
+    sheet.columns = [{ width: 20 }, { width: 30 }, { width: 22 }, { width: 14 }, { width: 14 }, { width: 18 }];
+    sheet.getRow(1).font = { bold: true };
+    sheet.getRow(1).eachCell(cell => { cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE0E7FF' } }; });
+    const buffer = await workbook.xlsx.writeBuffer();
+    const url = URL.createObjectURL(new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = 'spare-stock-template.xlsx';
+    anchor.click();
+    URL.revokeObjectURL(url);
   };
 
   // Fast Floor Issue Modal state
@@ -1003,17 +1048,18 @@ export default function InventoryPage() {
 
         {/* Action Buttons: Stock Maintenance & Mechanic Indents */}
         <div className="flex items-center gap-2 flex-wrap">
-          {canImportSpares && (
+          <>
             <label className={`text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 cursor-pointer ${spareImportBusy ? 'opacity-50 pointer-events-none' : ''}`}>
               <Upload className="w-4 h-4" />
-              <span>{spareImportBusy ? 'Importing…' : 'Import Spares CSV'}</span>
-              <input type="file" accept=".csv,text/csv" className="hidden" disabled={spareImportBusy} onChange={event => {
+              <span>{spareImportBusy ? 'Importing…' : 'Import Spares'}</span>
+              <input type="file" accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv" className="hidden" disabled={spareImportBusy} onChange={event => {
                 const file = event.currentTarget.files?.[0];
                 event.currentTarget.value = '';
                 if (file) void handleSpareImport(file);
               }} />
             </label>
-          )}
+          <button type="button" onClick={() => void downloadSpareTemplate()} className="text-xs font-bold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 px-3.5 py-2 rounded-xl transition flex items-center gap-1.5"><Download className="w-4 h-4" />Sample Excel</button>
+          </>
           <Link
             href="/dashboard/store-inbox"
             className="text-xs font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 shadow-xs cursor-pointer"
