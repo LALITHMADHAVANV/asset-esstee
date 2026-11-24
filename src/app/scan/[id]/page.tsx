@@ -35,6 +35,7 @@ import { useAuth } from '@/context/AuthContext';
 import { AssetHistoryModal } from '@/components/scan/AssetHistoryModal';
 import { formatAssetLocation } from '@/lib/formatters';
 import { matchesUnit } from '@/lib/constants/units';
+import { normalizeRole } from '@/lib/constants/roles';
 
 function MobileScanContent() {
   const { user, isLoading } = useAuth();
@@ -124,9 +125,11 @@ function AuthenticatedScanContent() {
       .then((r) => r.json())
       .then((data) => {
         if (data.users && Array.isArray(data.users)) {
-          const techs = data.users.filter((u: any) =>
-            ['MECHANIC', 'ELECTRICIAN', 'SENIOR_MECHANIC', 'SENIOR_ELECTRICIAN'].includes(textValue((u.role || '')).toUpperCase())
-          );
+          const technicianRoles = ['MECHANIC', 'ELECTRICIAN', 'SENIOR_MECHANIC', 'SENIOR_ELECTRICIAN'];
+          const techs = data.users.filter((u: any) => {
+            const rawRole = textValue(u.role).trim();
+            return rawRole && technicianRoles.includes(normalizeRole(rawRole));
+          });
           setRegisteredTechs(techs);
         }
       })
@@ -549,8 +552,26 @@ function AuthenticatedScanContent() {
                       <option value="Bobbin Winder / Cutter Jam">
                         Under-bed Thread Trimmer (UTT) / Cutter Jam
                       </option>
-                      <option value="Severe Noise & Vibration">
-                        Severe Noise &amp; Bearing Vibration
+                      <option value="Power problem">
+                        Power problem
+                      </option>
+                      <option value="Thread cuting">
+                        Thread cuting
+                      </option>
+                      <option value="Air problem">
+                        Air problem
+                      </option>
+                      <option value="Knife problem">
+                        Knife problem
+                      </option>
+                      <option value="Stitching problem">
+                        Stitching problem
+                      </option>
+                      <option value="Pedal problem">
+                        Pedal problem
+                      </option>
+                      <option value="M/c Bord problem Iot problem">
+                        M/c Bord problem Iot problem
                       </option>
                     </>
                   )}
