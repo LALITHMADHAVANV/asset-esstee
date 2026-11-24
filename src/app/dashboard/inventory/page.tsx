@@ -142,11 +142,34 @@ export default function InventoryPage() {
     try {
       if (!file.size || file.size > 5 * 1024 * 1024) throw new Error('Choose a non-empty Excel or CSV file up to 5 MB.');
       const workbook = new ExcelJS.Workbook();
-      if (/\.xlsx$/i.test(file.name)) await workbook.xlsx.load(await file.arrayBuffer());
-      else if (/\.csv$/i.test(file.name)) await workbook.csv.read(file);
-      else throw new Error('Supported files: Excel (.xlsx) and CSV (.csv).');
-      const sheet = workbook.worksheets[0];
-      if (!sheet || sheet.actualRowCount < 2) throw new Error('Include a header row and at least one spare row.');
+      let sheet: ExcelJS.Worksheet;
+      if (/\.xlsx$/i.test(file.name)) {
+        await workbook.xlsx.load(await file.arrayBuffer());
+        const firstSheet = workbook.worksheets[0];
+        if (!firstSheet) throw new Error('Include a header row and at least one spare row.');
+        sheet = firstSheet;
+      } else if (/\.csv$/i.test(file.name)) {
+        sheet = workbook.addWorksheet('Spare Stock');
+        const csv = await file.text();
+        const rows: string[][] = [];
+        let row: string[] = [], value = '', quoted = false;
+        for (let i = 0; i < csv.length; i++) {
+          const char = csv[i];
+          if (char === '"' && csv[i + 1] === '"' && quoted) { value += '"'; i++; }
+          else if (char === '"') quoted = !quoted;
+          else if (char === ',' && !quoted) { row.push(value.trim()); value = ''; }
+          else if ((char === '\n' || char === '\r') && !quoted) {
+            if (char === '\r' && csv[i + 1] === '\n') i++;
+            row.push(value.trim());
+            if (row.some(cell => cell)) rows.push(row);
+            row = []; value = '';
+          } else value += char;
+        }
+        row.push(value.trim());
+        if (row.some(cell => cell)) rows.push(row);
+        rows.forEach(values => sheet.addRow(values));
+      } else throw new Error('Supported files: Excel (.xlsx) and CSV (.csv).');
+      if (sheet.actualRowCount < 2) throw new Error('Include a header row and at least one spare row.');
       const cellText = (value: ExcelJS.CellValue): string => {
         if (value == null) return '';
         if (typeof value === 'object') {
