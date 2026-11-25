@@ -65,6 +65,7 @@ export function canAccessRoute(rawRole: string | null | undefined, pathname: str
       '/dashboard/history',
       '/dashboard/kpi',
       '/dashboard/floor-tracker',
+      '/dashboard/quotation-approvals',
     ];
     return ceoAllowed.some((r) => cleanPath === r || cleanPath.startsWith(`${r}/`));
   }

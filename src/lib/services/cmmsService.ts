@@ -600,7 +600,7 @@ export async function createBreakdownTicket(
 export async function startRepairTicket(
   ticketId: string,
   attendedBy?: string,
-  partsUsedInputs: Array<{ partId: string; quantity: number }> = []
+  partsUsedInputs: Array<{ partId: string; quantity: number; name?: string; sku?: string }> = []
 ): Promise<void> {
   const currentRepairs = getLocal<RepairTicket[]>(STORAGE_KEYS.REPAIRS, []);
   const existing = currentRepairs.find((ticket) => ticket.id === ticketId || (ticket as any).ticketId === ticketId);
@@ -616,8 +616,8 @@ export async function startRepairTicket(
       const part = currentParts.find((p) => p.partId === pu.partId);
       return {
         partId: pu.partId,
-        sku: part?.sku || pu.partId,
-        name: part?.name || 'Standard Spare Part',
+        sku: part?.sku || pu.sku || pu.partId,
+        name: part?.name || pu.name || 'Standard Spare Part',
         quantity: pu.quantity,
       };
     });
@@ -813,7 +813,7 @@ export async function resolveRepairTicket(
   downtimeMinutes: number,
   actionTaken: string,
   attendedBy: string,
-  partsUsedInputs: Array<{ partId: string; quantity: number }> = [],
+  partsUsedInputs: Array<{ partId: string; quantity: number; name?: string; sku?: string }> = [],
   details?: {
     repairCost?: number;
     laborCost?: number;
@@ -846,7 +846,12 @@ export async function resolveRepairTicket(
   // If partsUsedInputs was provided, use it; otherwise, use parts already reserved on the ticket from the start step!
   const effectivePartsInputs = (partsUsedInputs && partsUsedInputs.length > 0)
     ? partsUsedInputs
-    : (ticket.partsUsed || []).map((p) => ({ partId: p.partId, quantity: p.quantity }));
+    : (ticket.partsUsed || []).map((p) => ({
+        partId: p.partId,
+        quantity: p.quantity,
+        name: p.name,
+        sku: p.sku,
+      }));
 
   const resolvedPartsUsed = effectivePartsInputs
     .filter((pu) => pu.partId && pu.quantity > 0)
@@ -854,8 +859,8 @@ export async function resolveRepairTicket(
       const part = currentParts.find((p) => p.partId === pu.partId);
       return {
         partId: pu.partId,
-        sku: part?.sku || pu.partId,
-        name: part?.name || 'Standard Spare Part',
+        sku: part?.sku || pu.sku || pu.partId,
+        name: part?.name || pu.name || 'Standard Spare Part',
         quantity: pu.quantity,
       };
     });

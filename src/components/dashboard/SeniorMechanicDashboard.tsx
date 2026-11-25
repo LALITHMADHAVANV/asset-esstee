@@ -39,6 +39,9 @@ import {
   SlidersHorizontal,
   ClipboardList,
   XCircle,
+  Package,
+  Play,
+  Pause,
 } from 'lucide-react';
 import {
   Machine,
@@ -55,7 +58,10 @@ import {
   resolveRepairTicket,
   completePPMTask,
   rejectRepairTicket,
+  startRepairTicket,
+  stopRepairTicket,
 } from '@/lib/services/cmmsService';
+import { filterSparesForMachine } from '@/lib/utils/spareMapping';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import { matchesUnit } from '@/lib/constants/units';
@@ -81,6 +87,8 @@ function getActiveRepairMinutes(ticket: RepairTicket) {
     ? Math.max(0, Math.round((Date.now() - startMs) / 60000))
     : 0;
 }
+
+const CUSTOM_SPARE_PART_ID = '__CUSTOM_SPARE__';
 
 export function SeniorMechanicDashboard({
   machines,
@@ -118,6 +126,14 @@ export function SeniorMechanicDashboard({
   const [resolveDowntimeMinutes, setResolveDowntimeMinutes] = useState(1);
   const [resolveIssuesIdentified, setResolveIssuesIdentified] = useState('');
   const [resolveActionTaken, setResolveActionTaken] = useState('');
+  const [isSpareModalOpen, setIsSpareModalOpen] = useState(false);
+  const [ticketToStart, setTicketToStart] = useState<RepairTicket | null>(null);
+  const [startSpareParts, setStartSpareParts] = useState<
+    { partId: string; qty: number; customName: string }[]
+  >([]);
+  const [startShowAllSpares, setStartShowAllSpares] = useState(false);
+  const [isStartingWork, setIsStartingWork] = useState(false);
+  const [stoppingTicketId, setStoppingTicketId] = useState<string | null>(null);
 
   // Form state for New Breakdown Ticket
   const [newMachineId, setNewMachineId] = useState('');
@@ -137,6 +153,18 @@ export function SeniorMechanicDashboard({
   // Form state for Quick Assign
   const [assigneeName, setAssigneeName] = useState('');
   const [isSubmittingAssign, setIsSubmittingAssign] = useState(false);
+
+  const ticketToStartMachine = useMemo(
+    () => machines.find((machine) => machine.id === ticketToStart?.machineId) || null,
+    [machines, ticketToStart]
+  );
+  const startCompatibleSpares = useMemo(() => {
+    if (!ticketToStart || startShowAllSpares) return parts;
+    return filterSparesForMachine(
+      parts,
+      ticketToStartMachine || ticketToStart.machineType || ticketToStart.machineId
+    );
+  }, [parts, startShowAllSpares, ticketToStart, ticketToStartMachine]);
 
   // Widget Drilldown Drawer State
   const [drillDownState, setDrillDownState] = useState<{
@@ -396,6 +424,92 @@ export function SeniorMechanicDashboard({
     setIsResolveModalOpen(true);
   };
 
+  const handleStartRepair = async (ticket: RepairTicket) => {
+    if (isStartingWork) return;
+    if (ticket.downtimeMinutes > 0) {
+      setIsStartingWork(true);
+      try {
+        await startRepairTicket(ticket.id, user?.name || 'Senior Mechanic');
+        showToast(`Work resumed on ${ticket.id}. Previous work time retained.`, 'success');
+        onRefresh();
+      } catch {
+        showToast('Failed to resume work order', 'error');
+      } finally {
+        setIsStartingWork(false);
+      }
+      return;
+    }
+
+    setTicketToStart(ticket);
+    setStartSpareParts([{ partId: '', qty: 1, customName: '' }]);
+    setStartShowAllSpares(false);
+    setIsSpareModalOpen(true);
+  };
+
+  const handleConfirmStartWithSpares = async () => {
+    if (!ticketToStart) return;
+    const invalidCustomSpare = startSpareParts.some(
+      (row) => row.partId === CUSTOM_SPARE_PART_ID && !row.customName.trim()
+    );
+    if (invalidCustomSpare) {
+      showToast('Enter a name for each custom spare', 'warning');
+      return;
+    }
+
+    setIsStartingWork(true);
+    try {
+      const validSpares = startSpareParts
+        .filter((row) => row.partId && row.qty > 0)
+        .map((row) => row.partId === CUSTOM_SPARE_PART_ID
+          ? {
+              partId: `CUSTOM:${row.customName.trim()}`,
+              quantity: row.qty,
+              name: row.customName.trim(),
+              sku: 'CUSTOM',
+            }
+          : { partId: row.partId, quantity: row.qty });
+
+      await startRepairTicket(ticketToStart.id, user?.name || 'Senior Mechanic', validSpares);
+      const spareSummary = validSpares
+        .map((spare) => {
+          const part = parts.find((item) => item.partId === spare.partId);
+          return `${'name' in spare ? spare.name : part?.name || spare.partId} × ${spare.quantity}`;
+        })
+        .join(', ');
+      showToast(
+        spareSummary
+          ? `Work started on ${ticketToStart.id}. Spares recorded: ${spareSummary}`
+          : `Work order ${ticketToStart.id} started. No spare parts used.`,
+        'success'
+      );
+      setIsSpareModalOpen(false);
+      setTicketToStart(null);
+      onRefresh();
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to start repair ticket';
+      showToast(message, 'error');
+      console.error('Failed to start repair ticket:', err);
+    } finally {
+      setIsStartingWork(false);
+    }
+  };
+
+  const handleStopRepair = async (ticket: RepairTicket) => {
+    if (stoppingTicketId) return;
+    setStoppingTicketId(ticket.id);
+    try {
+      await stopRepairTicket(ticket.id);
+      showToast(`Work stopped on ${ticket.id}. Downtime recorded.`, 'info');
+      onRefresh();
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to stop work order';
+      showToast(message, 'error');
+      console.error('Failed to stop work order:', err);
+    } finally {
+      setStoppingTicketId(null);
+    }
+  };
+
   const handleResolveSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedTicketToResolve) return;
@@ -411,7 +525,12 @@ export function SeniorMechanicDashboard({
         resolveDowntimeMinutes,
         resolveActionTaken.trim(),
         user?.name || 'Senior Mechanic',
-        (selectedTicketToResolve.partsUsed || []).map(({ partId, quantity }) => ({ partId, quantity })),
+        (selectedTicketToResolve.partsUsed || []).map(({ partId, quantity, name, sku }) => ({
+          partId,
+          quantity,
+          name,
+          sku,
+        })),
         {
           issuesIdentified: resolveIssuesIdentified.trim(),
           completedAt: new Date().toISOString(),
@@ -798,7 +917,10 @@ export function SeniorMechanicDashboard({
         role={role || (isElectrician ? 'SENIOR_ELECTRICIAN' : 'SENIOR_MECHANIC')}
         compact={true}
         hideAttendance={true}
-        onOpenResolve={(t) => {
+        onOpenResolve={handleOpenResolve}
+        onStartRepair={handleStartRepair}
+        onStopRepair={handleStopRepair}
+        onReassignRepair={(t) => {
           setSelectedTicketForAssign(t);
           setIsAssignModalOpen(true);
         }}
@@ -1013,11 +1135,26 @@ export function SeniorMechanicDashboard({
                                     {t.attendedBy ? 'Reassign' : 'Assign'}
                                   </button>
                                   <button
+                                    onClick={() => t.status === 'IN_PROGRESS'
+                                      ? handleStopRepair(t)
+                                      : handleStartRepair(t)}
+                                    disabled={isStartingWork || stoppingTicketId === t.id}
+                                    className={`px-2 py-1 rounded text-[11px] font-semibold border transition cursor-pointer disabled:opacity-50 flex items-center gap-1 ${
+                                      t.status === 'IN_PROGRESS'
+                                        ? 'bg-amber-50 hover:bg-amber-100 text-amber-800 border-amber-200'
+                                        : 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-200'
+                                    }`}
+                                  >
+                                    {t.status === 'IN_PROGRESS'
+                                      ? <><Pause className="w-3 h-3" /><span>{stoppingTicketId === t.id ? 'Stopping...' : 'Stop Work'}</span></>
+                                      : <><Play className="w-3 h-3" /><span>{isStartingWork ? 'Starting...' : 'Start Work'}</span></>}
+                                  </button>
+                                  <button
                                     onClick={() => handleOpenResolve(t)}
                                     className="px-2 py-1 rounded text-[11px] font-semibold bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 transition cursor-pointer flex items-center gap-1"
                                   >
                                     <CheckCircle2 className="w-3 h-3" />
-                                    <span>Resolve</span>
+                                    <span>Complete Repair</span>
                                   </button>
                                 </>
                               )}
@@ -1576,6 +1713,159 @@ export function SeniorMechanicDashboard({
         </div>
       )}
 
+      {isSpareModalOpen && ticketToStart && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2.5">
+                <span className="p-2 rounded-xl bg-indigo-100 text-indigo-700">
+                  <Package className="w-5 h-5" />
+                </span>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900">Select Spares Before Starting</h3>
+                  <p className="text-xs text-slate-500 font-mono">
+                    {ticketToStart.id} · {ticketToStart.machineId} · {ticketToStart.line || 'Line 01'}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsSpareModalOpen(false)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer"
+                aria-label="Close spare selection"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-3 bg-amber-50 border border-amber-200 rounded-2xl text-xs">
+              <div className="font-bold text-amber-900">Fault: {ticketToStart.faultCategory}</div>
+              <div className="text-amber-700 mt-0.5">
+                {ticketToStart.faultDetails || 'Breakdown reported on floor'}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                  <Package className="w-3.5 h-3.5 text-indigo-600" />
+                  <span>Spares to Use (optional)</span>
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setStartShowAllSpares((showAll) => !showAll)}
+                  className="text-[10px] text-indigo-600 hover:underline font-semibold cursor-pointer"
+                >
+                  {startShowAllSpares
+                    ? `Show compatible (${startCompatibleSpares.length})`
+                    : `Show all (${parts.length})`}
+                </button>
+              </div>
+
+              {startSpareParts.map((row, index) => (
+                <div key={index} className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={row.partId}
+                      onChange={(event) => {
+                        const partId = event.target.value;
+                        setStartSpareParts((previous) => previous.map((item, rowIndex) =>
+                          rowIndex === index
+                            ? { ...item, partId, customName: partId === CUSTOM_SPARE_PART_ID ? item.customName : '' }
+                            : item
+                        ));
+                      }}
+                      className="flex-1 px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+                    >
+                      <option value="">-- No spare part --</option>
+                      {startCompatibleSpares.map((part) => (
+                        <option key={part.partId} value={part.partId}>
+                          {part.name} ({part.sku}) — ₹{part.unitCost} · Stock: {part.stock}
+                        </option>
+                      ))}
+                      <option value={CUSTOM_SPARE_PART_ID}>Custom spare (not in inventory)</option>
+                    </select>
+                    <input
+                      type="number"
+                      min={1}
+                      max={99}
+                      value={row.qty}
+                      onChange={(event) => setStartSpareParts((previous) => previous.map((item, rowIndex) =>
+                        rowIndex === index
+                          ? { ...item, qty: Math.max(1, Number.parseInt(event.target.value, 10) || 1) }
+                          : item
+                      ))}
+                      disabled={!row.partId}
+                      className="w-16 px-2 py-1.5 bg-white border border-slate-300 rounded-xl text-xs font-mono font-bold text-center disabled:opacity-40"
+                      aria-label={`Quantity for spare ${index + 1}`}
+                    />
+                    {startSpareParts.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => setStartSpareParts((previous) =>
+                          previous.filter((_, rowIndex) => rowIndex !== index)
+                        )}
+                        className="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-xl transition cursor-pointer"
+                        aria-label={`Remove spare ${index + 1}`}
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+                  {row.partId === CUSTOM_SPARE_PART_ID && (
+                    <input
+                      type="text"
+                      value={row.customName}
+                      onChange={(event) => setStartSpareParts((previous) => previous.map((item, rowIndex) =>
+                        rowIndex === index ? { ...item, customName: event.target.value } : item
+                      ))}
+                      placeholder="Enter custom spare name"
+                      required
+                      className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  )}
+                </div>
+              ))}
+
+              <button
+                type="button"
+                onClick={() => setStartSpareParts((previous) => [
+                  ...previous,
+                  { partId: '', qty: 1, customName: '' },
+                ])}
+                className="flex items-center gap-1.5 text-xs font-semibold text-indigo-600 hover:text-indigo-800 cursor-pointer hover:underline"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Add another spare</span>
+              </button>
+            </div>
+
+            <p className="text-[10px] text-slate-500 bg-slate-50 rounded-xl p-2.5 border border-slate-200">
+              Custom spares are recorded on the breakdown ticket and do not change inventory stock.
+            </p>
+
+            <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
+              <button
+                type="button"
+                onClick={() => setIsSpareModalOpen(false)}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isStartingWork}
+                onClick={handleConfirmStartWithSpares}
+                className="px-5 py-2.5 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white transition shadow-lg shadow-indigo-600/30 cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+              >
+                <Play className="w-4 h-4 fill-white" />
+                <span>{isStartingWork ? 'Starting Work...' : 'Confirm & Start Work'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ─── MODAL 2: ASSIGN / REASSIGN MECHANIC ────────────────────────── */}
       {isAssignModalOpen && selectedTicketForAssign && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-fade-in">
@@ -1692,6 +1982,16 @@ export function SeniorMechanicDashboard({
                   {resolveDowntimeMinutes} {resolveDowntimeMinutes === 1 ? 'min' : 'mins'}
                 </span>
               </div>
+              {(selectedTicketToResolve.partsUsed || []).length > 0 && (
+                <div className="p-3 bg-indigo-50 border border-indigo-200 rounded-xl">
+                  <div className="font-bold text-indigo-900 mb-1">Spares recorded</div>
+                  <div className="text-slate-700">
+                    {selectedTicketToResolve.partsUsed
+                      .map((part) => `${part.name} × ${part.quantity}`)
+                      .join(', ')}
+                  </div>
+                </div>
+              )}
               <div>
                 <label className="block font-bold text-slate-700 mb-1.5">
                   Root cause / issue identified *

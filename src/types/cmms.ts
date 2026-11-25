@@ -153,6 +153,25 @@ export interface Machine {
   }[];
 }
 
+export type RelocationDcStatus = 'PENDING_CEO_APPROVAL' | 'PROCESSING' | 'APPROVED_BY_CEO' | 'REJECTED';
+export type RelocationDcType = 'RETURNABLE_DELIVERY_CHALLAN' | 'DELIVERY_CHALLAN';
+
+export interface QuotationApprovalRequest {
+  id: string;
+  quotationName: string;
+  quotationMimeType: string;
+  quotationData?: string;
+  status: RelocationDcStatus;
+  requestedById: string;
+  requestedBy: string;
+  requestedAt: string;
+  approvedBy?: string;
+  approvedAt?: string;
+  rejectedBy?: string;
+  rejectedAt?: string;
+  reviewNote?: string;
+}
+
 export interface AssetLogEntry {
   id: string;
   machineId: string;
