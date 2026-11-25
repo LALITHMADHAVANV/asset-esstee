@@ -34,6 +34,8 @@ import {
   Award,
   TrendingUp,
   LayoutGrid,
+  ArrowRightLeft,
+  FileText,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useNav } from '@/context/NavContext';
@@ -189,6 +191,11 @@ export function Sidebar() {
                 badgeColor: 'bg-rose-500 text-white animate-pulse',
               },
               {
+                label: 'Quotation Approvals',
+                href: '/dashboard/quotation-approvals',
+                icon: FileText,
+              },
+              {
                 label: 'Notifications',
                 href: '/dashboard/messages',
                 icon: Bell,
@@ -331,6 +338,16 @@ export function Sidebar() {
                 icon: Clock,
                 badge: (pendingTicketsCount + pendingPpmCount) > 0 ? (pendingTicketsCount + pendingPpmCount) : null,
                 badgeColor: 'bg-emerald-500 text-white',
+              },
+              {
+                label: 'Quotation Request',
+                href: '/dashboard/quotation-requests',
+                icon: FileText,
+              },
+              {
+                label: 'Relocation DC',
+                href: '/dashboard/relocate-dc',
+                icon: ArrowRightLeft,
               },
               {
                 label: 'Process In-Charges',

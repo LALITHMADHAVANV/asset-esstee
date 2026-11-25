@@ -60,14 +60,20 @@ body.plant-command {
 /* ==========================================================================
    PRINT STYLING FOR CMMS FACTORY DOCUMENTS, ASSET TAGS & ROSTERS
    ========================================================================== */
+.challan-table {
+  border: 1.5px solid #000;
+  border-collapse: collapse;
+}
+
+.challan-table th,
+.challan-table td {
+  border: 1.5px solid #000;
+}
+
 @media print {
   @page {
     size: A4 portrait;
     margin: 8mm;
-  }
-  @page {
-    size: auto;
-    margin: 8mm 10mm 10mm 10mm;
   }
 
   /* Base print reset */
@@ -132,16 +138,35 @@ body.plant-command {
     position: absolute !important;
     left: 0;
     top: 0;
-    width: 210mm;
-    min-height: 297mm;
+    width: 194mm;
+    min-height: 281mm;
     margin: 0 auto;
     background: #ffffff;
   }
 
   body.printing-relocation-dc-active #relocation-dc-print-portal .print-challan-sheet {
-    width: 210mm;
-    min-height: 297mm;
+    box-sizing: border-box;
+    width: 194mm;
+    min-height: 281mm;
     border-width: 2px;
+    padding: 8mm;
+  }
+
+  body.printing-relocation-dc-active #relocation-dc-print-portal .challan-table {
+    width: 100%;
+    table-layout: fixed;
+    border-collapse: collapse;
+    border: 1.5px solid #000000 !important;
+  }
+
+  body.printing-relocation-dc-active #relocation-dc-print-portal .challan-table th,
+  body.printing-relocation-dc-active #relocation-dc-print-portal .challan-table td {
+    border: 1.5px solid #000000 !important;
+    color: #000000 !important;
+  }
+
+  body.printing-relocation-dc-active #relocation-dc-print-portal .challan-table tbody tr {
+    height: 14mm;
   }
 
   /* Strip shadows and unwanted artifacts on paper */
