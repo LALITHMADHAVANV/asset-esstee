@@ -37,6 +37,7 @@ import { useToast } from '@/context/ToastContext';
 import { useAuth } from '@/context/AuthContext';
 import { getCategoryForType, SUBTYPE_LOOKUP } from '@/lib/machineCatalog';
 import { PrintableAssetDocumentModal } from '@/components/print/PrintableAssetDocumentModal';
+import { RelocationDeliveryChallan } from '@/components/print/RelocationDeliveryChallan';
 import { formatAssetLocation, formatRelocationEndpoint, cleanRelocationLocation } from '@/lib/formatters';
 import { matchesUnit } from '@/lib/constants/units';
 
@@ -587,6 +588,7 @@ export function AssetModal({
   const [activeTab, setActiveTab] = useState<'DETAILS' | 'REPORT' | 'RELOCATE'>('DETAILS');
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [relocationChallan, setRelocationChallan] = useState<{ asset: Machine; destination: string; station: string; reason: string } | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
   // Breakdown Ticket Form
@@ -614,6 +616,7 @@ export function AssetModal({
 
   // Relocate Form
   const [targetLine, setTargetLine] = useState<FloorLine>('Line 01');
+  const [customLocation, setCustomLocation] = useState('');
   const [targetStation, setTargetStation] = useState<string>('Station 01');
   const [relocateReason, setRelocateReason] = useState<string>('');
 
@@ -814,20 +817,36 @@ export function AssetModal({
   // Submit Relocation
   const handleRelocate = async (e: React.FormEvent) => {
     e.preventDefault();
+    const finalLocation = targetLine === ('__CUSTOM_LOCATION__' as FloorLine)
+      ? customLocation.trim()
+      : targetLine;
+    if (!finalLocation) {
+      showToast('Enter a custom location before relocating.', 'warning');
+      return;
+    }
     setIsSubmitting(true);
     try {
       await relocateMachine(
         currentAsset.id,
-        targetLine,
+        finalLocation as FloorLine,
         targetStation,
         relocateReason.trim() || 'Floor line rebalancing',
         user?.name || 'Supervisor'
       );
       showToast(
-        `Asset ${currentAsset.id} relocated to ${targetLine} (${targetStation})`,
+        `Asset ${currentAsset.id} relocated to ${finalLocation} (${targetStation})`,
         'success'
       );
+      if (targetLine === ('__CUSTOM_LOCATION__' as FloorLine)) {
+        setRelocationChallan({
+          asset: { ...currentAsset, currentLine: finalLocation as FloorLine, area: finalLocation, stationNo: targetStation },
+          destination: finalLocation,
+          station: targetStation,
+          reason: relocateReason.trim() || 'Floor line rebalancing',
+        });
+      }
       setRelocateReason('');
+      setCustomLocation('');
       setActiveTab('DETAILS');
     } catch (err) {
       showToast('Failed to relocate asset', 'error');
@@ -1673,7 +1692,10 @@ export function AssetModal({
                   </label>
                   <select
                     value={targetLine}
-                    onChange={(e) => setTargetLine(e.target.value as FloorLine)}
+                    onChange={(e) => {
+                      setTargetLine(e.target.value as FloorLine);
+                      if (e.target.value !== '__CUSTOM_LOCATION__') setCustomLocation('');
+                    }}
                     className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-800 outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
                   >
                     <optgroup label="🧵 Sewing & Assembly Floor">
@@ -1692,8 +1714,25 @@ export function AssetModal({
                       <option value="Maintenance Workshop">Maintenance Workshop & Tool Bay</option>
                       <option value="Scrap Bay">Scrap & Salvage Bay</option>
                     </optgroup>
+                    <option value="__CUSTOM_LOCATION__">+ Add New / Custom Location...</option>
                   </select>
                 </div>
+
+                {targetLine === ('__CUSTOM_LOCATION__' as FloorLine) && (
+                  <div className="sm:col-span-2">
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      New Custom Location *
+                    </label>
+                    <input
+                      type="text"
+                      value={customLocation}
+                      onChange={(e) => setCustomLocation(e.target.value)}
+                      required
+                      placeholder="e.g. Warehouse Block B"
+                      className="w-full bg-indigo-50/60 border border-indigo-300 rounded-xl px-3 py-2 text-xs text-slate-800 outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
+                    />
+                  </div>
+                )}
 
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1">
@@ -1794,6 +1833,18 @@ export function AssetModal({
           isOpen={isEditModalOpen}
           onClose={() => setIsEditModalOpen(false)}
           asset={currentAsset}
+        />
+      )}
+
+      {relocationChallan && (
+        <RelocationDeliveryChallan
+          isOpen
+          onClose={() => setRelocationChallan(null)}
+          asset={relocationChallan.asset}
+          destination={relocationChallan.destination}
+          station={relocationChallan.station}
+          movedBy={user?.name || 'Supervisor'}
+          reason={relocationChallan.reason}
         />
       )}
     </div>

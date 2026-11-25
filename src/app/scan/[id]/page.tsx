@@ -33,6 +33,7 @@ import {
 import { useToast } from '@/context/ToastContext';
 import { useAuth } from '@/context/AuthContext';
 import { AssetHistoryModal } from '@/components/scan/AssetHistoryModal';
+import { RelocationDeliveryChallan } from '@/components/print/RelocationDeliveryChallan';
 import { formatAssetLocation } from '@/lib/formatters';
 import { matchesUnit } from '@/lib/constants/units';
 import { normalizeRole } from '@/lib/constants/roles';
@@ -148,6 +149,7 @@ function AuthenticatedScanContent() {
   const [activeTab, setActiveTab] = useState<'report' | 'relocate'>('report');
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [relocationChallan, setRelocationChallan] = useState<{ asset: Machine; destination: string; station: string; reason: string } | null>(null);
   const [assetHistoryCount, setAssetHistoryCount] = useState<number>(0);
 
   // Breakdown Form
@@ -306,9 +308,17 @@ function AuthenticatedScanContent() {
       );
 
       showToast(`Machine ${machine.id} relocated to ${finalLocation} (${targetStation})`, 'success');
+      if (targetLine === ('__CUSTOM_LOCATION__' as FloorLine)) {
+        setRelocationChallan({
+          asset: { ...machine, currentLine: finalLocation as FloorLine, area: finalLocation, stationNo: targetStation || 'Station 01' },
+          destination: finalLocation,
+          station: targetStation || 'Station 01',
+          reason: relocateReason.trim() || 'Floor line balancing',
+        });
+      }
       setRelocateReason('');
       setCustomLocation('');
-      if (user) {
+      if (targetLine !== ('__CUSTOM_LOCATION__' as FloorLine) && user) {
         if (role === 'ADMIN' || role === 'ASSET_MANAGER') {
           router.push('/dashboard/floor-tracker');
         } else {
@@ -891,6 +901,18 @@ function AuthenticatedScanContent() {
           setMachine(updated);
         }}
       />
+
+      {relocationChallan && (
+        <RelocationDeliveryChallan
+          isOpen
+          onClose={() => setRelocationChallan(null)}
+          asset={relocationChallan.asset}
+          destination={relocationChallan.destination}
+          station={relocationChallan.station}
+          movedBy={user?.name || reporterName.trim() || 'Floor Operator'}
+          reason={relocationChallan.reason}
+        />
+      )}
     </div>
   );
 }
