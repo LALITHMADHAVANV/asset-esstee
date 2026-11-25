@@ -126,12 +126,26 @@ export async function POST(req: Request) {
     if (!fileSignatureMatches(mimeType, bytes)) {
       return NextResponse.json({ error: 'The uploaded file does not match its PDF or image type.' }, { status: 400 });
     }
+    const submittedAssetId = form.get('assetId');
+    if (submittedAssetId !== null && typeof submittedAssetId !== 'string') {
+      return NextResponse.json({ error: 'Choose a valid asset ID.' }, { status: 400 });
+    }
+    const assetId = typeof submittedAssetId === 'string' ? submittedAssetId.trim() : '';
+    if (assetId.length > 100) {
+      return NextResponse.json({ error: 'Asset ID is too long.' }, { status: 400 });
+    }
+
+    if (assetId) {
+      const asset = await db.collection('machines').findOne({ id: assetId });
+      if (!asset) return NextResponse.json({ error: 'The selected asset ID was not found.' }, { status: 404 });
+    }
 
     const request: StoredQuotationRequest = {
       id: crypto.randomUUID(),
       quotationName: file.name.replace(/[\\/\r\n"]/g, '_').slice(0, 180) || 'quotation',
       quotationMimeType: mimeType,
       quotationData: Buffer.from(bytes).toString('base64'),
+      ...(assetId ? { assetId } : {}),
       status: 'PENDING_CEO_APPROVAL',
       requestedById: sessionUser.uid,
       requestedBy: sessionUser.name,

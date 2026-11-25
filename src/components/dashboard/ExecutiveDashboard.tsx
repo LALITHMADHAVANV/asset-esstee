@@ -12,12 +12,6 @@ import {
   TrendingUp,
   ArrowUp,
   ArrowDown,
-  Calendar,
-  ChevronDown,
-  CheckCircle2,
-  Target,
-  FileText,
-  Activity,
   Layers,
   Crown,
   Sparkles,
@@ -27,7 +21,6 @@ import {
   Clock,
   ArrowUpRight,
   ShieldAlert,
-  Zap,
   Building,
   Coins,
   PackageCheck,
@@ -44,9 +37,7 @@ interface ExecutiveDashboardProps {
   ppmSchedules?: PPMSchedule[];
   parts?: SparePart[];
   requisitions: PartRequisition[];
-  lastRefresh: Date;
   onRefresh: () => void;
-  isLoading?: boolean;
 }
 
 export function ExecutiveDashboard({
@@ -55,24 +46,13 @@ export function ExecutiveDashboard({
   ppmSchedules = [],
   parts = [],
   requisitions,
-  lastRefresh,
   onRefresh,
-  isLoading = false,
 }: ExecutiveDashboardProps) {
   const router = useRouter();
   const { showToast } = useToast();
 
-  // Date Range Filter State
-  const [dateRange, setDateRange] = useState('All Time');
-  const [isDateDropdownOpen, setIsDateDropdownOpen] = useState(false);
-  const [currency, setCurrency] = useState<'INR' | 'USD'>('INR');
-
   // Currency Formatter (data in CMMS is in INR ₹)
   const formatMoney = (amountINR: number) => {
-    if (currency === 'USD') {
-      const usdAmount = amountINR / 83.5;
-      return `$ ${Math.round(usdAmount).toLocaleString('en-US')}`;
-    }
     return `₹ ${Math.round(amountINR).toLocaleString('en-IN')}`;
   };
 
@@ -119,10 +99,6 @@ export function ExecutiveDashboard({
         r.status === 'PENDING_CEO_APPROVAL'
     );
   }, [requisitions]);
-
-  const totalPendingCost = useMemo(() => {
-    return ceoPendingReqs.reduce((acc, r) => acc + (r.estimatedCost || 0), 0);
-  }, [ceoPendingReqs]);
 
   const handleApprove = async (reqId: string) => {
     try {
@@ -462,194 +438,9 @@ export function ExecutiveDashboard({
       });
   }, [repairs, parts]);
 
-  // ─── 9. REAL DYNAMIC EXECUTIVE INSIGHTS ───────────────────────────────
-  const executiveInsights = useMemo(() => {
-    const list = [];
-    const activeBreakdowns = machines.filter((m) => m.status === 'BREAKDOWN').length;
-
-    if (ceoPendingReqs.length > 0) {
-      list.push({
-        icon: Crown,
-        color: 'bg-purple-100 text-purple-700',
-        text: (
-          <span>
-            <strong>{ceoPendingReqs.length} Critical requisition(s)</strong> totaling{' '}
-            {formatMoney(totalPendingCost)} require CEO authorization.
-          </span>
-        ),
-      });
-    }
-
-    if (activeBreakdowns > 0) {
-      list.push({
-        icon: AlertTriangle,
-        color: 'bg-rose-100 text-rose-700',
-        text: (
-          <span>
-            <strong>{activeBreakdowns} machine(s) in active breakdown</strong> on the production floor.
-          </span>
-        ),
-      });
-    } else {
-      list.push({
-        icon: CheckCircle2,
-        color: 'bg-emerald-100 text-emerald-700',
-        text: (
-          <span>
-            <strong>Zero active machine breakdowns.</strong> All production lines operating smoothly.
-          </span>
-        ),
-      });
-    }
-
-    if (topDowntimeMachines.length > 0) {
-      list.push({
-        icon: Target,
-        color: 'bg-amber-100 text-amber-700',
-        text: (
-          <span>
-            <strong>{topDowntimeMachines[0].name}</strong> accounts for highest downtime ({topDowntimeMachines[0].hours} hrs).
-          </span>
-        ),
-      });
-    }
-
-    if (machineReplacements.length > 0) {
-      list.push({
-        icon: RefreshCw,
-        color: 'bg-teal-100 text-teal-700',
-        text: (
-          <span>
-            <strong>{machineReplacements.length} asset(s) recommended for replacement</strong> due to repeated downtime or salvage.
-          </span>
-        ),
-      });
-    }
-
-    const ppmTotal = ppmSchedules.length;
-    const ppmCompletedCount = ppmSchedules.filter((p) => p.status === 'COMPLETED').length;
-    const ppmPct = ppmTotal > 0 ? Math.round((ppmCompletedCount / ppmTotal) * 100) : 100;
-    list.push({
-      icon: Activity,
-      color: 'bg-blue-100 text-blue-700',
-      text: (
-        <span>
-          <strong>PPM Compliance rate is at {ppmPct}%</strong> ({ppmCompletedCount}/{ppmTotal} scheduled routines completed).
-        </span>
-      ),
-    });
-
-    return list.slice(0, 5);
-  }, [
-    ceoPendingReqs,
-    totalPendingCost,
-    machines,
-    topDowntimeMachines,
-    machineReplacements,
-    ppmSchedules,
-    currency,
-  ]);
-
   return (
     <div className="space-y-5 pb-12 animate-in fade-in duration-150">
-      {/* ─── 1. TOP HEADER & DATE RANGE FILTER ────────────────────────── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-xs">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-            <span>Executive Plant Performance</span>
-            <span className="text-xs px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 font-bold border border-indigo-200">
-              Live Factory Telemetry
-            </span>
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-            Real-time financial impact, downtime allocation, and executive maintenance approvals.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2.5 flex-wrap">
-          {/* Currency Toggle */}
-          <div className="inline-flex rounded-xl border border-slate-200 bg-slate-50 p-1 text-xs font-bold shadow-2xs">
-            <button
-              type="button"
-              onClick={() => setCurrency('INR')}
-              className={`px-2.5 py-1 rounded-lg transition cursor-pointer ${
-                currency === 'INR' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'
-              }`}
-            >
-              ₹ INR
-            </button>
-            <button
-              type="button"
-              onClick={() => setCurrency('USD')}
-              className={`px-2.5 py-1 rounded-lg transition cursor-pointer ${
-                currency === 'USD' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'
-              }`}
-            >
-              $ USD
-            </button>
-          </div>
-
-          {/* Date Picker Dropdown */}
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => setIsDateDropdownOpen(!isDateDropdownOpen)}
-              className="inline-flex items-center gap-2 px-3.5 py-2 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 shadow-2xs transition cursor-pointer"
-            >
-              <Calendar className="w-4 h-4 text-slate-500" />
-              <span>{dateRange}</span>
-              <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
-            </button>
-
-            {isDateDropdownOpen && (
-              <div className="absolute right-0 mt-2 w-56 bg-white border border-slate-200 rounded-2xl shadow-xl py-1.5 z-50 text-xs font-medium">
-                {['All Time', 'Current Year (2025-2026)', 'Last 90 Days', 'Current Month'].map((range) => (
-                  <button
-                    key={range}
-                    type="button"
-                    onClick={() => {
-                      setDateRange(range);
-                      setIsDateDropdownOpen(false);
-                      showToast(`Report filtered to: ${range}`, 'info');
-                    }}
-                    className={`w-full text-left px-3.5 py-2 hover:bg-slate-50 transition cursor-pointer ${
-                      dateRange === range ? 'text-indigo-600 font-bold bg-indigo-50/50' : 'text-slate-700'
-                    }`}
-                  >
-                    {range}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Pending Approvals Quick Badge */}
-          {ceoPendingReqs.length > 0 && (
-            <button
-              type="button"
-              onClick={() => router.push('/dashboard/messages')}
-              className="inline-flex items-center gap-1.5 px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold transition shadow-xs cursor-pointer animate-pulse"
-              title="View Critical Requests Waiting for CEO Approval"
-            >
-              <Crown className="w-3.5 h-3.5" />
-              <span>{ceoPendingReqs.length} CEO Approvals</span>
-            </button>
-          )}
-
-          {/* Refresh Button */}
-          <button
-            type="button"
-            onClick={onRefresh}
-            disabled={isLoading}
-            className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl transition cursor-pointer"
-            title="Refresh Live Data"
-          >
-            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-          </button>
-        </div>
-      </div>
-
-      {/* ─── 2. TOP 5 KPI CARDS (COMPUTED FROM REAL FACTORY DATA) ──────── */}
+      {/* ─── 1. TOP 5 KPI CARDS (COMPUTED FROM REAL FACTORY DATA) ──────── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         {/* Card 1: Maintenance Activities Completed */}
         <div
@@ -776,7 +567,7 @@ export function ExecutiveDashboard({
         </div>
       </div>
 
-      {/* ─── 3. MIDDLE CHARTS ROW (REAL DATA DRIVEN) ──────────────────── */}
+      {/* ─── 2. MIDDLE CHARTS ROW (REAL DATA DRIVEN) ──────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
         {/* Chart 1: Maintenance & Repair Cost Trend (5 cols) */}
         <div className="lg:col-span-5 bg-white rounded-2xl p-5 border border-slate-200 shadow-xs flex flex-col justify-between">
@@ -1073,7 +864,7 @@ export function ExecutiveDashboard({
                     const y = 154 - barH;
 
                     return (
-                      <g key={m.name} className="group">
+                      <g key={m.id} className="group">
                         <rect
                           x={x}
                           y={y}
@@ -1121,7 +912,7 @@ export function ExecutiveDashboard({
         </div>
       </div>
 
-      {/* ─── 4. MIDDLE-BOTTOM ROW (COST BREAKDOWN, RECURRING PROBLEMS & RECOMMENDATIONS) ─ */}
+      {/* ─── 3. MIDDLE-BOTTOM ROW (COST BREAKDOWN, RECURRING PROBLEMS & RECOMMENDATIONS) ─ */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
         {/* Cost Breakdown Donut (4 cols) */}
         <div className="lg:col-span-4 bg-white rounded-2xl p-5 border border-slate-200 shadow-xs flex flex-col justify-between">
@@ -1351,10 +1142,10 @@ export function ExecutiveDashboard({
         </div>
       </div>
 
-      {/* ─── 5. BOTTOM SECTION (RECENT PROBLEMS, INSIGHTS & ACTIONS) ───── */}
+      {/* ─── 4. RECENT PROBLEMS ───────────────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-        {/* Table: Recent Major Problems / Recurring Events (6 cols) */}
-        <div className="lg:col-span-6 bg-white rounded-2xl p-5 border border-slate-200 shadow-xs flex flex-col justify-between">
+        {/* Table: Recent Major Problems / Recurring Events */}
+        <div className="lg:col-span-12 bg-white rounded-2xl p-5 border border-slate-200 shadow-xs flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div>
@@ -1415,127 +1206,9 @@ export function ExecutiveDashboard({
           </div>
         </div>
 
-        {/* Card: Key Insights & Takeaways (3 cols) */}
-        <div className="lg:col-span-3 bg-white rounded-2xl p-5 border border-slate-200 shadow-xs flex flex-col justify-between">
-          <div>
-            <div className="pb-3 border-b border-slate-100">
-              <h3 className="text-sm font-bold text-slate-900">
-                Key Insights &amp; Takeaways
-              </h3>
-              <p className="text-[11px] text-slate-400">Synthesized from live plant data</p>
-            </div>
-
-            <div className="space-y-3 mt-3 text-xs">
-              {executiveInsights.map((ins, i) => {
-                const IconComponent = ins.icon;
-                return (
-                  <div key={i} className="flex items-start gap-2.5">
-                    <div className={`w-6 h-6 rounded-full ${ins.color} flex items-center justify-center shrink-0 mt-0.5`}>
-                      <IconComponent className="w-3.5 h-3.5" />
-                    </div>
-                    <div className="text-slate-700 leading-snug">
-                      {ins.text}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-          <div className="text-[11px] text-slate-400 pt-3 border-t border-slate-100">
-            Updated dynamically based on factory status.
-          </div>
-        </div>
-
-        {/* Card: Suggested Actions for CEO (3 cols) */}
-        <div className="lg:col-span-3 bg-white rounded-2xl p-5 border border-slate-200 shadow-xs flex flex-col justify-between">
-          <div>
-            <div className="pb-3 border-b border-slate-100">
-              <h3 className="text-sm font-bold text-slate-900">
-                Suggested Actions for CEO
-              </h3>
-              <p className="text-[11px] text-slate-400">Priority executive decisions</p>
-            </div>
-
-            <div className="space-y-3 mt-3 text-xs">
-              {ceoPendingReqs.length > 0 && (
-                <button
-                  type="button"
-                  onClick={() => router.push('/dashboard/messages')}
-                  className="w-full text-left flex items-start gap-2.5 p-1.5 -mx-1.5 rounded-xl hover:bg-purple-50 transition cursor-pointer"
-                >
-                  <div className="w-6 h-6 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center shrink-0 mt-0.5">
-                    <Crown className="w-3.5 h-3.5" />
-                  </div>
-                  <div className="text-slate-700 leading-snug">
-                    Sanction <strong>{ceoPendingReqs.length} Critical Purchase Requisitions</strong> totaling {formatMoney(totalPendingCost)}.
-                  </div>
-                </button>
-              )}
-
-              {machineReplacements.length > 0 && (
-                <button
-                  type="button"
-                  onClick={() => setSelectedReplacement(machineReplacements[0])}
-                  className="w-full text-left flex items-start gap-2.5 p-1.5 -mx-1.5 rounded-xl hover:bg-teal-50 transition cursor-pointer"
-                >
-                  <div className="w-6 h-6 rounded-lg bg-teal-100 text-teal-700 flex items-center justify-center shrink-0 mt-0.5">
-                    <RefreshCw className="w-3.5 h-3.5" />
-                  </div>
-                  <div className="text-slate-700 leading-snug">
-                    Review Capex replacement for <strong>{machineReplacements[0].machine}</strong> ({formatMoney(machineReplacements[0].cost)}).
-                  </div>
-                </button>
-              )}
-
-              <button
-                type="button"
-                onClick={() => router.push('/dashboard/history')}
-                className="w-full text-left flex items-start gap-2.5 p-1.5 -mx-1.5 rounded-xl hover:bg-slate-50 transition cursor-pointer"
-              >
-                <div className="w-6 h-6 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center shrink-0 mt-0.5">
-                  <FileText className="w-3.5 h-3.5" />
-                </div>
-                <div className="text-slate-700 leading-snug">
-                  Inspect comprehensive plant maintenance ledger &amp; mechanic performance logs.
-                </div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  showToast('Preventive maintenance target locked at 90% compliance.', 'success');
-                }}
-                className="w-full text-left flex items-start gap-2.5 p-1.5 -mx-1.5 rounded-xl hover:bg-slate-50 transition cursor-pointer"
-              >
-                <div className="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0 mt-0.5">
-                  <Zap className="w-3.5 h-3.5" />
-                </div>
-                <div className="text-slate-700 leading-snug">
-                  Enforce preventive PPM maintenance schedule compliance target.
-                </div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => onRefresh()}
-                className="w-full text-left flex items-start gap-2.5 p-1.5 -mx-1.5 rounded-xl hover:bg-slate-50 transition cursor-pointer"
-              >
-                <div className="w-6 h-6 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center shrink-0 mt-0.5">
-                  <Activity className="w-3.5 h-3.5" />
-                </div>
-                <div className="text-slate-700 leading-snug">
-                  Synchronize and refresh all telemetry from plant maintenance database.
-                </div>
-              </button>
-            </div>
-          </div>
-          <div className="text-[11px] text-slate-400 pt-3 border-t border-slate-100">
-            Click any action above to review or sign off.
-          </div>
-        </div>
       </div>
 
-      {/* ─── 6. PENDING CEO CRITICAL REQUISITIONS DESK (EXECUTIVE AUTHORITY) ── */}
+      {/* ─── 5. PENDING CEO CRITICAL REQUISITIONS DESK (EXECUTIVE AUTHORITY) ── */}
       {ceoPendingReqs.length > 0 && (
         <div className="bg-white rounded-3xl p-5 sm:p-6 border border-purple-200 shadow-sm space-y-4">
           <div className="flex items-center justify-between pb-3 border-purple-100 border-b">
@@ -1608,7 +1281,7 @@ export function ExecutiveDashboard({
         </div>
       )}
 
-      {/* ─── 7. MODAL: MACHINE REPLACEMENT CAPEX PROPOSAL REVIEW ───────── */}
+      {/* ─── 6. MODAL: MACHINE REPLACEMENT CAPEX PROPOSAL REVIEW ───────── */}
       {selectedReplacement && (
         <div className="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
@@ -1684,7 +1357,7 @@ export function ExecutiveDashboard({
         </div>
       )}
 
-      {/* ─── 8. WIDGET DRILL-DOWN SIDEBAR (RIGHT TO LEFT) ─────────────── */}
+      {/* ─── 7. WIDGET DRILL-DOWN SIDEBAR (RIGHT TO LEFT) ─────────────── */}
       <WidgetDrilldownDrawer
         isOpen={drillDownState.isOpen}
         onClose={closeDrillDown}
