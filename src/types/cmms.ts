@@ -220,6 +220,8 @@ export interface RepairTicket {
   id: string; // e.g., "WO-1091"
   machineId: string;
   machineType: string;
+  assetCategory?: AssetCategory;
+  assetCategoryLabel?: string;
   line: string;
   unit?: string;
   reportedAt: string; // ISO date string

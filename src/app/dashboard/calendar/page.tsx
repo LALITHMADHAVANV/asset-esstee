@@ -1215,7 +1215,7 @@ export default function CalendarPage() {
                             <div>
                               <div className="font-extrabold text-sm text-slate-900 font-mono">{r.machineId}</div>
                               <div className="text-[11px] text-slate-500">
-                                {r.machineType} • <span className="font-semibold text-indigo-700">{r.line}</span>
+                                {(r as any).assetCategoryLabel ? `${(r as any).assetCategoryLabel} • ` : ''}{r.machineType} • <span className="font-semibold text-indigo-700">{r.line}</span>
                               </div>
                             </div>
 
@@ -1345,7 +1345,7 @@ export default function CalendarPage() {
             <form onSubmit={handleResolveSubmit} className="p-5 space-y-4">
               <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs space-y-1.5">
                 <div className="flex justify-between font-bold text-slate-800">
-                  <span>{selectedTicket.machineId} ({selectedTicket.machineType})</span>
+                  <span>{selectedTicket.machineId} ({(selectedTicket as any).assetCategoryLabel ? `${(selectedTicket as any).assetCategoryLabel} • ` : ''}{selectedTicket.machineType})</span>
                   <span className="text-rose-600">{selectedTicket.faultCategory}</span>
                 </div>
                 <div className="text-[11px] text-slate-500">

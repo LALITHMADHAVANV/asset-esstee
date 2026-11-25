@@ -91,8 +91,11 @@ export function PrintableAssetDocumentModal({
   // Encoded QR payload feeding all machine specifications into the QR code
   const qrData = `${assetScanUrl(origin, asset.id)}?${new URLSearchParams({
     id: asset.id || '',
+    category: asset.category || 'MACHINE',
     brand: asset.brand || '',
     model: asset.model || '',
+    serialNo: asset.serialNo || asset.serialNumber || '',
+    station: asset.stationNo || '',
     type: asset.type || '',
     typeName: asset.typeName || TYPE_NAME_MAP[asset.type] || '',
     company: asset.company || (typeof window !== 'undefined' ? localStorage.getItem('cmms_company_name') || '' : '') || '',
@@ -506,6 +509,7 @@ export function PrintableAssetDocumentModal({
                 {batchList.map((m) => {
                   const mParams = new URLSearchParams({
                     id: m.id || '',
+                    category: m.category || 'MACHINE',
                     brand: m.brand || '',
                     model: m.model || '',
                     type: m.type || '',

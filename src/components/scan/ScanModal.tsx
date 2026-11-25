@@ -40,6 +40,7 @@ export function ScanModal({
 
   // Relocate fields
   const [targetLine, setTargetLine] = useState<FloorLine>('Line 01');
+  const [customLocation, setCustomLocation] = useState('');
   const [targetStation, setTargetStation] = useState<string>('Station 01');
   const [relocateReason, setRelocateReason] = useState<string>('');
 
@@ -92,6 +93,20 @@ export function ScanModal({
 
   const currentMachine = visibleMachines.find((m) => m.id === selectedMachineId) || visibleMachines[0];
 
+  useEffect(() => {
+    if (!currentMachine) return;
+    const category = currentMachine.category || 'MACHINE';
+    if (category === 'TABLE') setFaultType('Table Top Surface Damaged / Splintered Laminate');
+    else if (category === 'CHAIR') setFaultType('Hydraulic Gas-Lift Cylinder Sinking Under Weight');
+    else if (category === 'LIGHT' || currentMachine.type?.startsWith('LIGHT') || currentMachine.id?.startsWith('LGT')) setFaultType('Overhead LED Driver Ballast Flickering');
+    else if (category === 'FAN' || currentMachine.type?.startsWith('FAN') || currentMachine.id?.startsWith('FAN')) setFaultType('Ceiling Downrod Vibration / Blade Angle Imbalance');
+    else if (category === 'UTILITY') setFaultType('Steam Pressure Drop Below Operating 4 Bar');
+    else if (category === 'VEHICLE') setFaultType('Vehicle Engine / Drive System Fault');
+    else if (category === 'APPLIANCES') setFaultType('Appliance Power Supply / Control Fault');
+    else if (category === 'FURNITURE') setFaultType('Furniture Structural / Mounting Damage');
+    else setFaultType('Skipping Stitches / Looper Timing Misalignment');
+  }, [currentMachine?.id, currentMachine?.category, currentMachine?.type]);
+
   // Show all registered technicians across all units (prioritizing machine's unit first)
   const availableMechanics = useMemo(() => {
     const machineUnit = currentMachine?.unit || '';
@@ -127,6 +142,24 @@ export function ScanModal({
       const ticketId = await createBreakdownTicket({
         machineId: currentMachine.id,
         machineType: currentMachine.typeName || currentMachine.type,
+        assetCategory: (currentMachine.category || 'MACHINE') as any,
+        assetCategoryLabel: currentMachine.category === 'TABLE'
+          ? 'Table'
+          : currentMachine.category === 'CHAIR'
+            ? 'Chair'
+            : currentMachine.category === 'LIGHT'
+              ? 'Lighting'
+              : currentMachine.category === 'FAN'
+                ? 'Fan'
+                : currentMachine.category === 'UTILITY'
+                  ? 'Utility'
+                  : currentMachine.category === 'VEHICLE'
+                    ? 'Vehicle'
+                    : currentMachine.category === 'APPLIANCES'
+                      ? 'Appliance'
+                      : currentMachine.category === 'FURNITURE'
+                        ? 'Furniture'
+                        : 'Machine',
         line: (currentMachine.area || currentMachine.currentLine) as FloorLine,
         reportedAt: new Date().toISOString(),
         reportedBy: `${user?.name || 'Operator'} (${user?.title || 'Floor'})`,
@@ -157,22 +190,30 @@ export function ScanModal({
   const handleRelocateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentMachine) return;
+    const finalLocation = targetLine === ('__CUSTOM_LOCATION__' as FloorLine)
+      ? customLocation.trim()
+      : targetLine;
+    if (!finalLocation) {
+      showToast('Enter a custom location before relocating.', 'warning');
+      return;
+    }
     setIsSubmitting(true);
 
     try {
       await relocateMachine(
         currentMachine.id,
-        targetLine,
+        finalLocation as FloorLine,
         targetStation,
         relocateReason.trim() || 'Floor line rebalancing',
         user?.name || 'Mechanic'
       );
 
       showToast(
-        `Machine ${currentMachine.id} relocated to ${targetLine} (${targetStation})`,
+        `Machine ${currentMachine.id} relocated to ${finalLocation} (${targetStation})`,
         'success'
       );
       setRelocateReason('');
+      setCustomLocation('');
       onClose();
     } catch (err) {
       showToast('Failed to relocate machine', 'error');
@@ -231,6 +272,25 @@ export function ScanModal({
                   </span>
                   <span className="text-[10px] text-slate-500 font-semibold">
                     ({currentMachine.typeName || currentMachine.type})
+                  </span>
+                  <span className="text-[9px] font-black uppercase tracking-wider bg-slate-900 text-white px-1.5 py-0.5 rounded">
+                    {currentMachine.category === 'TABLE'
+                      ? 'Table Ticket'
+                      : currentMachine.category === 'CHAIR'
+                        ? 'Chair Ticket'
+                        : currentMachine.category === 'LIGHT'
+                          ? 'Lighting Ticket'
+                          : currentMachine.category === 'FAN'
+                            ? 'Fan Ticket'
+                            : currentMachine.category === 'UTILITY'
+                              ? 'Utility Ticket'
+                              : currentMachine.category === 'VEHICLE'
+                                ? 'Vehicle Ticket'
+                                : currentMachine.category === 'APPLIANCES'
+                                  ? 'Appliance Ticket'
+                                  : currentMachine.category === 'FURNITURE'
+                                    ? 'Furniture Ticket'
+                                    : 'Machine Ticket'}
                   </span>
                 </div>
                 <div className="text-indigo-700 text-[11px] mt-0.5">
@@ -331,6 +391,42 @@ export function ScanModal({
                       </option>
                       <option value="Seat Foam Compressed / Fabric Torn">
                         Seat Foam Compressed / Fabric Torn
+                      </option>
+                    </>
+                  ) : currentMachine?.category === 'FURNITURE' ? (
+                    <>
+                      <option value="Furniture Structural / Mounting Damage">
+                        Furniture Structural / Mounting Damage
+                      </option>
+                      <option value="Furniture Surface / Finish Damage">
+                        Furniture Surface / Finish Damage
+                      </option>
+                      <option value="Furniture Drawer / Door / Lock Fault">
+                        Furniture Drawer / Door / Lock Fault
+                      </option>
+                    </>
+                  ) : currentMachine?.category === 'VEHICLE' ? (
+                    <>
+                      <option value="Vehicle Engine / Drive System Fault">
+                        Vehicle Engine / Drive System Fault
+                      </option>
+                      <option value="Vehicle Battery / Electrical Fault">
+                        Vehicle Battery / Electrical Fault
+                      </option>
+                      <option value="Vehicle Brake / Steering / Tire Fault">
+                        Vehicle Brake / Steering / Tire Fault
+                      </option>
+                    </>
+                  ) : currentMachine?.category === 'APPLIANCES' ? (
+                    <>
+                      <option value="Appliance Power Supply / Control Fault">
+                        Appliance Power Supply / Control Fault
+                      </option>
+                      <option value="Appliance Motor / Pump / Fan Fault">
+                        Appliance Motor / Pump / Fan Fault
+                      </option>
+                      <option value="Appliance Heating / Cooling Fault">
+                        Appliance Heating / Cooling Fault
                       </option>
                     </>
                   ) : currentMachine?.category === 'LIGHT' || currentMachine?.type?.startsWith('LIGHT') || currentMachine?.id?.startsWith('LGT') ? (
@@ -509,7 +605,10 @@ export function ScanModal({
                 </label>
                 <select
                   value={targetLine}
-                  onChange={(e) => setTargetLine(e.target.value as FloorLine)}
+                  onChange={(e) => {
+                    setTargetLine(e.target.value as FloorLine);
+                    if (e.target.value !== '__CUSTOM_LOCATION__') setCustomLocation('');
+                  }}
                   required
                   className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-slate-800"
                 >
@@ -529,8 +628,25 @@ export function ScanModal({
                     <option value="Maintenance Workshop">Maintenance Workshop & Tool Bay</option>
                     <option value="Scrap Bay">Decommission / Scrap Salvage Bay</option>
                   </optgroup>
+                  <option value="__CUSTOM_LOCATION__">+ Add New / Custom Location...</option>
                 </select>
               </div>
+
+              {targetLine === ('__CUSTOM_LOCATION__' as FloorLine) && (
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">
+                    New Custom Location *
+                  </label>
+                  <input
+                    type="text"
+                    value={customLocation}
+                    onChange={(e) => setCustomLocation(e.target.value)}
+                    required
+                    placeholder="e.g. Warehouse Block B"
+                    className="w-full px-3 py-2 text-xs bg-indigo-50/60 border border-indigo-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-slate-800"
+                  />
+                </div>
+              )}
 
               <div>
                 <label className="block text-xs font-semibold text-slate-600 mb-1">

@@ -2569,7 +2569,17 @@ export default function HistoryPage() {
             <div className="bg-slate-50/80 p-4 rounded-2xl border-2 border-dashed border-slate-200 flex flex-col items-center text-center space-y-3">
               <div className="p-3 bg-white rounded-2xl border-2 border-slate-900 shadow-xs">
                 <QRCodeSVG
-                  value={`${assetScanUrl(typeof window !== 'undefined' ? window.location.origin : '', selectedQrAsset.assetId)}?brand=${encodeURIComponent(selectedQrAsset.brand)}&model=${encodeURIComponent(selectedQrAsset.model)}&unit=${encodeURIComponent(selectedQrAsset.unit)}`}
+                  value={`${assetScanUrl(typeof window !== 'undefined' ? window.location.origin : '', selectedQrAsset.assetId)}?${new URLSearchParams({
+                    id: selectedQrAsset.assetId,
+                    category: selectedQrAsset.category,
+                    type: selectedQrAsset.subCategory || '',
+                    typeName: selectedQrAsset.categoryLabel,
+                    brand: selectedQrAsset.brand,
+                    model: selectedQrAsset.model,
+                    serialNo: selectedQrAsset.serialNo,
+                    unit: selectedQrAsset.unit,
+                    area: selectedQrAsset.location || '',
+                  }).toString()}`}
                   size={160}
                   level="H"
                   bgColor="#ffffff"
@@ -2632,7 +2642,17 @@ export default function HistoryPage() {
         <div id="single-qr-print-portal" className="hidden print:flex flex-col items-center justify-center p-6 bg-white">
           <div className="p-4 bg-white rounded-2xl border-2 border-black flex flex-col items-center text-center">
             <QRCodeSVG
-              value={`${assetScanUrl(typeof window !== 'undefined' ? window.location.origin : '', selectedQrAsset.assetId)}?brand=${encodeURIComponent(selectedQrAsset.brand)}&model=${encodeURIComponent(selectedQrAsset.model)}&unit=${encodeURIComponent(selectedQrAsset.unit)}`}
+              value={`${assetScanUrl(typeof window !== 'undefined' ? window.location.origin : '', selectedQrAsset.assetId)}?${new URLSearchParams({
+                id: selectedQrAsset.assetId,
+                category: selectedQrAsset.category,
+                type: selectedQrAsset.subCategory || '',
+                typeName: selectedQrAsset.categoryLabel,
+                brand: selectedQrAsset.brand,
+                model: selectedQrAsset.model,
+                serialNo: selectedQrAsset.serialNo,
+                unit: selectedQrAsset.unit,
+                area: selectedQrAsset.location || '',
+              }).toString()}`}
               size={180}
               level="H"
               bgColor="#ffffff"
