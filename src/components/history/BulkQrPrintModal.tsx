@@ -258,10 +258,22 @@ export function BulkQrPrintModal({
 
   // Render individual sticker based on selected format
   const renderSticker = (asset: BulkQrAsset, idx: number, isPrintPortal: boolean = false) => {
-    const qrValue = `${assetScanUrl(origin, asset.id)}?brand=${encodeURIComponent(asset.brand || '')}&model=${encodeURIComponent(asset.model || '')}&unit=${encodeURIComponent(asset.unit || '')}&company=${encodeURIComponent(asset.company || effectiveCompanyName)}`;
     const displayId = asset.id;
     const serialLabel = asset.serialNo || asset.serialNumber || '';
     const lineLabel = asset.currentLine || asset.location || asset.unit || '';
+    const qrParams = new URLSearchParams({
+      id: asset.id,
+      category: asset.category || 'MACHINE',
+      type: asset.type || '',
+      typeName: asset.typeName || '',
+      brand: asset.brand || '',
+      model: asset.model || '',
+      serialNo: serialLabel,
+      station: asset.location || asset.unit || '',
+      unit: asset.unit || '',
+      company: asset.company || effectiveCompanyName,
+    });
+    const qrValue = `${assetScanUrl(origin, asset.id)}?${qrParams.toString()}`;
 
     // =========================================================================
     // 1. PURE QR CODE (NO TEXT AT ALL)

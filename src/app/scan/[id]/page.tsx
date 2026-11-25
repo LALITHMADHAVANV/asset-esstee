@@ -37,6 +37,51 @@ import { formatAssetLocation } from '@/lib/formatters';
 import { matchesUnit } from '@/lib/constants/units';
 import { normalizeRole } from '@/lib/constants/roles';
 
+function normalizeAssetCategory(category?: string, type?: string, id?: string): string {
+  const raw = (category || '').toUpperCase();
+  if (raw === 'TABLE' || raw === 'CHAIR' || raw === 'LIGHT' || raw === 'FAN' || raw === 'UTILITY' || raw === 'VEHICLE' || raw === 'APPLIANCES') return raw;
+  if (raw === 'FURNITURE') return 'FURNITURE';
+  if (raw === 'MACHINE') return 'MACHINE';
+  const upperType = (type || '').toUpperCase();
+  const upperId = (id || '').toUpperCase();
+  if (upperType.startsWith('TABLE') || upperId.startsWith('TBL')) return 'TABLE';
+  if (upperType.startsWith('CHAIR') || upperId.startsWith('CHR')) return 'CHAIR';
+  if (upperType.startsWith('LIGHT') || upperId.startsWith('LGT')) return 'LIGHT';
+  if (upperType.startsWith('FAN') || upperId.startsWith('FAN')) return 'FAN';
+  if (upperType.startsWith('VEHICLE') || upperId.startsWith('VHC')) return 'VEHICLE';
+  if (upperType.startsWith('UTILITY') || upperId.startsWith('UTL')) return 'UTILITY';
+  return 'MACHINE';
+}
+
+function assetCategoryLabel(category?: string): string {
+  const normalized = normalizeAssetCategory(category);
+  const labels: Record<string, string> = {
+    MACHINE: 'Machine',
+    FURNITURE: 'Furniture',
+    TABLE: 'Table',
+    CHAIR: 'Chair',
+    LIGHT: 'Lighting',
+    FAN: 'Fan',
+    UTILITY: 'Utility',
+    VEHICLE: 'Vehicle',
+    APPLIANCES: 'Appliance',
+  };
+  return labels[normalized] || 'Asset';
+}
+
+function defaultFaultForCategory(category?: string): string {
+  const normalized = normalizeAssetCategory(category);
+  if (normalized === 'TABLE') return 'Table Surface Damaged / Laminate Chipped';
+  if (normalized === 'CHAIR') return 'Pneumatic Gas Cylinder Sinking / Pressure Loss';
+  if (normalized === 'LIGHT') return 'High-Bay / Task Light Flickering or Dead Ballast';
+  if (normalized === 'FAN') return 'Industrial Fan Motor Bearing Noise / Blade Vibration';
+  if (normalized === 'UTILITY') return 'Steam Boiler Heating Element / Pressure Valve Drop';
+  if (normalized === 'VEHICLE') return 'Vehicle Engine / Drive System Fault';
+  if (normalized === 'APPLIANCES') return 'Appliance Power Supply / Control Fault';
+  if (normalized === 'FURNITURE') return 'Furniture Structural / Mounting Damage';
+  return 'Skipping Stitches / Looper Timing Misalignment';
+}
+
 function MobileScanContent() {
   const { user, isLoading } = useAuth();
   const pathname = usePathname();
@@ -116,6 +161,7 @@ function AuthenticatedScanContent() {
 
   // Relocate Form
   const [targetLine, setTargetLine] = useState<FloorLine>('Line 01');
+  const [customLocation, setCustomLocation] = useState('');
   const [targetStation, setTargetStation] = useState('');
   const [relocateReason, setRelocateReason] = useState('');
 
@@ -167,6 +213,7 @@ function AuthenticatedScanContent() {
         setMachine(found);
         setTargetLine(found.currentLine);
         setTargetStation(found.stationNo);
+        setFaultType(defaultFaultForCategory(normalizeAssetCategory(found.category, found.type, found.id)));
       } else {
         setMachine(null);
       }
@@ -199,6 +246,8 @@ function AuthenticatedScanContent() {
       const ticketId = await createBreakdownTicket({
         machineId: machine.id,
         machineType: machine.typeName || machine.type,
+        assetCategory: normalizeAssetCategory(machine.category, machine.type, machine.id) as any,
+        assetCategoryLabel: assetCategoryLabel(normalizeAssetCategory(machine.category, machine.type, machine.id)),
         line: machine.currentLine,
         reportedAt: new Date().toISOString(),
         reportedBy: reporterDisplay,
@@ -238,19 +287,27 @@ function AuthenticatedScanContent() {
   const handleRelocateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!machine) return;
+    const finalLocation = targetLine === ('__CUSTOM_LOCATION__' as FloorLine)
+      ? customLocation.trim()
+      : targetLine;
+    if (!finalLocation) {
+      showToast('Enter a custom location before relocating.', 'warning');
+      return;
+    }
     setIsSubmitting(true);
 
     try {
       await relocateMachine(
         machine.id,
-        targetLine,
+        finalLocation as FloorLine,
         targetStation || 'Station 01',
         relocateReason.trim() || 'Floor line balancing',
         user?.name || reporterName.trim() || 'Floor Operator'
       );
 
-      showToast(`Machine ${machine.id} relocated to ${targetLine} (${targetStation})`, 'success');
+      showToast(`Machine ${machine.id} relocated to ${finalLocation} (${targetStation})`, 'success');
       setRelocateReason('');
+      setCustomLocation('');
       if (user) {
         if (role === 'ADMIN' || role === 'ASSET_MANAGER') {
           router.push('/dashboard/floor-tracker');
@@ -363,6 +420,9 @@ function AuthenticatedScanContent() {
               <p className="text-sm font-bold text-indigo-700 mt-0.5">
                 {machine.brand} • {machine.model}
               </p>
+              <span className="inline-flex mt-1.5 px-2 py-0.5 rounded-md bg-indigo-100 text-indigo-800 border border-indigo-200 text-[10px] font-black uppercase tracking-wider">
+                {assetCategoryLabel(normalizeAssetCategory(machine.category, machine.type, machine.id))} Ticket
+              </span>
               <div className="flex items-center gap-1.5 mt-1.5">
                 <span className="font-black uppercase tracking-wider bg-slate-900 text-white px-2 py-0.5 rounded text-[10px]">
                   {machine.unit || 'Unit 01'}
@@ -406,9 +466,9 @@ function AuthenticatedScanContent() {
           {/* Machine specs strip */}
           <div className="grid grid-cols-2 gap-2 mt-4 text-xs">
             <div className="bg-white p-2.5 rounded-xl border border-slate-200 shadow-2xs">
-              <span className="text-[10px] text-slate-500 block font-medium">Class / Type</span>
+              <span className="text-[10px] text-slate-500 block font-medium">Category / Type</span>
               <span className="font-semibold text-slate-800 truncate block">
-                {machine.typeName || machine.type}
+                {assetCategoryLabel(normalizeAssetCategory(machine.category, machine.type, machine.id))} • {machine.typeName || machine.type}
               </span>
             </div>
             <div className="bg-white p-2.5 rounded-xl border border-slate-200 shadow-2xs">
@@ -509,6 +569,48 @@ function AuthenticatedScanContent() {
                       </option>
                       <option value="Seat Base Foam Cracked / Loose Mounting">
                         Seat Base Foam Cracked / Loose Mounting
+                      </option>
+                    </>
+                  ) : machine.category === 'FURNITURE' ? (
+                    <>
+                      <option value="Furniture Structural / Mounting Damage">
+                        Furniture Structural / Mounting Damage
+                      </option>
+                      <option value="Furniture Surface / Finish Damage">
+                        Furniture Surface / Finish Damage
+                      </option>
+                      <option value="Furniture Drawer / Door / Lock Fault">
+                        Furniture Drawer / Door / Lock Fault
+                      </option>
+                    </>
+                  ) : machine.category === 'VEHICLE' ? (
+                    <>
+                      <option value="Vehicle Engine / Drive System Fault">
+                        Vehicle Engine / Drive System Fault
+                      </option>
+                      <option value="Vehicle Battery / Electrical Fault">
+                        Vehicle Battery / Electrical Fault
+                      </option>
+                      <option value="Vehicle Brake / Steering / Tire Fault">
+                        Vehicle Brake / Steering / Tire Fault
+                      </option>
+                      <option value="Vehicle Hydraulic / Lifting Fault">
+                        Vehicle Hydraulic / Lifting Fault
+                      </option>
+                    </>
+                  ) : machine.category === 'APPLIANCES' ? (
+                    <>
+                      <option value="Appliance Power Supply / Control Fault">
+                        Appliance Power Supply / Control Fault
+                      </option>
+                      <option value="Appliance Motor / Pump / Fan Fault">
+                        Appliance Motor / Pump / Fan Fault
+                      </option>
+                      <option value="Appliance Heating / Cooling Fault">
+                        Appliance Heating / Cooling Fault
+                      </option>
+                      <option value="Appliance Leakage / Physical Damage">
+                        Appliance Leakage / Physical Damage
                       </option>
                     </>
                   ) : machine.category === 'UTILITY' || machine.category === 'LIGHT' || machine.category === 'FAN' ? (
@@ -701,7 +803,10 @@ function AuthenticatedScanContent() {
                 </label>
                 <select
                   value={targetLine}
-                  onChange={(e) => setTargetLine(e.target.value as FloorLine)}
+                  onChange={(e) => {
+                    setTargetLine(e.target.value as FloorLine);
+                    if (e.target.value !== '__CUSTOM_LOCATION__') setCustomLocation('');
+                  }}
                   required
                   className="w-full px-3.5 py-2.5 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 text-slate-800 outline-none font-medium focus:bg-white transition"
                 >
@@ -711,8 +816,25 @@ function AuthenticatedScanContent() {
                   <option value="Line 04">Line 04 (Denim Bottoms)</option>
                   <option value="Buffer Workshop">Buffer Workshop (Standby Pool)</option>
                   <option value="Scrap Bay">Scrap Bay (Decommissioned)</option>
+                  <option value="__CUSTOM_LOCATION__">+ Add New / Custom Location...</option>
                 </select>
               </div>
+
+              {targetLine === ('__CUSTOM_LOCATION__' as FloorLine) && (
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">
+                    New Custom Location *
+                  </label>
+                  <input
+                    type="text"
+                    value={customLocation}
+                    onChange={(e) => setCustomLocation(e.target.value)}
+                    required
+                    placeholder="e.g. Warehouse Block B"
+                    className="w-full px-3.5 py-2.5 text-xs bg-indigo-50/60 border border-indigo-300 rounded-xl focus:ring-2 focus:ring-indigo-500 text-slate-800 outline-none font-medium focus:bg-white transition"
+                  />
+                </div>
+              )}
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">
