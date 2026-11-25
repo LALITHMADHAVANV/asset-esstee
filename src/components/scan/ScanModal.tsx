@@ -10,6 +10,7 @@ import { formatAssetLocation } from '@/lib/formatters';
 import { useToast } from '@/context/ToastContext';
 import { useAuth } from '@/context/AuthContext';
 import { matchesUnit } from '@/lib/constants/units';
+import { RelocationDeliveryChallan } from '@/components/print/RelocationDeliveryChallan';
 
 interface ScanModalProps {
   isOpen: boolean;
@@ -43,6 +44,7 @@ export function ScanModal({
   const [customLocation, setCustomLocation] = useState('');
   const [targetStation, setTargetStation] = useState<string>('Station 01');
   const [relocateReason, setRelocateReason] = useState<string>('');
+  const [relocationChallan, setRelocationChallan] = useState<{ asset: Machine; destination: string; station: string; reason: string } | null>(null);
 
   const { showToast } = useToast();
   const { user, role } = useAuth();
@@ -212,9 +214,17 @@ export function ScanModal({
         `Machine ${currentMachine.id} relocated to ${finalLocation} (${targetStation})`,
         'success'
       );
+      if (targetLine === ('__CUSTOM_LOCATION__' as FloorLine)) {
+        setRelocationChallan({
+          asset: { ...currentMachine, currentLine: finalLocation as FloorLine, area: finalLocation, stationNo: targetStation || 'Station 01' },
+          destination: finalLocation,
+          station: targetStation,
+          reason: relocateReason.trim() || 'Floor line rebalancing',
+        });
+      }
       setRelocateReason('');
       setCustomLocation('');
-      onClose();
+      if (targetLine !== ('__CUSTOM_LOCATION__' as FloorLine)) onClose();
     } catch (err) {
       showToast('Failed to relocate machine', 'error');
       console.error(err);
@@ -236,6 +246,18 @@ export function ScanModal({
               <h4 className="text-sm font-bold tracking-tight text-slate-900">Floor QR Terminal</h4>
               <p className="text-[10px] text-slate-500 font-medium">Handheld Operator &amp; Mechanic Dispatcher</p>
             </div>
+
+            {relocationChallan && (
+              <RelocationDeliveryChallan
+                isOpen
+                onClose={() => setRelocationChallan(null)}
+                asset={relocationChallan.asset}
+                destination={relocationChallan.destination}
+                station={relocationChallan.station}
+                movedBy={user?.name || 'Mechanic'}
+                reason={relocationChallan.reason}
+              />
+            )}
           </div>
           <div className="flex items-center gap-2">
             {onOpenLiveScanner && (
