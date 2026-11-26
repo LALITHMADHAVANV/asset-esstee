@@ -197,19 +197,6 @@ export default function RelocateDcPage() {
 
   return (
     <div className="space-y-6">
-      <header className="rounded-2xl bg-slate-950 p-6 text-white shadow-lg">
-        <div className="flex items-start gap-4">
-          <div className="rounded-xl bg-indigo-500/20 p-3 text-indigo-200"><ArrowRightLeft className="h-6 w-6" /></div>
-          <div>
-            <p className="text-xs font-bold uppercase tracking-[0.18em] text-indigo-200">Senior Mechanic Desk</p>
-            <h1 className="mt-1 text-2xl font-black">Relocation DC Generation</h1>
-            <p className="mt-2 max-w-2xl text-sm text-slate-300">
-              Generate a returnable delivery challan or delivery challan. This standalone module is independent of quotation approvals.
-            </p>
-          </div>
-        </div>
-      </header>
-
       <form onSubmit={createChallan} className="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(300px,0.9fr)]">
         <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <div>

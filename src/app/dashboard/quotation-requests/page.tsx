@@ -157,17 +157,6 @@ export default function QuotationRequestPage() {
 
   return (
     <div className="space-y-6">
-      <header className="rounded-2xl bg-slate-950 p-6 text-white shadow-lg">
-        <div className="flex items-start gap-4">
-          <div className="rounded-xl bg-indigo-500/20 p-3 text-indigo-200"><FileText className="h-6 w-6" /></div>
-          <div>
-            <p className="text-xs font-bold uppercase tracking-[0.18em] text-indigo-200">Senior Mechanic Desk</p>
-            <h1 className="mt-1 text-2xl font-black">Quotation Request</h1>
-            <p className="mt-2 max-w-2xl text-sm text-slate-300">Upload a quotation to send it to the CEO. This approval flow is separate from the relocation DC module.</p>
-          </div>
-        </div>
-      </header>
-
       <form onSubmit={submitRequest} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <h2 className="text-base font-black text-slate-900">Upload quotation</h2>
         <p className="mt-1 text-xs text-slate-500">PDF, JPG, PNG, or WEBP; maximum 5 MB.</p>
@@ -237,23 +226,24 @@ export default function QuotationRequestPage() {
           <span className="mt-1 text-xs text-slate-500">{quotation ? `${(quotation.size / 1024 / 1024).toFixed(2)} MB` : 'Select a PDF or image'}</span>
           <input id="quotation-file" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/jpeg,image/png,image/webp" className="sr-only" onChange={(event) => selectQuotation(event.target.files?.[0] || null)} />
         </label>
+        {quotation && (
+          <div className="mt-2 flex justify-end">
+            <button
+              type="button"
+              onClick={clearQuotation}
+              disabled={submitting}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-bold text-slate-600 hover:bg-rose-50 hover:text-rose-700 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <X className="h-3.5 w-3.5" />
+              Remove selected document
+            </button>
+          </div>
+        )}
         {quotation && quotationPreviewUrl && (
           <section aria-label="Quotation file preview" className="mt-4 overflow-hidden rounded-xl border border-slate-200">
-            <div className="flex items-center justify-between gap-3 border-b border-slate-200 bg-slate-50 px-4 py-3">
-              <div className="min-w-0">
-                <h3 className="text-sm font-bold text-slate-800">Quotation preview</h3>
-                <p className="mt-0.5 truncate text-xs text-slate-500">{quotation.name}</p>
-              </div>
-              <button
-                type="button"
-                onClick={clearQuotation}
-                disabled={submitting}
-                className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-bold text-slate-600 hover:bg-rose-50 hover:text-rose-700 disabled:cursor-not-allowed disabled:opacity-50"
-                aria-label="Remove selected quotation"
-              >
-                <X className="h-3.5 w-3.5" />
-                Remove
-              </button>
+            <div className="border-b border-slate-200 bg-slate-50 px-4 py-3">
+              <h3 className="text-sm font-bold text-slate-800">Quotation preview</h3>
+              <p className="mt-0.5 truncate text-xs text-slate-500">{quotation.name}</p>
             </div>
             {quotation.type === 'application/pdf' ? (
               <iframe
