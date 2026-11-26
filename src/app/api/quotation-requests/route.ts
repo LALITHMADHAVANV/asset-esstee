@@ -135,9 +135,17 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Asset ID is too long.' }, { status: 400 });
     }
 
+    let machineMake: string | undefined;
+    let machineType: string | undefined;
     if (assetId) {
       const asset = await db.collection('machines').findOne({ id: assetId });
       if (!asset) return NextResponse.json({ error: 'The selected asset ID was not found.' }, { status: 404 });
+      if (typeof asset.brand === 'string' && asset.brand.trim()) machineMake = asset.brand.trim();
+      if (typeof asset.typeName === 'string' && asset.typeName.trim()) {
+        machineType = asset.typeName.trim();
+      } else if (typeof asset.type === 'string' && asset.type.trim()) {
+        machineType = asset.type.trim();
+      }
     }
 
     const request: StoredQuotationRequest = {
@@ -146,6 +154,8 @@ export async function POST(req: Request) {
       quotationMimeType: mimeType,
       quotationData: Buffer.from(bytes).toString('base64'),
       ...(assetId ? { assetId } : {}),
+      ...(machineMake ? { machineMake } : {}),
+      ...(machineType ? { machineType } : {}),
       status: 'PENDING_CEO_APPROVAL',
       requestedById: sessionUser.uid,
       requestedBy: sessionUser.name,
