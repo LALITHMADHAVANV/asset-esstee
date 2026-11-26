@@ -256,9 +256,7 @@ export default function DashboardPage() {
           ppmSchedules={scopedPpmSchedules}
           parts={scopedParts}
           requisitions={scopedRequisitions}
-          lastRefresh={lastRefresh}
           onRefresh={fetchAllData}
-          isLoading={dataLoading}
         />
       ) : (
         <PlantOperationsDashboard

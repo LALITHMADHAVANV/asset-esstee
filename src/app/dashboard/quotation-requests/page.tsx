@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
-import { ExternalLink, FileText, LoaderCircle, Send, Upload } from 'lucide-react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { ExternalLink, FileText, LoaderCircle, Search, Send, Upload } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import { apiFetch } from '@/lib/services/cmmsService';
-import type { QuotationApprovalRequest } from '@/types/cmms';
+import type { Machine, QuotationApprovalRequest } from '@/types/cmms';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const ACCEPTED_TYPES = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'];
@@ -20,10 +20,25 @@ export default function QuotationRequestPage() {
   const { user } = useAuth();
   const { showToast } = useToast();
   const [quotation, setQuotation] = useState<File | null>(null);
+  const [machines, setMachines] = useState<Machine[]>([]);
+  const [assetIdRequired, setAssetIdRequired] = useState(false);
+  const [selectedAssetId, setSelectedAssetId] = useState('');
+  const [assetSearch, setAssetSearch] = useState('');
   const [requests, setRequests] = useState<QuotationApprovalRequest[]>([]);
   const [loading, setLoading] = useState(true);
+  const [assetsLoading, setAssetsLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [pageError, setPageError] = useState('');
+  const [assetError, setAssetError] = useState('');
+
+  const filteredAssets = useMemo(() => {
+    const query = assetSearch.trim().toLowerCase();
+    if (!query) return machines;
+    return machines.filter((machine) =>
+      [machine.id, machine.name, machine.typeName, machine.type, machine.brand, machine.model]
+        .some((value) => String(value || '').toLowerCase().includes(query))
+    );
+  }, [assetSearch, machines]);
 
   const loadRequests = useCallback(async () => {
     try {
@@ -41,11 +56,30 @@ export default function QuotationRequestPage() {
     }
   }, [showToast]);
 
+  const loadMachines = useCallback(async () => {
+    try {
+      const response = await apiFetch('/api/machines');
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Could not load asset IDs.');
+      setMachines(Array.isArray(result.data) ? result.data : []);
+      setAssetError('');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Could not load asset IDs.';
+      setAssetError(message);
+      showToast(message, 'error');
+    } finally {
+      setAssetsLoading(false);
+    }
+  }, [showToast]);
+
   useEffect(() => {
-    // Load the user's saved quotation requests after their workspace is ready.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (user) void loadRequests();
-  }, [loadRequests, user]);
+    // Load workspace data after the authenticated workspace becomes available.
+    if (user) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      void loadRequests();
+      void loadMachines();
+    }
+  }, [loadMachines, loadRequests, user]);
 
   const selectQuotation = (file: File | null) => {
     if (!file) {
@@ -71,15 +105,23 @@ export default function QuotationRequestPage() {
       showToast('Select the quotation file before submitting.', 'error');
       return;
     }
+    if (assetIdRequired && !selectedAssetId) {
+      showToast('Select an asset ID or choose that an asset ID is not needed.', 'error');
+      return;
+    }
 
     setSubmitting(true);
     try {
       const form = new FormData();
       form.set('quotation', quotation);
+      if (assetIdRequired) form.set('assetId', selectedAssetId);
       const response = await apiFetch('/api/quotation-requests', { method: 'POST', body: form });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || 'Could not submit the quotation.');
       setQuotation(null);
+      setAssetIdRequired(false);
+      setSelectedAssetId('');
+      setAssetSearch('');
       const fileInput = document.getElementById('quotation-file') as HTMLInputElement | null;
       if (fileInput) fileInput.value = '';
       showToast('Quotation sent to the CEO for approval.', 'success');
@@ -107,6 +149,59 @@ export default function QuotationRequestPage() {
       <form onSubmit={submitRequest} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <h2 className="text-base font-black text-slate-900">Upload quotation</h2>
         <p className="mt-1 text-xs text-slate-500">PDF, JPG, PNG, or WEBP; maximum 5 MB.</p>
+        <label className="mt-4 block max-w-sm space-y-1.5">
+          <span className="text-xs font-bold text-slate-700">Is this quotation for a specific asset ID?</span>
+          <select
+            value={assetIdRequired ? 'yes' : 'no'}
+            onChange={(event) => {
+              const required = event.target.value === 'yes';
+              setAssetIdRequired(required);
+              if (!required) {
+                setSelectedAssetId('');
+                setAssetSearch('');
+              }
+            }}
+            className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+          >
+            <option value="no">No asset ID needed</option>
+            <option value="yes">Yes, select an asset ID</option>
+          </select>
+        </label>
+        {assetIdRequired && (
+          <div className="mt-3 max-w-lg space-y-2">
+            <label htmlFor="asset-search" className="block text-xs font-bold text-slate-700">Search assets</label>
+            <div className="flex items-center gap-2 rounded-xl border border-slate-300 px-3">
+              <Search className="h-4 w-4 shrink-0 text-slate-400" />
+              <input
+                id="asset-search"
+                value={assetSearch}
+                onChange={(event) => setAssetSearch(event.target.value)}
+                placeholder="Search by asset ID, name, or model"
+                className="w-full py-2.5 text-sm outline-none"
+              />
+            </div>
+            <label htmlFor="quotation-asset-id" className="sr-only">Select asset ID</label>
+            <select
+              id="quotation-asset-id"
+              required
+              disabled={assetsLoading || Boolean(assetError)}
+              value={selectedAssetId}
+              onChange={(event) => setSelectedAssetId(event.target.value)}
+              className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 disabled:bg-slate-100"
+            >
+              <option value="">{assetsLoading ? 'Loading asset IDs…' : 'Select asset ID'}</option>
+              {filteredAssets.map((machine) => (
+                <option key={machine.id} value={machine.id}>
+                  {machine.id} — {machine.name || machine.typeName || machine.type}
+                </option>
+              ))}
+            </select>
+            {assetError && <p role="alert" className="text-xs text-rose-700">{assetError}</p>}
+            {!assetsLoading && !assetError && filteredAssets.length === 0 && (
+              <p className="text-xs text-slate-500">No matching assets found.</p>
+            )}
+          </div>
+        )}
         <label htmlFor="quotation-file" className="mt-4 flex min-h-40 cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 px-4 text-center hover:border-indigo-400 hover:bg-indigo-50/40">
           {quotation ? <FileText className="mb-2 h-7 w-7 text-indigo-600" /> : <Upload className="mb-2 h-7 w-7 text-slate-400" />}
           <span className="text-sm font-bold text-slate-800">{quotation?.name || 'Choose quotation file'}</span>
@@ -139,6 +234,7 @@ export default function QuotationRequestPage() {
                       <span className={`rounded-full border px-2 py-0.5 text-[10px] font-black uppercase ${statusStyle(request.status)}`}>{request.status.replaceAll('_', ' ')}</span>
                     </div>
                     <p className="mt-1 text-[11px] text-slate-500">Submitted {new Date(request.requestedAt).toLocaleString()}</p>
+                    {request.assetId && <p className="mt-1 text-xs font-semibold text-slate-700">Asset ID: {request.assetId}</p>}
                     {request.reviewNote && <p className="mt-1 text-xs text-slate-600">CEO note: {request.reviewNote}</p>}
                   </div>
                   <a href={`/api/quotation-requests?attachment=${encodeURIComponent(request.id)}`} target="_blank" rel="noopener noreferrer" className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-bold text-indigo-700 hover:bg-indigo-100">

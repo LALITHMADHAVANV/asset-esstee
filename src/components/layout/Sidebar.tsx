@@ -12,7 +12,6 @@ import {
   CalendarCheck,
   Layers,
   LogOut,
-  Crown,
   Package,
   PackageCheck,
   UserPlus,
@@ -71,7 +70,6 @@ export function Sidebar() {
   const [pendingTicketsCount, setPendingTicketsCount] = useState<number>(0);
   const [pendingPpmCount, setPendingPpmCount] = useState<number>(0);
   const [activeInChargesCount, setActiveInChargesCount] = useState<number>(0);
-  const [pendingCeoCount, setPendingCeoCount] = useState<number>(0);
   const [pendingStoreCount, setPendingStoreCount] = useState<number>(0);
   const [unattendedBreachCount, setUnattendedBreachCount] = useState<number>(0);
 
@@ -120,13 +118,6 @@ export function Sidebar() {
     });
 
     const unsubReqs = subscribeRequisitions((reqs) => {
-      const ceoPending = reqs.filter(
-        (r) =>
-          (r.type === 'CRITICAL_CEO' || r.requiresCeoApproval) &&
-          r.status === 'PENDING_CEO_APPROVAL'
-      ).length;
-      setPendingCeoCount(ceoPending);
-
       const storePending = reqs.filter(
         (r) => r.status !== 'FULFILLED' && r.status !== 'REJECTED'
       ).length;
@@ -182,13 +173,6 @@ export function Sidebar() {
                 label: 'Executive Overview',
                 href: '/dashboard',
                 icon: LayoutDashboard,
-              },
-              {
-                label: 'Executive Approvals',
-                href: '/dashboard/messages',
-                icon: Crown,
-                badge: pendingCeoCount > 0 ? pendingCeoCount : null,
-                badgeColor: 'bg-rose-500 text-white animate-pulse',
               },
               {
                 label: 'Quotation Approvals',
@@ -516,7 +500,7 @@ export function Sidebar() {
         href: it.href.startsWith('/dashboard') ? `/${companySlug}${it.href}` : it.href,
       })),
     }));
-  }, [currentRole, pendingTicketsCount, pendingPpmCount, activeInChargesCount, pendingCeoCount, pendingStoreCount, lowStockCount, user?.companySlug]);
+  }, [currentRole, pendingTicketsCount, pendingPpmCount, activeInChargesCount, pendingStoreCount, lowStockCount, user?.companySlug]);
 
   const userInitial = useMemo(() => {
     if (currentRole === 'ADMIN') return 'A';
