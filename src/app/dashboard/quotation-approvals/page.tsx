@@ -113,6 +113,8 @@ export default function QuotationApprovalsPage() {
                         <p className="mt-2 text-xs text-slate-500">Request ID: {request.id}</p>
                         <p className="mt-2 text-[11px] text-slate-400">Requested by {request.requestedBy} · {new Date(request.requestedAt).toLocaleString()}</p>
                         {request.assetId && <p className="mt-2 text-xs font-semibold text-slate-700">Asset ID: {request.assetId}</p>}
+                        {request.machineMake && <p className="mt-1 text-xs text-slate-700">Machine make: {request.machineMake}</p>}
+                        {request.machineType && <p className="mt-1 text-xs text-slate-700">Machine type: {request.machineType}</p>}
                         {request.reviewNote && <p className="mt-2 rounded-lg bg-slate-50 p-2 text-xs text-slate-700">Review note: {request.reviewNote}</p>}
                         <a
                           href={`/api/quotation-requests?attachment=${encodeURIComponent(request.id)}`}

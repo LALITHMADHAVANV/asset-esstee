@@ -162,6 +162,8 @@ export interface QuotationApprovalRequest {
   quotationMimeType: string;
   quotationData?: string;
   assetId?: string;
+  machineMake?: string;
+  machineType?: string;
   status: RelocationDcStatus;
   requestedById: string;
   requestedBy: string;
